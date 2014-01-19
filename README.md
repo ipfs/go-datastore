@@ -4,6 +4,8 @@ datastore is a generic layer of abstraction for data store and database access. 
 
 In addition, grouped datastores significantly simplify interesting data access patterns (such as caching and sharding).
 
+Based on [datastore.py](https://github.com/datastore/datastore).
+
 ### Documentation
 
 https://godoc.org/github.com/datastore/datastore.go
