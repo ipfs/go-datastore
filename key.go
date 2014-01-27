@@ -46,6 +46,11 @@ func (k Key) String() string {
   return k.string
 }
 
+// Returns the bytes value of Key
+func (k Key) Bytes() []byte {
+  return []byte(k.string)
+}
+
 // Returns the `list` representation of this Key.
 // NewKey("/Comedy/MontyPython/Actor:JohnCleese").List()
 // ["Comedy", "MontyPythong", "Actor:JohnCleese"]
