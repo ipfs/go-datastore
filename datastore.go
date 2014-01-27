@@ -55,7 +55,16 @@ type Datastore interface {
 }
 
 // Errors
-var ErrNotFound = errors.New("datastore: key not found")
+
+// ErrNotFound is returned by Get, Has, and Delete when a datastore does not
+// map the given key to a value.
+var ErrNotFound = errors.New("datastore: key not found.")
+
+// ErrInvalidType is returned by Put when a given value is incopatible with
+// the type the datastore supports. This means a conversion (or serialization)
+// is needed beforehand.
+var ErrInvalidType = errors.New("datastore: invalid type error.")
+
 
 // GetBackedHas provides a default Datastore.Has implementation.
 // It exists so Datastore.Has implementations can use it, like so:
