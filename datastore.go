@@ -1,7 +1,7 @@
 package datastore
 
 import (
-  "errors"
+	"errors"
 )
 
 /*
@@ -29,29 +29,29 @@ should be checked by callers.
 */
 
 type Datastore interface {
-  // Put stores the object `value` named by `key`.
-  //
-  // The generalized Datastore interface does not impose a value type,
-  // allowing various datastore middleware implementations (which do not
-  // handle the values directly) to be composed together.
-  //
-  // Ultimately, the lowest-level datastore will need to do some value checking
-  // or risk getting incorrect values. It may also be useful to expose a more
-  // type-safe interface to your application, and do the checking up-front.
-  Put(key Key, value interface{}) (err error)
+	// Put stores the object `value` named by `key`.
+	//
+	// The generalized Datastore interface does not impose a value type,
+	// allowing various datastore middleware implementations (which do not
+	// handle the values directly) to be composed together.
+	//
+	// Ultimately, the lowest-level datastore will need to do some value checking
+	// or risk getting incorrect values. It may also be useful to expose a more
+	// type-safe interface to your application, and do the checking up-front.
+	Put(key Key, value interface{}) (err error)
 
-  // Get retrieves the object `value` named by `key`.
-  // Get will return ErrNotFound if the key is not mapped to a value.
-  Get(key Key) (value interface{}, err error)
+	// Get retrieves the object `value` named by `key`.
+	// Get will return ErrNotFound if the key is not mapped to a value.
+	Get(key Key) (value interface{}, err error)
 
-  // Has returns whether the `key` is mapped to a `value`.
-  // In some contexts, it may be much cheaper only to check for existence of
-  // a value, rather than retrieving the value itself. (e.g. HTTP HEAD).
-  // The default implementation is found in `GetBackedHas`.
-  Has(key Key) (exists bool, err error)
+	// Has returns whether the `key` is mapped to a `value`.
+	// In some contexts, it may be much cheaper only to check for existence of
+	// a value, rather than retrieving the value itself. (e.g. HTTP HEAD).
+	// The default implementation is found in `GetBackedHas`.
+	Has(key Key) (exists bool, err error)
 
-  // Delete removes the value for given `key`.
-  Delete(key Key) (err error)
+	// Delete removes the value for given `key`.
+	Delete(key Key) (err error)
 }
 
 // Errors
@@ -65,7 +65,6 @@ var ErrNotFound = errors.New("datastore: key not found.")
 // is needed beforehand.
 var ErrInvalidType = errors.New("datastore: invalid type error.")
 
-
 // GetBackedHas provides a default Datastore.Has implementation.
 // It exists so Datastore.Has implementations can use it, like so:
 //
@@ -73,13 +72,13 @@ var ErrInvalidType = errors.New("datastore: invalid type error.")
 //   return GetBackedHas(d, key)
 // }
 func GetBackedHas(ds Datastore, key Key) (bool, error) {
-  _, err := ds.Get(key)
-  switch err {
-  case nil:
-    return true, nil
-  case ErrNotFound:
-    return false, nil
-  default:
-    return false, err
-  }
+	_, err := ds.Get(key)
+	switch err {
+	case nil:
+		return true, nil
+	case ErrNotFound:
+		return false, nil
+	default:
+		return false, err
+	}
 }
