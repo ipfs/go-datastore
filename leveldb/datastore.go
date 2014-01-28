@@ -33,8 +33,8 @@ func NewDatastore(path string, opts *Options) (*Datastore, error) {
 // Note: using sync = false.
 // see http://godoc.org/github.com/syndtr/goleveldb/leveldb/opt#WriteOptions
 func (d *Datastore) Put(key ds.Key, value interface{}) (err error) {
-	val, failed := value.([]byte)
-	if failed {
+	val, ok := value.([]byte)
+	if !ok {
 		return ds.ErrInvalidType
 	}
 	return d.DB.Put(key.Bytes(), val, nil)
