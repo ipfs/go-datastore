@@ -81,7 +81,7 @@ func NewLogDatastore(ds Datastore, name string) *LogDatastore {
 
 func (d *LogDatastore) Put(key Key, value interface{}) (err error) {
 	log.Printf("%s: Put %s", d.Name, key)
-	log.Printf("%s: Put %s ```%s```", d.Name, key, value)
+	// log.Printf("%s: Put %s ```%s```", d.Name, key, value)
 	return d.Child.Put(key, value)
 }
 
