@@ -14,7 +14,10 @@ type Datastore struct {
 type Options opt.Options
 
 func NewDatastore(path string, opts *Options) (*Datastore, error) {
-	nopts := opt.Options(*opts)
+	var nopts opt.Options
+	if opts != nil {
+		nopts = opt.Options(*opts)
+	}
 	db, err := leveldb.OpenFile(path, &nopts)
 	if err != nil {
 		return nil, err
