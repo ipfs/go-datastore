@@ -68,29 +68,34 @@ func (d *NullDatastore) Delete(key Key) (err error) {
 
 // LogDatastore logs all accesses through the datastore.
 type LogDatastore struct {
+	Name string
 	Child Datastore
 }
 
-func NewLogDatastore(ds Datastore) *LogDatastore {
-	return &LogDatastore{Child: ds}
+func NewLogDatastore(ds Datastore, name string) *LogDatastore {
+	if len(name) < 1 {
+		name = "LogDatastore"
+	}
+	return &LogDatastore{Name: name, Child: ds}
 }
 
 func (d *LogDatastore) Put(key Key, value interface{}) (err error) {
-	log.Printf("LogDatastore: Put %s", key)
+	log.Printf("%s: Put %s", d.Name, key)
+	log.Printf("%s: Put %s ```%s```", d.Name, key, value)
 	return d.Child.Put(key, value)
 }
 
 func (d *LogDatastore) Get(key Key) (value interface{}, err error) {
-	log.Printf("LogDatastore: Get %s", key)
+	log.Printf("%s: Get %s", d.Name, key)
 	return d.Child.Get(key)
 }
 
 func (d *LogDatastore) Has(key Key) (exists bool, err error) {
-	log.Printf("LogDatastore: Has %s", key)
+	log.Printf("%s: Has %s", d.Name, key)
 	return d.Child.Has(key)
 }
 
 func (d *LogDatastore) Delete(key Key) (err error) {
-	log.Printf("LogDatastore: Delete %s", key)
+	log.Printf("%s: Delete %s", d.Name, key)
 	return d.Child.Delete(key)
 }
