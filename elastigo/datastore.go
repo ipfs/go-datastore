@@ -38,7 +38,7 @@ func NewDatastore(addr Address, index string) (*Datastore, error) {
 
 	api.Domain = addr.Host
 	if addr.Port > 0 {
-		api.Port = string(addr.Port)
+		api.Port = fmt.Sprintf("%d", addr.Port)
 	}
 
 	GlobalInstance = addr
