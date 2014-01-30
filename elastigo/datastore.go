@@ -2,6 +2,7 @@ package elastigo
 
 import (
 	"fmt"
+	"github.com/codahale/blake2"
 	ds "github.com/jbenet/datastore.go"
 	"github.com/mattbaird/elastigo/api"
 	"github.com/mattbaird/elastigo/core"
@@ -24,6 +25,10 @@ type Address struct {
 type Datastore struct {
 	addr  Address
 	index string
+
+	// Elastic search does not allow slashes in their object ids,
+	// so we hash the key. By default, we use the provided BlakeKeyHash
+	KeyHash func(ds.Key) string
 }
 
 func NewDatastore(addr Address, index string) (*Datastore, error) {
@@ -38,8 +43,9 @@ func NewDatastore(addr Address, index string) (*Datastore, error) {
 
 	GlobalInstance = addr
 	return &Datastore{
-		addr:  addr,
-		index: index,
+		addr:    addr,
+		index:   index,
+		KeyHash: BlakeKeyHash,
 	}, nil
 }
 
@@ -54,7 +60,8 @@ func (d *Datastore) Index(key ds.Key) string {
 
 // value should be JSON serializable.
 func (d *Datastore) Put(key ds.Key, value interface{}) (err error) {
-	res, err := core.Index(false, d.Index(key), key.Type(), key.Name(), value)
+	id := d.KeyHash(key)
+	res, err := core.Index(false, d.Index(key), key.Type(), id, value)
 	if err != nil {
 		return err
 	}
@@ -65,7 +72,8 @@ func (d *Datastore) Put(key ds.Key, value interface{}) (err error) {
 }
 
 func (d *Datastore) Get(key ds.Key) (value interface{}, err error) {
-	res, err := core.Get(false, d.Index(key), key.Type(), key.Name())
+	id := d.KeyHash(key)
+	res, err := core.Get(false, d.Index(key), key.Type(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -76,11 +84,13 @@ func (d *Datastore) Get(key ds.Key) (value interface{}, err error) {
 }
 
 func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
-	return core.Exists(false, d.Index(key), key.Type(), key.Name())
+	id := d.KeyHash(key)
+	return core.Exists(false, d.Index(key), key.Type(), id)
 }
 
 func (d *Datastore) Delete(key ds.Key) (err error) {
-	res, err := core.Delete(false, d.Index(key), key.Type(), key.Name(), 0, "")
+	id := d.KeyHash(key)
+	res, err := core.Delete(false, d.Index(key), key.Type(), id, 0, "")
 	if err != nil {
 		return err
 	}
@@ -88,4 +98,13 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 		return fmt.Errorf("Elasticsearch response: NOT OK. %v", res)
 	}
 	return nil
+}
+
+// Hash a key and return the first 16 hex chars of its blake2b hash.
+// basically: Blake2b(key).HexString[:16]
+func BlakeKeyHash(key ds.Key) string {
+	h := blake2.NewBlake2B()
+	h.Write(key.Bytes())
+	d := h.Sum(nil)
+	return fmt.Sprintf("%x", d)[:16]
 }
