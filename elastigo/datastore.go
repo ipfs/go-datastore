@@ -6,6 +6,8 @@ import (
 	ds "github.com/jbenet/datastore.go"
 	"github.com/mattbaird/elastigo/api"
 	"github.com/mattbaird/elastigo/core"
+	"net/url"
+	"strings"
 )
 
 // Currently, elastigo does not allow connecting to multiple elasticsearch
@@ -14,16 +16,11 @@ import (
 //
 // Thus, we use a global static variable (GlobalInstance), and return an
 // error if NewDatastore is called twice with different addresses.
-var GlobalInstance Address
-
-type Address struct {
-	Host string
-	Port int
-}
+var GlobalInstance string
 
 // Datastore uses a standard Go map for internal storage.
 type Datastore struct {
-	addr  Address
+	url   string
 	index string
 
 	// Elastic search does not allow slashes in their object ids,
@@ -31,19 +28,32 @@ type Datastore struct {
 	KeyHash func(ds.Key) string
 }
 
-func NewDatastore(addr Address, index string) (*Datastore, error) {
-	if GlobalInstance.Host != "" && GlobalInstance != addr {
+func NewDatastore(urlstr string) (*Datastore, error) {
+	if GlobalInstance != "" && GlobalInstance != urlstr {
 		return nil, fmt.Errorf("elastigo only allows one client. See godoc.")
 	}
 
-	api.Domain = addr.Host
-	if addr.Port > 0 {
-		api.Port = fmt.Sprintf("%d", addr.Port)
+	uf := "http://<host>:<port>/<index>"
+	u, err := url.Parse(urlstr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing url: %s (%s)", urlstr, uf)
 	}
 
-	GlobalInstance = addr
+	host := strings.Split(u.Host, ":")
+	api.Domain = host[0]
+	if len(host) > 1 {
+		api.Port = host[1]
+	}
+
+	index := strings.Trim(u.Path, "/")
+	if strings.Contains(index, "/") {
+		e := "elastigo index cannot have slashes: %s (%s -> %s)"
+		return nil, fmt.Errorf(e, index, urlstr, uf)
+	}
+
+	GlobalInstance = urlstr
 	return &Datastore{
-		addr:    addr,
+		url:     urlstr,
 		index:   index,
 		KeyHash: BlakeKeyHash,
 	}, nil
