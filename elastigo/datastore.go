@@ -2,12 +2,13 @@ package elastigo
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/codahale/blake2"
 	ds "github.com/jbenet/datastore.go"
 	"github.com/mattbaird/elastigo/api"
 	"github.com/mattbaird/elastigo/core"
-	"net/url"
-	"strings"
 )
 
 // Currently, elastigo does not allow connecting to multiple elasticsearch
@@ -108,6 +109,10 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 		return fmt.Errorf("Elasticsearch response: NOT OK. %v", res)
 	}
 	return nil
+}
+
+func (d *Datastore) KeyList() []ds.Key {
+	panic("Not yet implemented!")
 }
 
 // Hash a key and return the first 16 hex chars of its blake2b hash.
