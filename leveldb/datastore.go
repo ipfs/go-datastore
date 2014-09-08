@@ -63,13 +63,13 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 	return err
 }
 
-func (d *Datastore) KeyList() []ds.Key {
+func (d *Datastore) KeyList() ([]ds.Key, error) {
 	i := d.DB.NewIterator(nil, nil)
 	var keys []ds.Key
 	for ; i.Valid(); i.Next() {
 		keys = append(keys, ds.NewKey(string(i.Key())))
 	}
-	return keys
+	return keys, nil
 }
 
 // LevelDB needs to be closed.

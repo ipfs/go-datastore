@@ -41,12 +41,12 @@ func (d *MapDatastore) Delete(key Key) (err error) {
 	return nil
 }
 
-func (d *MapDatastore) KeyList() []Key {
+func (d *MapDatastore) KeyList() ([]Key, error) {
 	var keys []Key
 	for k, _ := range d.values {
 		keys = append(keys, k)
 	}
-	return keys
+	return keys, nil
 }
 
 // NullDatastore stores nothing, but conforms to the API.
@@ -74,8 +74,8 @@ func (d *NullDatastore) Delete(key Key) (err error) {
 	return nil
 }
 
-func (d *NullDatastore) KeyList() []Key {
-	return nil
+func (d *NullDatastore) KeyList() ([]Key, error) {
+	return nil, nil
 }
 
 // LogDatastore logs all accesses through the datastore.
@@ -112,7 +112,7 @@ func (d *LogDatastore) Delete(key Key) (err error) {
 	return d.Child.Delete(key)
 }
 
-func (d *LogDatastore) KeyList() []Key {
+func (d *LogDatastore) KeyList() ([]Key, error) {
 	log.Printf("%s: Get KeyList.", d.Name)
 	return d.Child.KeyList()
 }

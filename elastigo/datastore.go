@@ -1,6 +1,7 @@
 package elastigo
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -111,8 +112,8 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 	return nil
 }
 
-func (d *Datastore) KeyList() []ds.Key {
-	panic("Not yet implemented!")
+func (d *Datastore) KeyList() ([]ds.Key, error) {
+	return nil, errors.New("Not yet implemented!")
 }
 
 // Hash a key and return the first 16 hex chars of its blake2b hash.
