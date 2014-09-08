@@ -52,6 +52,9 @@ type Datastore interface {
 
 	// Delete removes the value for given `key`.
 	Delete(key Key) (err error)
+
+	// Returns a list of keys in the datastore
+	KeyList() ([]Key, error)
 }
 
 // Errors

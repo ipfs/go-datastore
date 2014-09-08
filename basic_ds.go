@@ -41,6 +41,14 @@ func (d *MapDatastore) Delete(key Key) (err error) {
 	return nil
 }
 
+func (d *MapDatastore) KeyList() ([]Key, error) {
+	var keys []Key
+	for k, _ := range d.values {
+		keys = append(keys, k)
+	}
+	return keys, nil
+}
+
 // NullDatastore stores nothing, but conforms to the API.
 // Useful to test with.
 type NullDatastore struct {
@@ -66,9 +74,13 @@ func (d *NullDatastore) Delete(key Key) (err error) {
 	return nil
 }
 
+func (d *NullDatastore) KeyList() ([]Key, error) {
+	return nil, nil
+}
+
 // LogDatastore logs all accesses through the datastore.
 type LogDatastore struct {
-	Name string
+	Name  string
 	Child Datastore
 }
 
@@ -98,4 +110,9 @@ func (d *LogDatastore) Has(key Key) (exists bool, err error) {
 func (d *LogDatastore) Delete(key Key) (err error) {
 	log.Printf("%s: Delete %s", d.Name, key)
 	return d.Child.Delete(key)
+}
+
+func (d *LogDatastore) KeyList() ([]Key, error) {
+	log.Printf("%s: Get KeyList.", d.Name)
+	return d.Child.KeyList()
 }
