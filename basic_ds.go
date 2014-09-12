@@ -1,8 +1,6 @@
 package datastore
 
-import (
-	"log"
-)
+import "log"
 
 // Here are some basic datastore implementations.
 
@@ -92,27 +90,27 @@ func NewLogDatastore(ds Datastore, name string) *LogDatastore {
 }
 
 func (d *LogDatastore) Put(key Key, value interface{}) (err error) {
-	log.Printf("%s: Put %s", d.Name, key)
+	log.Printf("%s: Put %s\n", d.Name, key)
 	// log.Printf("%s: Put %s ```%s```", d.Name, key, value)
 	return d.Child.Put(key, value)
 }
 
 func (d *LogDatastore) Get(key Key) (value interface{}, err error) {
-	log.Printf("%s: Get %s", d.Name, key)
+	log.Printf("%s: Get %s\n", d.Name, key)
 	return d.Child.Get(key)
 }
 
 func (d *LogDatastore) Has(key Key) (exists bool, err error) {
-	log.Printf("%s: Has %s", d.Name, key)
+	log.Printf("%s: Has %s\n", d.Name, key)
 	return d.Child.Has(key)
 }
 
 func (d *LogDatastore) Delete(key Key) (err error) {
-	log.Printf("%s: Delete %s", d.Name, key)
+	log.Printf("%s: Delete %s\n", d.Name, key)
 	return d.Child.Delete(key)
 }
 
 func (d *LogDatastore) KeyList() ([]Key, error) {
-	log.Printf("%s: Get KeyList.", d.Name)
+	log.Printf("%s: Get KeyList\n", d.Name)
 	return d.Child.KeyList()
 }
