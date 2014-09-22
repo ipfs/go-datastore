@@ -1,7 +1,7 @@
 package datastore
 
 import (
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/jbenet/datastore.go/Godeps/_workspace/src/code.google.com/p/go-uuid/uuid"
 	"path"
 	"strings"
 )

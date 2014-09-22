@@ -2,12 +2,13 @@ package datastore_test
 
 import (
 	"bytes"
-	. "github.com/jbenet/datastore.go"
-	. "launchpad.net/gocheck"
 	"math/rand"
 	"path"
 	"strings"
 	"testing"
+
+	. "github.com/jbenet/datastore.go"
+	. "github.com/jbenet/datastore.go/Godeps/_workspace/src/gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
