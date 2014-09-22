@@ -56,6 +56,11 @@ type Datastore interface {
 	KeyList() ([]Key, error)
 }
 
+type ThreadSafeDatastore interface {
+	Datastore
+	IsThreadSafe()
+}
+
 // Errors
 
 // ErrNotFound is returned by Get, Has, and Delete when a datastore does not
