@@ -6,10 +6,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/codahale/blake2"
+	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/codahale/blake2"
 	ds "github.com/jbenet/datastore.go"
-	"github.com/mattbaird/elastigo/api"
-	"github.com/mattbaird/elastigo/core"
+	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
+	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/mattbaird/elastigo/core"
 )
 
 // Currently, elastigo does not allow connecting to multiple elasticsearch

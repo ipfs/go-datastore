@@ -6,7 +6,7 @@ import (
 
 	ds "github.com/jbenet/datastore.go"
 	lru "github.com/jbenet/datastore.go/lru"
-	. "gopkg.in/check.v1"
+	. "github.com/jbenet/datastore.go/Godeps/_workspace/src/gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
