@@ -56,6 +56,8 @@ type Datastore interface {
 	KeyList() ([]Key, error)
 }
 
+// ThreadSafeDatastore is an interface that all threadsafe datastore should
+// implement to leverage type safety checks.
 type ThreadSafeDatastore interface {
 	Datastore
 	IsThreadSafe()
