@@ -38,6 +38,11 @@ func NewKey(s string) Key {
 	return k
 }
 
+// KeyWithNamespaces constructs a key out of a namespace slice.
+func KeyWithNamespaces(ns []string) Key {
+	return NewKey(strings.Join(ns, "/"))
+}
+
 // Clean up a Key, using path.Clean.
 func (k *Key) Clean() {
 	k.string = path.Clean("/" + k.string)
@@ -51,6 +56,33 @@ func (k Key) String() string {
 // Bytes returns the string value of Key as a []byte
 func (k Key) Bytes() []byte {
 	return []byte(k.string)
+}
+
+// Equal checks equality of two keys
+func (k Key) Equal(k2 Key) bool {
+	return k.string == k2.string
+}
+
+// Less checks whether this key is sorted lower than another.
+func (k Key) Less(k2 Key) bool {
+	list1 := k.List()
+	list2 := k2.List()
+	for i, c1 := range list1 {
+		if len(list2) < (i + 1) {
+			return false
+		}
+
+		c2 := list2[i]
+		if c1 < c2 {
+			return true
+		} else if c1 > c2 {
+			return false
+		}
+		// c1 == c2, continue
+	}
+
+	// list1 is shorter or exactly the same.
+	return len(list1) < len(list2)
 }
 
 // List returns the `list` representation of this Key.
@@ -69,7 +101,7 @@ func (k Key) Reverse() Key {
 	for i, e := range l {
 		r[len(l)-i-1] = e
 	}
-	return NewKey(strings.Join(r, "/"))
+	return KeyWithNamespaces(r)
 }
 
 // Namespaces returns the `namespaces` making up this Key.
@@ -187,7 +219,16 @@ func NamespaceType(namespace string) string {
 	return strings.Join(parts[0:len(parts)-1], ":")
 }
 
+// NamespaceValue returns the last component of a namespace. `baz` in `f:b:baz`
 func NamespaceValue(namespace string) string {
 	parts := strings.Split(namespace, ":")
 	return parts[len(parts)-1]
 }
+
+// KeySlice attaches the methods of sort.Interface to []Key,
+// sorting in increasing order.
+type KeySlice []Key
+
+func (p KeySlice) Len() int           { return len(p) }
+func (p KeySlice) Less(i, j int) bool { return p[i].Less(p[j]) }
+func (p KeySlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }

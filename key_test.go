@@ -62,6 +62,14 @@ func (ks *KeySuite) SubtestKey(s string, c *C) {
 	for i, e := range NewKey(s).List() {
 		c.Check(namespaces[i], Equals, e)
 	}
+
+	c.Check(NewKey(s), Equals, NewKey(s))
+	c.Check(NewKey(s).Equal(NewKey(s)), Equals, true)
+	c.Check(NewKey(s).Equal(NewKey("/fdsafdsa/"+s)), Equals, false)
+
+	// less
+	c.Check(NewKey(s).Less(NewKey(s).Parent()), Equals, false)
+	c.Check(NewKey(s).Less(NewKey(s).Child("foo")), Equals, true)
 }
 
 func (ks *KeySuite) TestKeyBasic(c *C) {
@@ -125,4 +133,22 @@ func (ks *KeySuite) TestRandom(c *C) {
 		keys[r] = true
 	}
 	CheckTrue(c, len(keys) == 1000)
+}
+
+func (ks *KeySuite) TestLess(c *C) {
+
+	checkLess := func(a, b string) {
+		ak := NewKey(a)
+		bk := NewKey(b)
+		c.Check(ak.Less(bk), Equals, true)
+		c.Check(bk.Less(ak), Equals, false)
+	}
+
+	checkLess("/a/b/c", "/a/b/c/d")
+	checkLess("/a/b", "/a/b/c/d")
+	checkLess("/a", "/a/b/c/d")
+	checkLess("/a/a/c", "/a/b/c")
+	checkLess("/a/a/d", "/a/b/c")
+	checkLess("/a/b/c/d/e/f/g/h", "/b")
+	checkLess("/", "/a")
 }
