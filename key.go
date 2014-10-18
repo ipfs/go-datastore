@@ -162,7 +162,14 @@ func (k Key) Parent() Key {
 // Child returns the `child` Key of this Key.
 //   NewKey("/Comedy/MontyPython").Child("Actor:JohnCleese")
 //   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
-func (k Key) Child(s string) Key {
+func (k Key) Child(k2 Key) Key {
+	return NewKey(k.string + "/" + k2.string)
+}
+
+// ChildString returns the `child` Key of this Key -- string helper.
+//   NewKey("/Comedy/MontyPython").Child("Actor:JohnCleese")
+//   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
+func (k Key) ChildString(s string) Key {
 	return NewKey(k.string + "/" + s)
 }
 

@@ -24,7 +24,7 @@ func (ks *DSSuite) TestBasic(c *C) {
 
 	pair := &kt.Pair{
 		Convert: func(k ds.Key) ds.Key {
-			return ds.NewKey("/abc").Child(k.String())
+			return ds.NewKey("/abc").Child(k)
 		},
 		Invert: func(k ds.Key) ds.Key {
 			// remove abc prefix
@@ -58,7 +58,7 @@ func (ks *DSSuite) TestBasic(c *C) {
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v1.([]byte), []byte(k.String())), Equals, true)
 
-		v2, err := mpds.Get(ds.NewKey("abc").Child(k.String()))
+		v2, err := mpds.Get(ds.NewKey("abc").Child(k))
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v2.([]byte), []byte(k.String())), Equals, true)
 	}
