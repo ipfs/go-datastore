@@ -2,6 +2,7 @@ package keytransform_test
 
 import (
 	"bytes"
+	"sort"
 	"testing"
 
 	ds "github.com/jbenet/datastore.go"
@@ -21,10 +22,22 @@ var _ = Suite(&DSSuite{})
 
 func (ks *DSSuite) TestBasic(c *C) {
 
+	pair := &kt.Pair{
+		Convert: func(k ds.Key) ds.Key {
+			return ds.NewKey("/abc").Child(k.String())
+		},
+		Invert: func(k ds.Key) ds.Key {
+			// remove abc prefix
+			l := k.List()
+			if l[0] != "abc" {
+				panic("key does not have prefix. convert failed?")
+			}
+			return ds.KeyWithNamespaces(l[1:])
+		},
+	}
+
 	mpds := ds.NewMapDatastore()
-	ktds := kt.WrapDatastore(mpds, func(k ds.Key) ds.Key {
-		return k.Reverse()
-	})
+	ktds := kt.Wrap(mpds, pair)
 
 	keys := strsToKeys([]string{
 		"foo",
@@ -45,9 +58,25 @@ func (ks *DSSuite) TestBasic(c *C) {
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v1.([]byte), []byte(k.String())), Equals, true)
 
-		v2, err := mpds.Get(k.Reverse())
+		v2, err := mpds.Get(ds.NewKey("abc").Child(k.String()))
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v2.([]byte), []byte(k.String())), Equals, true)
+	}
+
+	listA, errA := mpds.KeyList()
+	listB, errB := ktds.KeyList()
+	c.Check(errA, Equals, nil)
+	c.Check(errB, Equals, nil)
+	c.Check(len(listA), Equals, len(listB))
+
+	// sort them cause yeah.
+	sort.Sort(ds.KeySlice(listA))
+	sort.Sort(ds.KeySlice(listB))
+
+	for i, kA := range listA {
+		kB := listB[i]
+		c.Check(pair.Invert(kA), Equals, kB)
+		c.Check(kA, Equals, pair.Convert(kB))
 	}
 }
 
