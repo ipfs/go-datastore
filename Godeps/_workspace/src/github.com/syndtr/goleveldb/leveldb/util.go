@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/storage"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/storage"
 )
 
 func shorten(str string) string {

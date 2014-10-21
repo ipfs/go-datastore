@@ -14,8 +14,8 @@ package core_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/mattbaird/elastigo/core"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/core"
 	"strconv"
 	"time"
 )

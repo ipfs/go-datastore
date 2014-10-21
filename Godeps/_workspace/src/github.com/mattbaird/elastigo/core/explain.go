@@ -14,7 +14,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
 )
 
 // Explain computes a score explanation for a query and a specific document.

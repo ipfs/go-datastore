@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"github.com/araddon/gou"
 	"github.com/bmizerany/assert"
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
 	"log"
 	"strconv"
 	"testing"

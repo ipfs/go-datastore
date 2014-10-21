@@ -3,8 +3,8 @@ package lru
 import (
 	"errors"
 
-	lru "github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/hashicorp/golang-lru"
-	ds "github.com/jbenet/datastore.go"
+	lru "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/hashicorp/golang-lru"
+	ds "github.com/jbenet/go-datastore"
 )
 
 // Datastore uses golang-lru for internal storage.

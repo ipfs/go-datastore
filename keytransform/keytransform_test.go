@@ -5,8 +5,8 @@ import (
 	"sort"
 	"testing"
 
-	ds "github.com/jbenet/datastore.go"
-	kt "github.com/jbenet/datastore.go/keytransform"
+	ds "github.com/jbenet/go-datastore"
+	kt "github.com/jbenet/go-datastore/keytransform"
 	. "launchpad.net/gocheck"
 )
 

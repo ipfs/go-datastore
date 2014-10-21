@@ -14,7 +14,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
 )
 
 // MGet allows the caller to get multiple documents based on an index, type (optional) and id (and possibly routing).

@@ -4,7 +4,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/code.google.com/p/go-uuid/uuid"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/code.google.com/p/go-uuid/uuid"
 )
 
 /*

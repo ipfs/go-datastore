@@ -1,9 +1,9 @@
 package leveldb
 
 import (
-	ds "github.com/jbenet/datastore.go"
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb"
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/opt"
+	ds "github.com/jbenet/go-datastore"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 // Datastore uses a standard Go map for internal storage.

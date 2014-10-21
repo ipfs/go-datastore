@@ -5,8 +5,8 @@ import (
 	"sort"
 	"testing"
 
-	ds "github.com/jbenet/datastore.go"
-	ns "github.com/jbenet/datastore.go/namespace"
+	ds "github.com/jbenet/go-datastore"
+	ns "github.com/jbenet/go-datastore/namespace"
 	. "launchpad.net/gocheck"
 )
 

@@ -83,7 +83,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jbenet/datastore.go/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
 )
 
 // These constants are part of the wire format and should not be changed.
