@@ -66,7 +66,7 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 func (d *Datastore) KeyList() ([]ds.Key, error) {
 	i := d.DB.NewIterator(nil, nil)
 	var keys []ds.Key
-	for ; i.Valid(); i.Next() {
+	for i.Next() {
 		keys = append(keys, ds.NewKey(string(i.Key())))
 	}
 	return keys, nil
