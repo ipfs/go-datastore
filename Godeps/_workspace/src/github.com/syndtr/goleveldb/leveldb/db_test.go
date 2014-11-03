@@ -7,6 +7,9 @@
 package leveldb
 
 import (
+	"container/list"
+	crand "crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"os"
@@ -1125,6 +1128,44 @@ func TestDb_Snapshot(t *testing.T) {
 	})
 }
 
+func TestDb_SnapshotList(t *testing.T) {
+	db := &DB{snapsList: list.New()}
+	e0a := db.acquireSnapshot()
+	e0b := db.acquireSnapshot()
+	db.seq = 1
+	e1 := db.acquireSnapshot()
+	db.seq = 2
+	e2 := db.acquireSnapshot()
+
+	if db.minSeq() != 0 {
+		t.Fatalf("invalid sequence number, got=%d", db.minSeq())
+	}
+	db.releaseSnapshot(e0a)
+	if db.minSeq() != 0 {
+		t.Fatalf("invalid sequence number, got=%d", db.minSeq())
+	}
+	db.releaseSnapshot(e2)
+	if db.minSeq() != 0 {
+		t.Fatalf("invalid sequence number, got=%d", db.minSeq())
+	}
+	db.releaseSnapshot(e0b)
+	if db.minSeq() != 1 {
+		t.Fatalf("invalid sequence number, got=%d", db.minSeq())
+	}
+	e2 = db.acquireSnapshot()
+	if db.minSeq() != 1 {
+		t.Fatalf("invalid sequence number, got=%d", db.minSeq())
+	}
+	db.releaseSnapshot(e1)
+	if db.minSeq() != 2 {
+		t.Fatalf("invalid sequence number, got=%d", db.minSeq())
+	}
+	db.releaseSnapshot(e2)
+	if db.minSeq() != 2 {
+		t.Fatalf("invalid sequence number, got=%d", db.minSeq())
+	}
+}
+
 func TestDb_HiddenValuesAreRemoved(t *testing.T) {
 	trun(t, func(h *dbHarness) {
 		s := h.db.s
@@ -1577,11 +1618,7 @@ func TestDb_BloomFilter(t *testing.T) {
 		return fmt.Sprintf("key%06d", i)
 	}
 
-	const (
-		n              = 10000
-		indexOverhead  = 19898
-		filterOverhead = 19799
-	)
+	const n = 10000
 
 	// Populate multiple layers
 	for i := 0; i < n; i++ {
@@ -1605,7 +1642,7 @@ func TestDb_BloomFilter(t *testing.T) {
 	cnt := int(h.stor.ReadCounter())
 	t.Logf("lookup of %d present keys yield %d sstable I/O reads", n, cnt)
 
-	if min, max := n+indexOverhead+filterOverhead, n+indexOverhead+filterOverhead+2*n/100; cnt < min || cnt > max {
+	if min, max := n, n+2*n/100; cnt < min || cnt > max {
 		t.Errorf("num of sstable I/O reads of present keys not in range of %d - %d, got %d", min, max, cnt)
 	}
 
@@ -1616,7 +1653,7 @@ func TestDb_BloomFilter(t *testing.T) {
 	}
 	cnt = int(h.stor.ReadCounter())
 	t.Logf("lookup of %d missing keys yield %d sstable I/O reads", n, cnt)
-	if max := 3*n/100 + indexOverhead + filterOverhead; cnt > max {
+	if max := 3 * n / 100; cnt > max {
 		t.Errorf("num of sstable I/O reads of missing keys was more than %d, got %d", max, cnt)
 	}
 
@@ -1887,4 +1924,245 @@ func TestDb_LeveldbIssue200(t *testing.T) {
 	assertBytes(t, []byte("4"), iter.Key())
 	iter.Next()
 	assertBytes(t, []byte("5"), iter.Key())
+}
+
+func TestDb_GoleveldbIssue74(t *testing.T) {
+	h := newDbHarnessWopt(t, &opt.Options{
+		WriteBuffer: 1 * opt.MiB,
+	})
+	defer h.close()
+
+	const n, dur = 10000, 5 * time.Second
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	until := time.Now().Add(dur)
+	wg := new(sync.WaitGroup)
+	wg.Add(2)
+	var done uint32
+	go func() {
+		var i int
+		defer func() {
+			t.Logf("WRITER DONE #%d", i)
+			atomic.StoreUint32(&done, 1)
+			wg.Done()
+		}()
+
+		b := new(Batch)
+		for ; time.Now().Before(until) && atomic.LoadUint32(&done) == 0; i++ {
+			iv := fmt.Sprintf("VAL%010d", i)
+			for k := 0; k < n; k++ {
+				key := fmt.Sprintf("KEY%06d", k)
+				b.Put([]byte(key), []byte(key+iv))
+				b.Put([]byte(fmt.Sprintf("PTR%06d", k)), []byte(key))
+			}
+			h.write(b)
+
+			b.Reset()
+			snap := h.getSnapshot()
+			iter := snap.NewIterator(util.BytesPrefix([]byte("PTR")), nil)
+			var k int
+			for ; iter.Next(); k++ {
+				ptrKey := iter.Key()
+				key := iter.Value()
+
+				if _, err := snap.Get(ptrKey, nil); err != nil {
+					t.Fatalf("WRITER #%d snapshot.Get %q: %v", i, ptrKey, err)
+				}
+				if value, err := snap.Get(key, nil); err != nil {
+					t.Fatalf("WRITER #%d snapshot.Get %q: %v", i, key, err)
+				} else if string(value) != string(key)+iv {
+					t.Fatalf("WRITER #%d snapshot.Get %q got invalid value, want %q got %q", i, key, string(key)+iv, value)
+				}
+
+				b.Delete(key)
+				b.Delete(ptrKey)
+			}
+			h.write(b)
+			iter.Release()
+			snap.Release()
+			if k != n {
+				t.Fatalf("#%d %d != %d", i, k, n)
+			}
+		}
+	}()
+	go func() {
+		var i int
+		defer func() {
+			t.Logf("READER DONE #%d", i)
+			atomic.StoreUint32(&done, 1)
+			wg.Done()
+		}()
+		for ; time.Now().Before(until) && atomic.LoadUint32(&done) == 0; i++ {
+			snap := h.getSnapshot()
+			iter := snap.NewIterator(util.BytesPrefix([]byte("PTR")), nil)
+			var prevValue string
+			var k int
+			for ; iter.Next(); k++ {
+				ptrKey := iter.Key()
+				key := iter.Value()
+
+				if _, err := snap.Get(ptrKey, nil); err != nil {
+					t.Fatalf("READER #%d snapshot.Get %q: %v", i, ptrKey, err)
+				}
+
+				if value, err := snap.Get(key, nil); err != nil {
+					t.Fatalf("READER #%d snapshot.Get %q: %v", i, key, err)
+				} else if prevValue != "" && string(value) != string(key)+prevValue {
+					t.Fatalf("READER #%d snapshot.Get %q got invalid value, want %q got %q", i, key, string(key)+prevValue, value)
+				} else {
+					prevValue = string(value[len(key):])
+				}
+			}
+			iter.Release()
+			snap.Release()
+			if k > 0 && k != n {
+				t.Fatalf("#%d %d != %d", i, k, n)
+			}
+		}
+	}()
+	wg.Wait()
+}
+
+func TestDb_GetProperties(t *testing.T) {
+	h := newDbHarness(t)
+	defer h.close()
+
+	_, err := h.db.GetProperty("leveldb.num-files-at-level")
+	if err == nil {
+		t.Error("GetProperty() failed to detect missing level")
+	}
+
+	_, err = h.db.GetProperty("leveldb.num-files-at-level0")
+	if err != nil {
+		t.Error("got unexpected error", err)
+	}
+
+	_, err = h.db.GetProperty("leveldb.num-files-at-level0x")
+	if err == nil {
+		t.Error("GetProperty() failed to detect invalid level")
+	}
+}
+
+func TestDb_GoleveldbIssue72and83(t *testing.T) {
+	h := newDbHarnessWopt(t, &opt.Options{
+		WriteBuffer:     1 * opt.MiB,
+		CachedOpenFiles: 3,
+	})
+	defer h.close()
+
+	const n, wn, dur = 10000, 100, 30 * time.Second
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	randomData := func(prefix byte, i int) []byte {
+		data := make([]byte, 1+4+32+64+32)
+		_, err := crand.Reader.Read(data[1 : len(data)-4])
+		if err != nil {
+			panic(err)
+		}
+		data[0] = prefix
+		binary.LittleEndian.PutUint32(data[len(data)-4:], uint32(i))
+		return data
+	}
+
+	keys := make([][]byte, n)
+	for i := range keys {
+		keys[i] = randomData(1, 0)
+	}
+
+	until := time.Now().Add(dur)
+	wg := new(sync.WaitGroup)
+	wg.Add(3)
+	var done uint32
+	go func() {
+		i := 0
+		defer func() {
+			t.Logf("WRITER DONE #%d", i)
+			wg.Done()
+		}()
+
+		b := new(Batch)
+		for ; i < wn && atomic.LoadUint32(&done) == 0; i++ {
+			b.Reset()
+			for _, k1 := range keys {
+				k2 := randomData(2, i)
+				b.Put(k2, randomData(42, i))
+				b.Put(k1, k2)
+			}
+			if err := h.db.Write(b, h.wo); err != nil {
+				atomic.StoreUint32(&done, 1)
+				t.Fatalf("WRITER #%d db.Write: %v", i, err)
+			}
+		}
+	}()
+	go func() {
+		var i int
+		defer func() {
+			t.Logf("READER0 DONE #%d", i)
+			atomic.StoreUint32(&done, 1)
+			wg.Done()
+		}()
+		for ; time.Now().Before(until) && atomic.LoadUint32(&done) == 0; i++ {
+			snap := h.getSnapshot()
+			seq := snap.elem.seq
+			if seq == 0 {
+				snap.Release()
+				continue
+			}
+			iter := snap.NewIterator(util.BytesPrefix([]byte{1}), nil)
+			writei := int(snap.elem.seq/(n*2) - 1)
+			var k int
+			for ; iter.Next(); k++ {
+				k1 := iter.Key()
+				k2 := iter.Value()
+				kwritei := int(binary.LittleEndian.Uint32(k2[len(k2)-4:]))
+				if writei != kwritei {
+					t.Fatalf("READER0 #%d.%d W#%d invalid write iteration num: %d", i, k, writei, kwritei)
+				}
+				if _, err := snap.Get(k2, nil); err != nil {
+					t.Fatalf("READER0 #%d.%d W#%d snap.Get: %v\nk1: %x\n -> k2: %x", i, k, writei, err, k1, k2)
+				}
+			}
+			if err := iter.Error(); err != nil {
+				t.Fatalf("READER0 #%d.%d W#%d snap.Iterator: %v", i, k, err)
+			}
+			iter.Release()
+			snap.Release()
+			if k > 0 && k != n {
+				t.Fatalf("READER0 #%d W#%d short read, got=%d want=%d", i, writei, k, n)
+			}
+		}
+	}()
+	go func() {
+		var i int
+		defer func() {
+			t.Logf("READER1 DONE #%d", i)
+			atomic.StoreUint32(&done, 1)
+			wg.Done()
+		}()
+		for ; time.Now().Before(until) && atomic.LoadUint32(&done) == 0; i++ {
+			iter := h.db.NewIterator(nil, nil)
+			seq := iter.(*dbIter).seq
+			if seq == 0 {
+				iter.Release()
+				continue
+			}
+			writei := int(seq/(n*2) - 1)
+			var k int
+			for ok := iter.Last(); ok; ok = iter.Prev() {
+				k++
+			}
+			if err := iter.Error(); err != nil {
+				t.Fatalf("READER1 #%d.%d W#%d db.Iterator: %v", i, k, writei, err)
+			}
+			iter.Release()
+			if m := (writei+1)*n + n; k != m {
+				t.Fatalf("READER1 #%d W#%d short read, got=%d want=%d", i, writei, k, m)
+			}
+		}
+	}()
+
+	wg.Wait()
+
 }

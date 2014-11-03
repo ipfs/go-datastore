@@ -48,8 +48,7 @@ func (db *DB) newRawIterator(slice *util.Range, ro *opt.ReadOptions) iterator.It
 		i = append(i, fmi)
 	}
 	i = append(i, ti...)
-	strict := db.s.o.GetStrict(opt.StrictIterator) || ro.GetStrict(opt.StrictIterator)
-	mi := iterator.NewMergedIterator(i, db.s.icmp, strict)
+	mi := iterator.NewMergedIterator(i, db.s.icmp, true)
 	mi.SetReleaser(&versionReleaser{v: v})
 	return mi
 }
@@ -321,9 +320,13 @@ func (i *dbIter) Release() {
 }
 
 func (i *dbIter) SetReleaser(releaser util.Releaser) {
-	if i.dir != dirReleased {
-		i.releaser = releaser
+	if i.dir == dirReleased {
+		panic(util.ErrReleased)
 	}
+	if i.releaser != nil && releaser != nil {
+		panic(util.ErrHasReleaser)
+	}
+	i.releaser = releaser
 }
 
 func (i *dbIter) Error() error {

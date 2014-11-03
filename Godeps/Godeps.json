@@ -33,7 +33,7 @@
 		},
 		{
 			"ImportPath": "github.com/syndtr/goleveldb/leveldb",
-			"Rev": "9bca75c48d6c31becfbb127702b425e7226052e3"
+			"Rev": "cd2b8f743192883ab9fbc5f070ebda1dc90f3732"
 		},
 		{
 			"ImportPath": "gopkg.in/check.v1",

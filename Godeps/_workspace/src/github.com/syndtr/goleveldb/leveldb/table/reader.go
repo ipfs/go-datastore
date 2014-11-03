@@ -13,6 +13,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/code.google.com/p/snappy-go/snappy"
 
@@ -25,8 +26,9 @@ import (
 )
 
 var (
-	ErrNotFound     = util.ErrNotFound
-	ErrIterReleased = errors.New("leveldb/table: iterator released")
+	ErrNotFound       = util.ErrNotFound
+	ErrReaderReleased = errors.New("leveldb/table: reader released")
+	ErrIterReleased   = errors.New("leveldb/table: iterator released")
 )
 
 func max(x, y int) int {
@@ -37,7 +39,7 @@ func max(x, y int) int {
 }
 
 type block struct {
-	tr             *Reader
+	bpool          *util.BufferPool
 	data           []byte
 	restartsLen    int
 	restartsOffset int
@@ -45,14 +47,14 @@ type block struct {
 	checksum bool
 }
 
-func (b *block) seek(rstart, rlimit int, key []byte) (index, offset int, err error) {
+func (b *block) seek(cmp comparer.Comparer, rstart, rlimit int, key []byte) (index, offset int, err error) {
 	index = sort.Search(b.restartsLen-rstart-(b.restartsLen-rlimit), func(i int) bool {
 		offset := int(binary.LittleEndian.Uint32(b.data[b.restartsOffset+4*(rstart+i):]))
 		offset += 1                                 // shared always zero, since this is a restart point
 		v1, n1 := binary.Uvarint(b.data[offset:])   // key length
 		_, n2 := binary.Uvarint(b.data[offset+n1:]) // value length
 		m := offset + n1 + n2
-		return b.tr.cmp.Compare(b.data[m:m+int(v1)], key) > 0
+		return cmp.Compare(b.data[m:m+int(v1)], key) > 0
 	}) + rstart - 1
 	if index < rstart {
 		// The smallest key is greater-than key sought.
@@ -94,50 +96,9 @@ func (b *block) entry(offset int) (key, value []byte, nShared, n int, err error)
 	return
 }
 
-func (b *block) newIterator(slice *util.Range, inclLimit bool, cache util.Releaser) *blockIter {
-	bi := &blockIter{
-		block: b,
-		cache: cache,
-		// Valid key should never be nil.
-		key:             make([]byte, 0),
-		dir:             dirSOI,
-		riStart:         0,
-		riLimit:         b.restartsLen,
-		offsetStart:     0,
-		offsetRealStart: 0,
-		offsetLimit:     b.restartsOffset,
-	}
-	if slice != nil {
-		if slice.Start != nil {
-			if bi.Seek(slice.Start) {
-				bi.riStart = b.restartIndex(bi.restartIndex, b.restartsLen, bi.prevOffset)
-				bi.offsetStart = b.restartOffset(bi.riStart)
-				bi.offsetRealStart = bi.prevOffset
-			} else {
-				bi.riStart = b.restartsLen
-				bi.offsetStart = b.restartsOffset
-				bi.offsetRealStart = b.restartsOffset
-			}
-		}
-		if slice.Limit != nil {
-			if bi.Seek(slice.Limit) && (!inclLimit || bi.Next()) {
-				bi.offsetLimit = bi.prevOffset
-				bi.riLimit = bi.restartIndex + 1
-			}
-		}
-		bi.reset()
-		if bi.offsetStart > bi.offsetLimit {
-			bi.sErr(errors.New("leveldb/table: Reader: invalid slice range"))
-		}
-	}
-	return bi
-}
-
 func (b *block) Release() {
-	if b.tr.bpool != nil {
-		b.tr.bpool.Put(b.data)
-	}
-	b.tr = nil
+	b.bpool.Put(b.data)
+	b.bpool = nil
 	b.data = nil
 }
 
@@ -152,10 +113,12 @@ const (
 )
 
 type blockIter struct {
-	block           *block
-	cache, releaser util.Releaser
-	key, value      []byte
-	offset          int
+	tr            *Reader
+	block         *block
+	blockReleaser util.Releaser
+	releaser      util.Releaser
+	key, value    []byte
+	offset        int
 	// Previous offset, only filled by Next.
 	prevOffset   int
 	prevNode     []int
@@ -252,7 +215,7 @@ func (i *blockIter) Seek(key []byte) bool {
 		return false
 	}
 
-	ri, offset, err := i.block.seek(i.riStart, i.riLimit, key)
+	ri, offset, err := i.block.seek(i.tr.cmp, i.riStart, i.riLimit, key)
 	if err != nil {
 		i.sErr(err)
 		return false
@@ -263,7 +226,7 @@ func (i *blockIter) Seek(key []byte) bool {
 		i.dir = dirForward
 	}
 	for i.Next() {
-		if i.block.tr.cmp.Compare(i.key, key) >= 0 {
+		if i.tr.cmp.Compare(i.key, key) >= 0 {
 			return true
 		}
 	}
@@ -439,16 +402,17 @@ func (i *blockIter) Value() []byte {
 }
 
 func (i *blockIter) Release() {
-	if i.dir > dirReleased {
+	if i.dir != dirReleased {
+		i.tr = nil
 		i.block = nil
 		i.prevNode = nil
 		i.prevKeys = nil
 		i.key = nil
 		i.value = nil
 		i.dir = dirReleased
-		if i.cache != nil {
-			i.cache.Release()
-			i.cache = nil
+		if i.blockReleaser != nil {
+			i.blockReleaser.Release()
+			i.blockReleaser = nil
 		}
 		if i.releaser != nil {
 			i.releaser.Release()
@@ -458,9 +422,13 @@ func (i *blockIter) Release() {
 }
 
 func (i *blockIter) SetReleaser(releaser util.Releaser) {
-	if i.dir > dirReleased {
-		i.releaser = releaser
+	if i.dir == dirReleased {
+		panic(util.ErrReleased)
 	}
+	if i.releaser != nil && releaser != nil {
+		panic(util.ErrHasReleaser)
+	}
+	i.releaser = releaser
 }
 
 func (i *blockIter) Valid() bool {
@@ -472,21 +440,21 @@ func (i *blockIter) Error() error {
 }
 
 type filterBlock struct {
-	tr         *Reader
+	bpool      *util.BufferPool
 	data       []byte
 	oOffset    int
 	baseLg     uint
 	filtersNum int
 }
 
-func (b *filterBlock) contains(offset uint64, key []byte) bool {
+func (b *filterBlock) contains(filter filter.Filter, offset uint64, key []byte) bool {
 	i := int(offset >> b.baseLg)
 	if i < b.filtersNum {
 		o := b.data[b.oOffset+i*4:]
 		n := int(binary.LittleEndian.Uint32(o))
 		m := int(binary.LittleEndian.Uint32(o[4:]))
 		if n < m && m <= b.oOffset {
-			return b.tr.filter.Contains(b.data[n:m], key)
+			return filter.Contains(b.data[n:m], key)
 		} else if n == m {
 			return false
 		}
@@ -495,15 +463,14 @@ func (b *filterBlock) contains(offset uint64, key []byte) bool {
 }
 
 func (b *filterBlock) Release() {
-	if b.tr.bpool != nil {
-		b.tr.bpool.Put(b.data)
-	}
-	b.tr = nil
+	b.bpool.Put(b.data)
+	b.bpool = nil
 	b.data = nil
 }
 
 type indexIter struct {
 	*blockIter
+	tr    *Reader
 	slice *util.Range
 	// Options
 	checksum  bool
@@ -519,15 +486,17 @@ func (i *indexIter) Get() iterator.Iterator {
 	if n == 0 {
 		return iterator.NewEmptyIterator(errors.New("leveldb/table: Reader: invalid table (bad data block handle)"))
 	}
+
 	var slice *util.Range
 	if i.slice != nil && (i.blockIter.isFirst() || i.blockIter.isLast()) {
 		slice = i.slice
 	}
-	return i.blockIter.block.tr.getDataIter(dataBH, slice, i.checksum, i.fillCache)
+	return i.tr.getDataIterErr(dataBH, slice, i.checksum, i.fillCache)
 }
 
 // Reader is a table reader.
 type Reader struct {
+	mu     sync.RWMutex
 	reader io.ReaderAt
 	cache  cache.Namespace
 	err    error
@@ -540,6 +509,8 @@ type Reader struct {
 
 	dataEnd           int64
 	indexBH, filterBH blockHandle
+	indexBlock        *block
+	filterBlock       *filterBlock
 }
 
 func verifyChecksum(data []byte) bool {
@@ -588,7 +559,7 @@ func (r *Reader) readBlock(bh blockHandle, checksum bool) (*block, error) {
 	}
 	restartsLen := int(binary.LittleEndian.Uint32(data[len(data)-4:]))
 	b := &block{
-		tr:             r,
+		bpool:          r.bpool,
 		data:           data,
 		restartsLen:    restartsLen,
 		restartsOffset: len(data) - (restartsLen+1)*4,
@@ -649,7 +620,7 @@ func (r *Reader) readFilterBlock(bh blockHandle) (*filterBlock, error) {
 		return nil, errors.New("leveldb/table: Reader: invalid filter block (invalid offset)")
 	}
 	b := &filterBlock{
-		tr:         r,
+		bpool:      r.bpool,
 		data:       data,
 		oOffset:    oOffset,
 		baseLg:     uint(data[n-1]),
@@ -688,12 +659,77 @@ func (r *Reader) readFilterBlockCached(bh blockHandle, fillCache bool) (*filterB
 	return b, b, err
 }
 
+func (r *Reader) getIndexBlock(fillCache bool) (b *block, rel util.Releaser, err error) {
+	if r.indexBlock == nil {
+		return r.readBlockCached(r.indexBH, true, fillCache)
+	}
+	return r.indexBlock, util.NoopReleaser{}, nil
+}
+
+func (r *Reader) getFilterBlock(fillCache bool) (*filterBlock, util.Releaser, error) {
+	if r.filterBlock == nil {
+		return r.readFilterBlockCached(r.filterBH, fillCache)
+	}
+	return r.filterBlock, util.NoopReleaser{}, nil
+}
+
 func (r *Reader) getDataIter(dataBH blockHandle, slice *util.Range, checksum, fillCache bool) iterator.Iterator {
 	b, rel, err := r.readBlockCached(dataBH, checksum, fillCache)
 	if err != nil {
 		return iterator.NewEmptyIterator(err)
 	}
-	return b.newIterator(slice, false, rel)
+	return r.newBlockIter(b, rel, slice, false)
+}
+
+func (r *Reader) getDataIterErr(dataBH blockHandle, slice *util.Range, checksum, fillCache bool) iterator.Iterator {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if r.err != nil {
+		return iterator.NewEmptyIterator(r.err)
+	}
+
+	return r.getDataIter(dataBH, slice, checksum, fillCache)
+}
+
+func (r *Reader) newBlockIter(b *block, bReleaser util.Releaser, slice *util.Range, inclLimit bool) *blockIter {
+	bi := &blockIter{
+		tr:            r,
+		block:         b,
+		blockReleaser: bReleaser,
+		// Valid key should never be nil.
+		key:             make([]byte, 0),
+		dir:             dirSOI,
+		riStart:         0,
+		riLimit:         b.restartsLen,
+		offsetStart:     0,
+		offsetRealStart: 0,
+		offsetLimit:     b.restartsOffset,
+	}
+	if slice != nil {
+		if slice.Start != nil {
+			if bi.Seek(slice.Start) {
+				bi.riStart = b.restartIndex(bi.restartIndex, b.restartsLen, bi.prevOffset)
+				bi.offsetStart = b.restartOffset(bi.riStart)
+				bi.offsetRealStart = bi.prevOffset
+			} else {
+				bi.riStart = b.restartsLen
+				bi.offsetStart = b.restartsOffset
+				bi.offsetRealStart = b.restartsOffset
+			}
+		}
+		if slice.Limit != nil {
+			if bi.Seek(slice.Limit) && (!inclLimit || bi.Next()) {
+				bi.offsetLimit = bi.prevOffset
+				bi.riLimit = bi.restartIndex + 1
+			}
+		}
+		bi.reset()
+		if bi.offsetStart > bi.offsetLimit {
+			bi.sErr(errors.New("leveldb/table: Reader: invalid slice range"))
+		}
+	}
+	return bi
 }
 
 // NewIterator creates an iterator from the table.
@@ -708,22 +744,26 @@ func (r *Reader) getDataIter(dataBH blockHandle, slice *util.Range, checksum, fi
 //
 // Also read Iterator documentation of the leveldb/iterator package.
 func (r *Reader) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	if r.err != nil {
 		return iterator.NewEmptyIterator(r.err)
 	}
 
 	fillCache := !ro.GetDontFillCache()
-	b, rel, err := r.readBlockCached(r.indexBH, true, fillCache)
+	indexBlock, rel, err := r.getIndexBlock(fillCache)
 	if err != nil {
 		return iterator.NewEmptyIterator(err)
 	}
 	index := &indexIter{
-		blockIter: b.newIterator(slice, true, rel),
+		blockIter: r.newBlockIter(indexBlock, rel, slice, true),
+		tr:        r,
 		slice:     slice,
 		checksum:  ro.GetStrict(opt.StrictBlockChecksum),
 		fillCache: !ro.GetDontFillCache(),
 	}
-	return iterator.NewIndexedIterator(index, r.strictIter || ro.GetStrict(opt.StrictIterator), false)
+	return iterator.NewIndexedIterator(index, r.strictIter || ro.GetStrict(opt.StrictIterator), true)
 }
 
 // Find finds key/value pair whose key is greater than or equal to the
@@ -733,18 +773,21 @@ func (r *Reader) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.It
 // The caller should not modify the contents of the returned slice, but
 // it is safe to modify the contents of the argument after Find returns.
 func (r *Reader) Find(key []byte, ro *opt.ReadOptions) (rkey, value []byte, err error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	if r.err != nil {
 		err = r.err
 		return
 	}
 
-	indexBlock, rel, err := r.readBlockCached(r.indexBH, true, true)
+	indexBlock, rel, err := r.getIndexBlock(true)
 	if err != nil {
 		return
 	}
 	defer rel.Release()
 
-	index := indexBlock.newIterator(nil, true, nil)
+	index := r.newBlockIter(indexBlock, nil, nil, true)
 	defer index.Release()
 	if !index.Seek(key) {
 		err = index.Error()
@@ -759,9 +802,9 @@ func (r *Reader) Find(key []byte, ro *opt.ReadOptions) (rkey, value []byte, err 
 		return
 	}
 	if r.filter != nil {
-		filterBlock, rel, ferr := r.readFilterBlockCached(r.filterBH, true)
+		filterBlock, rel, ferr := r.getFilterBlock(true)
 		if ferr == nil {
-			if !filterBlock.contains(dataBH.offset, key) {
+			if !filterBlock.contains(r.filter, dataBH.offset, key) {
 				rel.Release()
 				return nil, nil, ErrNotFound
 			}
@@ -779,9 +822,13 @@ func (r *Reader) Find(key []byte, ro *opt.ReadOptions) (rkey, value []byte, err 
 	}
 	// Don't use block buffer, no need to copy the buffer.
 	rkey = data.Key()
-	// Use block buffer, and since the buffer will be recycled, the buffer
-	// need to be copied.
-	value = append([]byte{}, data.Value()...)
+	if r.bpool == nil {
+		value = data.Value()
+	} else {
+		// Use block buffer, and since the buffer will be recycled, the buffer
+		// need to be copied.
+		value = append([]byte{}, data.Value()...)
+	}
 	return
 }
 
@@ -791,6 +838,9 @@ func (r *Reader) Find(key []byte, ro *opt.ReadOptions) (rkey, value []byte, err 
 // The caller should not modify the contents of the returned slice, but
 // it is safe to modify the contents of the argument after Get returns.
 func (r *Reader) Get(key []byte, ro *opt.ReadOptions) (value []byte, err error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	if r.err != nil {
 		err = r.err
 		return
@@ -808,6 +858,9 @@ func (r *Reader) Get(key []byte, ro *opt.ReadOptions) (value []byte, err error) 
 //
 // It is safe to modify the contents of the argument after Get returns.
 func (r *Reader) OffsetOf(key []byte) (offset int64, err error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	if r.err != nil {
 		err = r.err
 		return
@@ -819,7 +872,7 @@ func (r *Reader) OffsetOf(key []byte) (offset int64, err error) {
 	}
 	defer rel.Release()
 
-	index := indexBlock.newIterator(nil, true, nil)
+	index := r.newBlockIter(indexBlock, nil, nil, true)
 	defer index.Release()
 	if index.Seek(key) {
 		dataBH, n := decodeBlockHandle(index.Value())
@@ -840,12 +893,24 @@ func (r *Reader) OffsetOf(key []byte) (offset int64, err error) {
 // Release implements util.Releaser.
 // It also close the file if it is an io.Closer.
 func (r *Reader) Release() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if closer, ok := r.reader.(io.Closer); ok {
 		closer.Close()
+	}
+	if r.indexBlock != nil {
+		r.indexBlock.Release()
+		r.indexBlock = nil
+	}
+	if r.filterBlock != nil {
+		r.filterBlock.Release()
+		r.filterBlock = nil
 	}
 	r.reader = nil
 	r.cache = nil
 	r.bpool = nil
+	r.err = ErrReaderReleased
 }
 
 // NewReader creates a new initialized table reader for the file.
@@ -853,9 +918,6 @@ func (r *Reader) Release() {
 //
 // The returned table reader instance is goroutine-safe.
 func NewReader(f io.ReaderAt, size int64, cache cache.Namespace, bpool *util.BufferPool, o *opt.Options) *Reader {
-	if bpool == nil {
-		bpool = util.NewBufferPool(o.GetBlockSize() + blockTrailerLen)
-	}
 	r := &Reader{
 		reader:     f,
 		cache:      cache,
@@ -900,7 +962,7 @@ func NewReader(f io.ReaderAt, size int64, cache cache.Namespace, bpool *util.Buf
 	}
 	// Set data end.
 	r.dataEnd = int64(metaBH.offset)
-	metaIter := metaBlock.newIterator(nil, false, nil)
+	metaIter := r.newBlockIter(metaBlock, nil, nil, false)
 	for metaIter.Next() {
 		key := string(metaIter.Key())
 		if !strings.HasPrefix(key, "filter.") {
@@ -930,5 +992,22 @@ func NewReader(f io.ReaderAt, size int64, cache cache.Namespace, bpool *util.Buf
 	}
 	metaIter.Release()
 	metaBlock.Release()
+
+	// Cache index and filter block locally, since we don't have global cache.
+	if cache == nil {
+		r.indexBlock, r.err = r.readBlock(r.indexBH, true)
+		if r.err != nil {
+			return r
+		}
+		if r.filter != nil {
+			r.filterBlock, err = r.readFilterBlock(r.filterBH)
+			if err != nil {
+				// Don't use filter then.
+				r.filter = nil
+				r.filterBH = blockHandle{}
+			}
+		}
+	}
+
 	return r
 }
