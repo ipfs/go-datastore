@@ -10,23 +10,23 @@
 // Do not assume *any* internal functionality works as expected besides
 // what's actually tested here.
 
-package check_test
+package gocheck_test
 
 import (
 	"fmt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/gopkg.in/check.v1"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
 	"strings"
 )
 
 type BootstrapS struct{}
 
-var boostrapS = check.Suite(&BootstrapS{})
+var boostrapS = gocheck.Suite(&BootstrapS{})
 
-func (s *BootstrapS) TestCountSuite(c *check.C) {
+func (s *BootstrapS) TestCountSuite(c *gocheck.C) {
 	suitesRun += 1
 }
 
-func (s *BootstrapS) TestFailedAndFail(c *check.C) {
+func (s *BootstrapS) TestFailedAndFail(c *gocheck.C) {
 	if c.Failed() {
 		critical("c.Failed() must be false first!")
 	}
@@ -37,7 +37,7 @@ func (s *BootstrapS) TestFailedAndFail(c *check.C) {
 	c.Succeed()
 }
 
-func (s *BootstrapS) TestFailedAndSucceed(c *check.C) {
+func (s *BootstrapS) TestFailedAndSucceed(c *gocheck.C) {
 	c.Fail()
 	c.Succeed()
 	if c.Failed() {
@@ -45,7 +45,7 @@ func (s *BootstrapS) TestFailedAndSucceed(c *check.C) {
 	}
 }
 
-func (s *BootstrapS) TestLogAndGetTestLog(c *check.C) {
+func (s *BootstrapS) TestLogAndGetTestLog(c *gocheck.C) {
 	c.Log("Hello there!")
 	log := c.GetTestLog()
 	if log != "Hello there!\n" {
@@ -53,7 +53,7 @@ func (s *BootstrapS) TestLogAndGetTestLog(c *check.C) {
 	}
 }
 
-func (s *BootstrapS) TestLogfAndGetTestLog(c *check.C) {
+func (s *BootstrapS) TestLogfAndGetTestLog(c *gocheck.C) {
 	c.Logf("Hello %v", "there!")
 	log := c.GetTestLog()
 	if log != "Hello there!\n" {
@@ -61,9 +61,9 @@ func (s *BootstrapS) TestLogfAndGetTestLog(c *check.C) {
 	}
 }
 
-func (s *BootstrapS) TestRunShowsErrors(c *check.C) {
+func (s *BootstrapS) TestRunShowsErrors(c *gocheck.C) {
 	output := String{}
-	check.Run(&FailHelper{}, &check.RunConf{Output: &output})
+	gocheck.Run(&FailHelper{}, &gocheck.RunConf{Output: &output})
 	if strings.Index(output.value, "Expected failure!") == -1 {
 		critical(fmt.Sprintf("RunWithWriter() output did not contain the "+
 			"expected failure! Got: %#v",
@@ -71,9 +71,9 @@ func (s *BootstrapS) TestRunShowsErrors(c *check.C) {
 	}
 }
 
-func (s *BootstrapS) TestRunDoesntShowSuccesses(c *check.C) {
+func (s *BootstrapS) TestRunDoesntShowSuccesses(c *gocheck.C) {
 	output := String{}
-	check.Run(&SuccessHelper{}, &check.RunConf{Output: &output})
+	gocheck.Run(&SuccessHelper{}, &gocheck.RunConf{Output: &output})
 	if strings.Index(output.value, "Expected success!") != -1 {
 		critical(fmt.Sprintf("RunWithWriter() output contained a successful "+
 			"test! Got: %#v",
