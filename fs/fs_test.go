@@ -6,7 +6,7 @@ import (
 
 	ds "github.com/jbenet/go-datastore"
 	fs "github.com/jbenet/go-datastore/fs"
-	. "launchpad.net/gocheck"
+	. "github.com/jbenet/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
 )
 
 // Hook up gocheck into the "go test" runner.

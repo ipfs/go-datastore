@@ -1,7 +1,7 @@
-package check_test
+package gocheck_test
 
 import (
-	. "github.com/jbenet/go-datastore/Godeps/_workspace/src/gopkg.in/check.v1"
+	. "github.com/jbenet/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
 )
 
 var _ = Suite(&PrinterS{})
