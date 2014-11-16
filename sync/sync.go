@@ -16,7 +16,7 @@ type MutexDatastore struct {
 
 // MutexWrap constructs a datastore with a coarse lock around
 // the entire datastore, for every single operation
-func MutexWrap(d ds.Datastore) ds.ThreadSafeDatastore {
+func MutexWrap(d ds.Datastore) ds.ThreadSafeDatastoreCloser {
 	return &MutexDatastore{child: d}
 }
 
@@ -62,3 +62,5 @@ func (d *MutexDatastore) KeyList() ([]ds.Key, error) {
 	defer d.RUnlock()
 	return d.child.KeyList()
 }
+
+func (d *MutexDatastore) Close() error { return nil } // no-op
