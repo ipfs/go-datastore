@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"errors"
+	"io"
 )
 
 /*
@@ -61,6 +62,13 @@ type Datastore interface {
 type ThreadSafeDatastore interface {
 	Datastore
 	IsThreadSafe()
+}
+
+// ThreadSafeDatastoreCloser extends the ThreadSafeDatastore with the io.Closer
+// interface
+type ThreadSafeDatastoreCloser interface {
+	ThreadSafeDatastore
+	io.Closer
 }
 
 // Errors

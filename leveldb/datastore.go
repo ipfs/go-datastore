@@ -13,7 +13,7 @@ type Datastore struct {
 
 type Options opt.Options
 
-func NewDatastore(path string, opts *Options) (ds.ThreadSafeDatastore, error) {
+func NewDatastore(path string, opts *Options) (ds.ThreadSafeDatastoreCloser, error) {
 	var nopts opt.Options
 	if opts != nil {
 		nopts = opt.Options(*opts)
