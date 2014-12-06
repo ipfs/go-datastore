@@ -8,17 +8,17 @@
 package memdb
 
 import (
-	"errors"
 	"math/rand"
 	"sync"
 
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/comparer"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
 )
 
 var (
-	ErrNotFound     = util.ErrNotFound
+	ErrNotFound     = errors.ErrNotFound
 	ErrIterReleased = errors.New("leveldb/memdb: iterator released")
 )
 
