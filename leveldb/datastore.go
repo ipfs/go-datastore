@@ -3,9 +3,12 @@ package leveldb
 import (
 	"io"
 
-	ds "github.com/jbenet/go-datastore"
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb"
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
+
+	ds "github.com/jbenet/go-datastore"
+	dsq "github.com/jbenet/go-datastore/query"
 )
 
 type Datastore interface {
@@ -69,13 +72,33 @@ func (d *datastore) Delete(key ds.Key) (err error) {
 	return err
 }
 
-func (d *datastore) KeyList() ([]ds.Key, error) {
-	i := d.DB.NewIterator(nil, nil)
-	var keys []ds.Key
-	for i.Next() {
-		keys = append(keys, ds.NewKey(string(i.Key())))
+func (d *datastore) Query(q dsq.Query) (*dsq.Results, error) {
+	var rnge *util.Range
+	if q.Prefix != "" {
+		rnge = util.BytesPrefix([]byte(q.Prefix))
 	}
-	return keys, nil
+	i := d.DB.NewIterator(rnge, nil)
+
+	var es []dsq.Entry
+	for i.Next() {
+		cpy := make([]byte, len(i.Value()))
+		copy(cpy, i.Value())
+
+		es = append(es, dsq.Entry{
+			Key:   ds.NewKey(string(i.Key())).String(),
+			Value: cpy,
+		})
+	}
+	i.Release()
+	if err := i.Error(); err != nil {
+		return nil, err
+	}
+
+	// TODO: make this async with:
+	// qr := dsq.ResultsWithEntriesChan(q, ch)
+	qr := dsq.ResultsWithEntries(q, es)
+	qr = q.ApplyTo(qr)
+	return qr, nil
 }
 
 // LevelDB needs to be closed.

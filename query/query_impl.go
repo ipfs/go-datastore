@@ -57,17 +57,22 @@ func NaiveOrder(qr *Results, o Order) *Results {
 	return ResultsWithEntries(qr.Query, e)
 }
 
-func (q Query) ApplyTo(re []Entry) *Results {
-	qr := ResultsWithEntries(q, re)
-	qr = NaiveFilter(qr, FilterKeyPrefix{q.Prefix})
+func (q Query) ApplyTo(qr *Results) *Results {
+	if q.Prefix != "" {
+		qr = NaiveFilter(qr, FilterKeyPrefix{q.Prefix})
+	}
 	for _, f := range q.Filters {
 		qr = NaiveFilter(qr, f)
 	}
 	for _, o := range q.Orders {
 		qr = NaiveOrder(qr, o)
 	}
-	qr = NaiveOffset(qr, q.Offset)
-	qr = NaiveLimit(qr, q.Offset)
+	if q.Offset != 0 {
+		qr = NaiveOffset(qr, q.Offset)
+	}
+	if q.Limit != 0 {
+		qr = NaiveLimit(qr, q.Offset)
+	}
 	return qr
 }
 

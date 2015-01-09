@@ -8,7 +8,10 @@ import (
 	"strings"
 
 	ds "github.com/jbenet/go-datastore"
+	query "github.com/jbenet/go-datastore/query"
 )
+
+var ObjectKeySuffix = ".dsobject"
 
 // Datastore uses a standard Go map for internal storage.
 type Datastore struct {
@@ -26,7 +29,7 @@ func NewDatastore(path string) (ds.Datastore, error) {
 
 // KeyFilename returns the filename associated with `key`
 func (d *Datastore) KeyFilename(key ds.Key) string {
-	return filepath.Join(d.path, key.String(), ".dsobject")
+	return filepath.Join(d.path, key.String(), ObjectKeySuffix)
 }
 
 // Put stores the given value.
@@ -99,6 +102,36 @@ func (d *Datastore) KeyList() ([]ds.Key, error) {
 
 	filepath.Walk(d.path, walkFn)
 	return keys, nil
+}
+
+// Query implements Datastore.Query
+func (d *Datastore) Query(q query.Query) (*query.Results, error) {
+
+	entries := make(chan query.Entry)
+
+	walkFn := func(path string, info os.FileInfo, err error) error {
+		// remove ds path prefix
+		if strings.HasPrefix(path, d.path) {
+			path = path[len(d.path):]
+		}
+
+		if !info.IsDir() {
+			if strings.HasSuffix(path, ObjectKeySuffix) {
+				path = path[:len(path)-len(ObjectKeySuffix)]
+			}
+			key := ds.NewKey(path)
+			entries <- query.Entry{Key: key.String(), Value: query.NotFetched}
+		}
+		return nil
+	}
+
+	go func() {
+		filepath.Walk(d.path, walkFn)
+		close(entries)
+	}()
+	r := query.ResultsWithEntriesChan(q, entries)
+	r = q.ApplyTo(r)
+	return r, nil
 }
 
 // isDir returns whether given path is a directory

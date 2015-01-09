@@ -71,6 +71,12 @@ type Query struct {
 	Offset int
 }
 
+// NotFetched is a special type that signals whether or not the value
+// of an Entry has been fetched or not. This is needed because
+// datastore implementations get to decide whether Query returns values
+// or only keys. nil is not a good signal, as real values may be nil.
+var NotFetched = struct{}{}
+
 // Entry is a query result entry.
 type Entry struct {
 	Key   string // cant be ds.Key because circular imports ...!!!
