@@ -5,15 +5,6 @@ import (
 	"testing"
 )
 
-var sampleKeys = []string{
-	"/ab/c",
-	"/ab/cd",
-	"/a",
-	"/abce",
-	"/abcf",
-	"/ab",
-}
-
 type filterTestCase struct {
 	filter Filter
 	keys   []string

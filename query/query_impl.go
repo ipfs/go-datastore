@@ -13,6 +13,7 @@ func NaiveFilter(qr Results, filter Filter) Results {
 	ch := make(chan Result)
 	go func() {
 		defer close(ch)
+		defer qr.Close()
 
 		for e := range qr.Next() {
 			if e.Error != nil || filter.Filter(e.Entry) {
@@ -29,13 +30,19 @@ func NaiveLimit(qr Results, limit int) Results {
 	ch := make(chan Result)
 	go func() {
 		defer close(ch)
+		defer qr.Close()
 
 		l := 0
 		for e := range qr.Next() {
-			if e.Error != nil || (l < limit) {
+			if e.Error != nil {
 				ch <- e
+				continue
 			}
+			ch <- e
 			l++
+			if limit > 0 && l >= limit {
+				break
+			}
 		}
 	}()
 
@@ -47,6 +54,7 @@ func NaiveOffset(qr Results, offset int) Results {
 	ch := make(chan Result)
 	go func() {
 		defer close(ch)
+		defer qr.Close()
 
 		sent := 0
 		for e := range qr.Next() {
@@ -54,10 +62,11 @@ func NaiveOffset(qr Results, offset int) Results {
 				ch <- e
 			}
 
-			if sent >= offset {
-				ch <- e
+			if sent < offset {
 				sent++
+				continue
 			}
+			ch <- e
 		}
 	}()
 
@@ -71,6 +80,7 @@ func NaiveOrder(qr Results, o Order) Results {
 	var entries []Entry
 	go func() {
 		defer close(ch)
+		defer qr.Close()
 
 		for e := range qr.Next() {
 			if e.Error != nil {

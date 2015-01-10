@@ -53,25 +53,23 @@ func (d *ktds) Delete(key ds.Key) (err error) {
 
 // Query implements Query, inverting keys on the way back out.
 func (d *ktds) Query(q dsq.Query) (dsq.Results, error) {
-
-	q2 := q
-	q2.Prefix = d.ConvertKey(ds.NewKey(q2.Prefix)).String()
-	r, err := d.child.Query(q2)
+	qr, err := d.child.Query(q)
 	if err != nil {
 		return nil, err
 	}
 
 	ch := make(chan dsq.Result)
 	go func() {
-		for r := range r.Next() {
+		defer close(ch)
+		defer qr.Close()
+
+		for r := range qr.Next() {
 			if r.Error == nil {
 				r.Entry.Key = d.InvertKey(ds.NewKey(r.Entry.Key)).String()
 			}
 			ch <- r
 		}
-		close(ch)
 	}()
 
-	r2 := dsq.ResultsWithChan(q, ch)
-	return r2, nil
+	return dsq.DerivedResults(qr, ch), nil
 }
