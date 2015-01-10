@@ -79,8 +79,20 @@ func (d *datastore) Query(q dsq.Query) (*dsq.Results, error) {
 	}
 	i := d.DB.NewIterator(rnge, nil)
 
+	// offset
+	if q.Offset > 0 {
+		for j := 0; j < q.Offset; j++ {
+			i.Next()
+		}
+	}
+
 	var es []dsq.Entry
 	for i.Next() {
+
+		// limit
+		if q.Limit > 0 && len(es) >= q.Limit {
+			break
+		}
 
 		k := ds.NewKey(string(i.Key())).String()
 		e := dsq.Entry{Key: k}
@@ -98,10 +110,15 @@ func (d *datastore) Query(q dsq.Query) (*dsq.Results, error) {
 		return nil, err
 	}
 
+	// Now, apply remaining pieces.
+	q2 := q
+	q2.Offset = 0 // already applied
+	q2.Limit = 0  // already applied
 	// TODO: make this async with:
 	// qr := dsq.ResultsWithEntriesChan(q, ch)
 	qr := dsq.ResultsWithEntries(q, es)
-	qr = q.ApplyTo(qr)
+	qr = q2.ApplyTo(qr)
+	qr.Query = q // set it back
 	return qr, nil
 }
 

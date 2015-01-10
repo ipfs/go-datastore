@@ -59,21 +59,35 @@ func TestQuery(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expect := []string{
+	expectMatches(t, []string{
 		"/a/b",
 		"/a/b/c",
 		"/a/b/d",
 		"/a/c",
 		"/a/d",
+	}, rs.AllEntries())
+
+	// test offset and limit
+
+	rs, err = d.Query(dsq.Query{Prefix: "/a/", Offset: 2, Limit: 2})
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	re := rs.AllEntries()
-	if len(re) != len(expect) {
-		t.Error("not enough", expect, re)
+	expectMatches(t, []string{
+		"/a/b/d",
+		"/a/c",
+	}, rs.AllEntries())
+
+}
+
+func expectMatches(t *testing.T, expect []string, actual []dsq.Entry) {
+	if len(actual) != len(expect) {
+		t.Error("not enough", expect, actual)
 	}
 	for _, k := range expect {
 		found := false
-		for _, e := range re {
+		for _, e := range actual {
 			if e.Key == k {
 				found = true
 			}
