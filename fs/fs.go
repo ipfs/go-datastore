@@ -82,28 +82,6 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 	return os.Remove(fn)
 }
 
-// KeyList returns a list of all keys in the datastore
-func (d *Datastore) KeyList() ([]ds.Key, error) {
-
-	keys := []ds.Key{}
-
-	walkFn := func(path string, info os.FileInfo, err error) error {
-		// remove ds path prefix
-		if strings.HasPrefix(path, d.path) {
-			path = path[len(d.path):]
-		}
-
-		if !info.IsDir() {
-			key := ds.NewKey(path)
-			keys = append(keys, key)
-		}
-		return nil
-	}
-
-	filepath.Walk(d.path, walkFn)
-	return keys, nil
-}
-
 // Query implements Datastore.Query
 func (d *Datastore) Query(q query.Query) (*query.Results, error) {
 
