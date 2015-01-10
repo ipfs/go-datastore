@@ -81,13 +81,17 @@ func (d *datastore) Query(q dsq.Query) (*dsq.Results, error) {
 
 	var es []dsq.Entry
 	for i.Next() {
-		cpy := make([]byte, len(i.Value()))
-		copy(cpy, i.Value())
 
-		es = append(es, dsq.Entry{
-			Key:   ds.NewKey(string(i.Key())).String(),
-			Value: cpy,
-		})
+		k := ds.NewKey(string(i.Key())).String()
+		e := dsq.Entry{Key: k}
+
+		if !q.KeysOnly {
+			buf := make([]byte, len(i.Value()))
+			copy(buf, i.Value())
+			e.Value = buf
+		}
+
+		es = append(es, e)
 	}
 	i.Release()
 	if err := i.Error(); err != nil {

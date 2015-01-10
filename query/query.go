@@ -52,23 +52,12 @@ cost of the layer of abstraction.
 
 */
 type Query struct {
-
-	// Prefix namespaces the query to results whose keys have the Prefix
-	Prefix string
-
-	// Filters filter out results from the query
-	// They apply sequentially.
-	Filters []Filter
-
-	// Orders reorder the query results according to given Orders.
-	// They apply sequentially.
-	Orders []Order
-
-	// Limit imposes a maximum on the number of results
-	Limit int
-
-	// Offset instructs datastores to skip a given number of results.
-	Offset int
+	Prefix   string   // namespaces the query to results whose keys have Prefix
+	Filters  []Filter // filter results. apply sequentially
+	Orders   []Order  // order results. apply sequentially
+	Limit    int      // maximum number of results
+	Offset   int      // skip given number of results
+	KeysOnly bool     // return only keys.
 }
 
 // NotFetched is a special type that signals whether or not the value
