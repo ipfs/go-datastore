@@ -79,44 +79,53 @@ func (d *datastore) Query(q dsq.Query) (*dsq.Results, error) {
 	}
 	i := d.DB.NewIterator(rnge, nil)
 
-	// offset
-	if q.Offset > 0 {
-		for j := 0; j < q.Offset; j++ {
-			i.Next()
-		}
-	}
+	// buffer this channel so that we dont totally block leveldb if client
+	// is not reading from chan.
+	ch := make(chan dsq.Entry, 1000)
+	qr := dsq.ResultsWithEntriesChan(q, ch)
+	// qr := dsq.ResultsWithEntries(q, es)
 
-	var es []dsq.Entry
-	for i.Next() {
+	go func() {
+		defer close(ch)
 
-		// limit
-		if q.Limit > 0 && len(es) >= q.Limit {
-			break
-		}
-
-		k := ds.NewKey(string(i.Key())).String()
-		e := dsq.Entry{Key: k}
-
-		if !q.KeysOnly {
-			buf := make([]byte, len(i.Value()))
-			copy(buf, i.Value())
-			e.Value = buf
+		// offset
+		if q.Offset > 0 {
+			for j := 0; j < q.Offset; j++ {
+				i.Next()
+			}
 		}
 
-		es = append(es, e)
-	}
-	i.Release()
-	if err := i.Error(); err != nil {
-		return nil, err
-	}
+		sent := 0
+		for i.Next() {
+
+			// limit
+			if q.Limit > 0 && sent >= q.Limit {
+				break
+			}
+
+			k := ds.NewKey(string(i.Key())).String()
+			e := dsq.Entry{Key: k}
+
+			if !q.KeysOnly {
+				buf := make([]byte, len(i.Value()))
+				copy(buf, i.Value())
+				e.Value = buf
+			}
+
+			ch <- e
+			sent++
+		}
+		i.Release()
+		if err := i.Error(); err != nil {
+			qr.Err() <- err
+		}
+	}()
 
 	// Now, apply remaining pieces.
 	q2 := q
 	q2.Offset = 0 // already applied
 	q2.Limit = 0  // already applied
-	// TODO: make this async with:
-	// qr := dsq.ResultsWithEntriesChan(q, ch)
-	qr := dsq.ResultsWithEntries(q, es)
+
 	qr = q2.ApplyTo(qr)
 	qr.Query = q // set it back
 	return qr, nil

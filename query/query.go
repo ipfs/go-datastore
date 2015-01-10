@@ -77,6 +77,7 @@ type Results struct {
 	Query Query // the query these Results correspond to
 
 	done chan struct{}
+	err  chan error
 	res  chan Entry
 	all  []Entry
 }
@@ -89,6 +90,7 @@ func ResultsWithEntriesChan(q Query, res <-chan Entry) *Results {
 		Query: q,
 		done:  make(chan struct{}),
 		res:   make(chan Entry),
+		err:   make(chan error),
 		all:   []Entry{},
 	}
 
@@ -99,6 +101,7 @@ func ResultsWithEntriesChan(q Query, res <-chan Entry) *Results {
 			r.res <- e
 		}
 		close(r.res)
+		close(r.err)
 		close(r.done)
 	}()
 	return r
@@ -112,6 +115,7 @@ func ResultsWithEntries(q Query, res []Entry) *Results {
 		Query: q,
 		done:  make(chan struct{}),
 		res:   make(chan Entry),
+		err:   make(chan error),
 		all:   res,
 	}
 
@@ -121,6 +125,7 @@ func ResultsWithEntries(q Query, res []Entry) *Results {
 			r.res <- e
 		}
 		close(r.res)
+		close(r.err)
 		close(r.done)
 	}()
 	return r
@@ -142,4 +147,16 @@ func (r *Results) AllEntries() []Entry {
 	}
 	<-r.done
 	return r.all
+}
+
+// Err() returns an error channel.
+// Results may arrive at any time.
+// The channel may or may not be buffered.
+// An error may halt processing, but the error channel will
+// not rate limit the query processing.
+//
+// Note: this is a terrible interface and should change.
+// not quite sure to what :(
+func (r *Results) Err() chan error {
+	return r.err
 }
