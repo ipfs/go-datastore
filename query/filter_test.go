@@ -28,7 +28,10 @@ func testKeyFilter(t *testing.T, f Filter, keys []string, expect []string) {
 
 	res := ResultsWithEntries(Query{}, e)
 	res = NaiveFilter(res, f)
-	actualE := res.AllEntries()
+	actualE, err := res.Rest()
+	if err != nil {
+		t.Fatal(err)
+	}
 	actual := make([]string, len(actualE))
 	for i, e := range actualE {
 		actual[i] = e.Key

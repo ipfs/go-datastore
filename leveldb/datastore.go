@@ -3,11 +3,11 @@ package leveldb
 import (
 	"io"
 
+	ds "github.com/jbenet/go-datastore"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb"
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
-
-	ds "github.com/jbenet/go-datastore"
 	dsq "github.com/jbenet/go-datastore/query"
 )
 
@@ -72,63 +72,80 @@ func (d *datastore) Delete(key ds.Key) (err error) {
 	return err
 }
 
-func (d *datastore) Query(q dsq.Query) (*dsq.Results, error) {
+func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
+
+	// we can use multiple iterators concurrently. see:
+	// https://godoc.org/github.com/syndtr/goleveldb/leveldb#DB.NewIterator
+	// advance the iterator only if the reader reads
+	//
+	// run query in own sub-process tied to Results.Process(), so that
+	// it waits for us to finish AND so that clients can signal to us
+	// that resources should be reclaimed.
+	qrb := dsq.NewResultBuilder(q)
+	qrb.Process.Go(func(worker goprocess.Process) {
+		d.runQuery(worker, qrb)
+	})
+
+	// go wait on the worker (without signaling close)
+	go qrb.Process.CloseAfterChildren()
+
+	// Now, apply remaining things (filters, order)
+	qr := qrb.Results()
+	for _, f := range q.Filters {
+		qr = dsq.NaiveFilter(qr, f)
+	}
+	for _, o := range q.Orders {
+		qr = dsq.NaiveOrder(qr, o)
+	}
+	return qr, nil
+}
+
+func (d *datastore) runQuery(worker goprocess.Process, qrb *dsq.ResultBuilder) {
+
 	var rnge *util.Range
-	if q.Prefix != "" {
-		rnge = util.BytesPrefix([]byte(q.Prefix))
+	if qrb.Query.Prefix != "" {
+		rnge = util.BytesPrefix([]byte(qrb.Query.Prefix))
 	}
 	i := d.DB.NewIterator(rnge, nil)
+	defer i.Release()
 
-	// buffer this channel so that we dont totally block leveldb if client
-	// is not reading from chan.
-	ch := make(chan dsq.Entry, 1000)
-	qr := dsq.ResultsWithEntriesChan(q, ch)
-	// qr := dsq.ResultsWithEntries(q, es)
+	// advance iterator for offset
+	if qrb.Query.Offset > 0 {
+		for j := 0; j < qrb.Query.Offset; j++ {
+			i.Next()
+		}
+	}
 
-	go func() {
-		defer close(ch)
-
-		// offset
-		if q.Offset > 0 {
-			for j := 0; j < q.Offset; j++ {
-				i.Next()
-			}
+	// iterate, and handle limit, too
+	for sent := 0; i.Next(); sent++ {
+		// end early if we hit the limit
+		if qrb.Query.Limit > 0 && sent >= qrb.Query.Limit {
+			break
 		}
 
-		sent := 0
-		for i.Next() {
+		k := ds.NewKey(string(i.Key())).String()
+		e := dsq.Entry{Key: k}
 
-			// limit
-			if q.Limit > 0 && sent >= q.Limit {
-				break
-			}
-
-			k := ds.NewKey(string(i.Key())).String()
-			e := dsq.Entry{Key: k}
-
-			if !q.KeysOnly {
-				buf := make([]byte, len(i.Value()))
-				copy(buf, i.Value())
-				e.Value = buf
-			}
-
-			ch <- e
-			sent++
+		if !qrb.Query.KeysOnly {
+			buf := make([]byte, len(i.Value()))
+			copy(buf, i.Value())
+			e.Value = buf
 		}
-		i.Release()
-		if err := i.Error(); err != nil {
-			qr.Err() <- err
+
+		select {
+		case qrb.Output <- dsq.Result{Entry: e}: // we sent it out
+		case <-worker.Closing(): // client told us to end early.
+			break
 		}
-	}()
+	}
 
-	// Now, apply remaining pieces.
-	q2 := q
-	q2.Offset = 0 // already applied
-	q2.Limit = 0  // already applied
-
-	qr = q2.ApplyTo(qr)
-	qr.Query = q // set it back
-	return qr, nil
+	if err := i.Error(); err != nil {
+		select {
+		case qrb.Output <- dsq.Result{Error: err}: // client read our error
+		case <-worker.Closing(): // client told us to end.
+			return
+		}
+	}
 }
 
 // LevelDB needs to be closed.
