@@ -3,7 +3,6 @@ package namespace
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	ds "github.com/jbenet/go-datastore"
 	ktds "github.com/jbenet/go-datastore/keytransform"
@@ -77,7 +76,6 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 
 			r.Entry.Key = d.Datastore.InvertKey(k).String()
 			ch <- r
-			<-time.After(100 * time.Millisecond)
 		}
 	}()
 
