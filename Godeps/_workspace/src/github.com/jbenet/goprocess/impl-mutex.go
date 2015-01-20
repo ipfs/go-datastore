@@ -74,29 +74,36 @@ func (p *process) AddChild(child Process) {
 	p.Unlock()
 }
 
-func (p *process) Go(f ProcessFunc) {
+func (p *process) Go(f ProcessFunc) Process {
 	child := newProcess(nil)
 	p.AddChild(child)
+
+	waitFor := newProcess(nil)
+	child.WaitFor(waitFor) // prevent child from closing
 	go func() {
 		f(child)
-		child.Close() // close to tear down.
+		waitFor.Close()            // allow child to close.
+		child.CloseAfterChildren() // close to tear down.
 	}()
+	return child
 }
 
 // Close is the external close function.
 // it's a wrapper around internalClose that waits on Closed()
 func (p *process) Close() error {
 	p.Lock()
-	defer p.Unlock()
 
-	// if already closed, get out.
+	// if already closing, or closed, get out. (but wait!)
 	select {
-	case <-p.Closed():
+	case <-p.Closing():
+		p.Unlock()
+		<-p.Closed()
 		return p.closeErr
 	default:
 	}
 
 	p.doClose()
+	p.Unlock()
 	return p.closeErr
 }
 
@@ -115,12 +122,23 @@ func (p *process) doClose() {
 
 	close(p.closing) // signal that we're shutting down (Closing)
 
-	for _, c := range p.children {
-		go c.Close() // force all children to shut down
-	}
+	for len(p.children) > 0 || len(p.waitfors) > 0 {
+		for _, c := range p.children {
+			go c.Close() // force all children to shut down
+		}
+		p.children = nil // clear them
 
-	for _, w := range p.waitfors {
-		<-w.Closed() // wait till all waitfors are fully closed (before teardown)
+		// we must be careful not to iterate over waitfors directly, as it may
+		// change under our feet.
+		wf := p.waitfors
+		p.waitfors = nil // clear them
+		for _, w := range wf {
+			// Here, we wait UNLOCKED, so that waitfors who are in the middle of
+			// adding a child to us can finish. we will immediately close the child.
+			p.Unlock()
+			<-w.Closed() // wait till all waitfors are fully closed (before teardown)
+			p.Lock()
+		}
 	}
 
 	p.closeErr = p.teardown() // actually run the close logic (ok safe to teardown)
@@ -162,16 +180,10 @@ func (p *process) CloseAfterChildren() error {
 	// wait for all processes we're waiting for are closed.
 	// the semantics here are simple: we will _only_ close
 	// if there are no processes currently waiting for.
-	for {
-		// remove it from waitingfors
-		if next := nextToWaitFor(); next != nil {
-			<-next.Closed()
-			continue
-		}
-
-		// YAY! we're done. close
-		break
+	for next := nextToWaitFor(); next != nil; next = nextToWaitFor() {
+		<-next.Closed()
 	}
 
+	// YAY! we're done. close
 	return p.Close()
 }

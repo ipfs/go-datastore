@@ -149,7 +149,7 @@ func TestTeardownCalledOnce(t *testing.T) {
 	a.c[1].Close()
 }
 
-func TestOnClosed(t *testing.T) {
+func TestOnClosedAll(t *testing.T) {
 
 	Q := make(chan string, 10)
 	p := WithParent(Background())
@@ -165,12 +165,40 @@ func TestOnClosed(t *testing.T) {
 
 	go p.Close()
 
-	testStrs(t, Q, "00", "01", "10", "11")
-	testStrs(t, Q, "00", "01", "10", "11")
-	testStrs(t, Q, "00", "01", "10", "11")
-	testStrs(t, Q, "00", "01", "10", "11")
-	testStrs(t, Q, "0", "1")
-	testStrs(t, Q, "0", "1")
+	testStrs(t, Q, "00", "01", "10", "11", "0", "1")
+	testStrs(t, Q, "00", "01", "10", "11", "0", "1")
+	testStrs(t, Q, "00", "01", "10", "11", "0", "1")
+	testStrs(t, Q, "00", "01", "10", "11", "0", "1")
+	testStrs(t, Q, "00", "01", "10", "11", "0", "1")
+	testStrs(t, Q, "00", "01", "10", "11", "0", "1")
+	testStrs(t, Q, "")
+}
+
+func TestOnClosedLeaves(t *testing.T) {
+
+	Q := make(chan string, 10)
+	p := WithParent(Background())
+	a := setupHierarchy(p)
+
+	go onClosedStr(Q, "0", a.c[0])
+	go onClosedStr(Q, "10", a.c[1].c[0])
+	go onClosedStr(Q, "", a)
+	go onClosedStr(Q, "00", a.c[0].c[0])
+	go onClosedStr(Q, "1", a.c[1])
+	go onClosedStr(Q, "01", a.c[0].c[1])
+	go onClosedStr(Q, "11", a.c[1].c[1])
+
+	go a.c[0].Close()
+	testStrs(t, Q, "00", "01", "0")
+	testStrs(t, Q, "00", "01", "0")
+	testStrs(t, Q, "00", "01", "0")
+
+	go a.c[1].Close()
+	testStrs(t, Q, "10", "11", "1")
+	testStrs(t, Q, "10", "11", "1")
+	testStrs(t, Q, "10", "11", "1")
+
+	go p.Close()
 	testStrs(t, Q, "")
 }
 
@@ -397,6 +425,7 @@ func TestCloseAfterChildren(t *testing.T) {
 	aDone := make(chan struct{})
 	bDone := make(chan struct{})
 
+	t.Log("test none when waiting on a")
 	testNone(t, Q)
 	go func() {
 		a.CloseAfterChildren()
@@ -404,6 +433,7 @@ func TestCloseAfterChildren(t *testing.T) {
 	}()
 	testNone(t, Q)
 
+	t.Log("test none when waiting on b")
 	go func() {
 		b.CloseAfterChildren()
 		bDone <- struct{}{}
@@ -482,8 +512,8 @@ func testNotClosed(t *testing.T, p Process) {
 
 func testNone(t *testing.T, c <-chan string) {
 	select {
-	case <-c:
-		t.Fatal("none should be closed")
+	case out := <-c:
+		t.Fatal("none should be closed", out)
 	default:
 	}
 }

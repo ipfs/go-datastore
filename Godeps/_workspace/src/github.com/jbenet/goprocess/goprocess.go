@@ -18,7 +18,7 @@ import (
 // More specifically, it fits this:
 //
 //   p := WithTeardown(tf) // new process is created, it is now running.
-//   p.AddChild(q)         // can register children **before** Closing.
+//   p.AddChild(q)         // can register children **before** Closed().
 //   go p.Close()          // blocks until done running teardown func.
 //   <-p.Closing()         // would now return true.
 //   <-p.childrenDone()    // wait on all children to be done
@@ -113,7 +113,7 @@ type Process interface {
 	//   }
 	//
 	// It is useful to construct simple asynchronous workers, children of p.
-	Go(f ProcessFunc)
+	Go(f ProcessFunc) Process
 
 	// Close ends the process. Close blocks until the process has completely
 	// shut down, and any teardown has run _exactly once_. The returned error
@@ -171,7 +171,19 @@ var nilProcessFunc = func(Process) {}
 //
 // This is because having the process you
 func Go(f ProcessFunc) Process {
-	return GoChild(Background(), f)
+	// return GoChild(Background(), f)
+
+	// we use two processes, one for communication, and
+	// one for ensuring we wait on the function (unclosable from the outside).
+	p := newProcess(nil)
+	waitFor := newProcess(nil)
+	p.WaitFor(waitFor) // prevent p from closing
+	go func() {
+		f(p)
+		waitFor.Close() // allow p to close.
+		p.Close()       // ensure p closes.
+	}()
+	return p
 }
 
 // GoChild is like Go, but it registers the returned Process as a child of parent,
