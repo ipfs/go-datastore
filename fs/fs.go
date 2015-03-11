@@ -29,7 +29,7 @@ func NewDatastore(path string) (ds.Datastore, error) {
 
 // KeyFilename returns the filename associated with `key`
 func (d *Datastore) KeyFilename(key ds.Key) string {
-	return filepath.Join(d.path, key.String(), ObjectKeySuffix)
+	return filepath.Join(d.path, key.String()+ObjectKeySuffix)
 }
 
 // Put stores the given value.
