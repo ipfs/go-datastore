@@ -13,7 +13,7 @@ import (
 
 var ObjectKeySuffix = ".dsobject"
 
-// Datastore uses a standard Go map for internal storage.
+// Datastore uses a uses a file per key to store values.
 type Datastore struct {
 	path string
 }
