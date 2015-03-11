@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	ds "github.com/jbenet/go-datastore"
-	lru "github.com/jbenet/go-datastore/lru"
 	. "github.com/jbenet/go-datastore/Godeps/_workspace/src/gopkg.in/check.v1"
+	lru "github.com/jbenet/go-datastore/lru"
 )
 
 // Hook up gocheck into the "go test" runner.
