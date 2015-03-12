@@ -117,7 +117,15 @@ func (fs *Datastore) Get(key datastore.Key) (value interface{}, err error) {
 }
 
 func (fs *Datastore) Has(key datastore.Key) (exists bool, err error) {
-	return false, errors.New("TODO")
+	_, path := fs.encode(key)
+	switch _, err := os.Stat(path); {
+	case err == nil:
+		return true, nil
+	case os.IsNotExist(err):
+		return false, nil
+	default:
+		return false, err
+	}
 }
 
 func (fs *Datastore) Delete(key datastore.Key) error {

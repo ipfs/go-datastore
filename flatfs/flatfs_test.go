@@ -196,3 +196,43 @@ func TestStorage(t *testing.T) {
 		t.Error("did not see the data file")
 	}
 }
+
+func TestHasNotFound(t *testing.T) {
+	temp, cleanup := tempdir(t)
+	defer cleanup()
+
+	fs, err := flatfs.New(temp, 2)
+	if err != nil {
+		t.Fatalf("New fail: %v\n", err)
+	}
+
+	found, err := fs.Has(datastore.NewKey("quux"))
+	if err != nil {
+		t.Fatalf("Has fail: %v\n", err)
+	}
+	if g, e := found, false; g != e {
+		t.Fatalf("wrong Has: %v != %v", g, e)
+	}
+}
+
+func TestHasFound(t *testing.T) {
+	temp, cleanup := tempdir(t)
+	defer cleanup()
+
+	fs, err := flatfs.New(temp, 2)
+	if err != nil {
+		t.Fatalf("New fail: %v\n", err)
+	}
+	err = fs.Put(datastore.NewKey("quux"), []byte("foobar"))
+	if err != nil {
+		t.Fatalf("Put fail: %v\n", err)
+	}
+
+	found, err := fs.Has(datastore.NewKey("quux"))
+	if err != nil {
+		t.Fatalf("Has fail: %v\n", err)
+	}
+	if g, e := found, true; g != e {
+		t.Fatalf("wrong Has: %v != %v", g, e)
+	}
+}
