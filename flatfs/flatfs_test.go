@@ -236,3 +236,43 @@ func TestHasFound(t *testing.T) {
 		t.Fatalf("wrong Has: %v != %v", g, e)
 	}
 }
+
+func TestDeleteNotFound(t *testing.T) {
+	temp, cleanup := tempdir(t)
+	defer cleanup()
+
+	fs, err := flatfs.New(temp, 2)
+	if err != nil {
+		t.Fatalf("New fail: %v\n", err)
+	}
+
+	err = fs.Delete(datastore.NewKey("quux"))
+	if g, e := err, datastore.ErrNotFound; g != e {
+		t.Fatalf("expected ErrNotFound, got: %v\n", g)
+	}
+}
+
+func TestDeleteFound(t *testing.T) {
+	temp, cleanup := tempdir(t)
+	defer cleanup()
+
+	fs, err := flatfs.New(temp, 2)
+	if err != nil {
+		t.Fatalf("New fail: %v\n", err)
+	}
+	err = fs.Put(datastore.NewKey("quux"), []byte("foobar"))
+	if err != nil {
+		t.Fatalf("Put fail: %v\n", err)
+	}
+
+	err = fs.Delete(datastore.NewKey("quux"))
+	if err != nil {
+		t.Fatalf("Delete fail: %v\n", err)
+	}
+
+	// check that it's gone
+	_, err = fs.Get(datastore.NewKey("quux"))
+	if g, e := err, datastore.ErrNotFound; g != e {
+		t.Fatalf("expected Get after Delete to give ErrNotFound, got: %v\n", g)
+	}
+}

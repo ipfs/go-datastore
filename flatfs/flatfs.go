@@ -129,7 +129,15 @@ func (fs *Datastore) Has(key datastore.Key) (exists bool, err error) {
 }
 
 func (fs *Datastore) Delete(key datastore.Key) error {
-	return errors.New("TODO")
+	_, path := fs.encode(key)
+	switch err := os.Remove(path); {
+	case err == nil:
+		return nil
+	case os.IsNotExist(err):
+		return datastore.ErrNotFound
+	default:
+		return err
+	}
 }
 
 func (fs *Datastore) Query(q query.Query) (query.Results, error) {
