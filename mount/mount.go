@@ -62,7 +62,11 @@ func (d *Datastore) Get(key datastore.Key) (value interface{}, err error) {
 }
 
 func (d *Datastore) Has(key datastore.Key) (exists bool, err error) {
-	return false, errors.New("TODO")
+	ds, k := d.lookup(key)
+	if ds == nil {
+		return false, nil
+	}
+	return ds.Has(k)
 }
 
 func (d *Datastore) Delete(key datastore.Key) error {

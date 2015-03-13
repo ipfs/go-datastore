@@ -107,3 +107,64 @@ func TestGet(t *testing.T) {
 		t.Errorf("wrong value: %q != %q", g, e)
 	}
 }
+
+func TestHasBadNothing(t *testing.T) {
+	m := mount.New([]mount.Mount{})
+
+	found, err := m.Has(datastore.NewKey("/quux/thud"))
+	if err != nil {
+		t.Fatalf("Has error: %v", err)
+	}
+	if g, e := found, false; g != e {
+		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
+
+func TestHasBadNoMount(t *testing.T) {
+	mapds := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/redherring"), Datastore: mapds},
+	})
+
+	found, err := m.Has(datastore.NewKey("/quux/thud"))
+	if err != nil {
+		t.Fatalf("Has error: %v", err)
+	}
+	if g, e := found, false; g != e {
+		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
+
+func TestHasNotFound(t *testing.T) {
+	mapds := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/quux"), Datastore: mapds},
+	})
+
+	found, err := m.Has(datastore.NewKey("/quux/thud"))
+	if err != nil {
+		t.Fatalf("Has error: %v", err)
+	}
+	if g, e := found, false; g != e {
+		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
+
+func TestHas(t *testing.T) {
+	mapds := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/quux"), Datastore: mapds},
+	})
+
+	if err := mapds.Put(datastore.NewKey("/thud"), []byte("foobar")); err != nil {
+		t.Fatalf("Put error: %v", err)
+	}
+
+	found, err := m.Has(datastore.NewKey("/quux/thud"))
+	if err != nil {
+		t.Fatalf("Has error: %v", err)
+	}
+	if g, e := found, true; g != e {
+		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
