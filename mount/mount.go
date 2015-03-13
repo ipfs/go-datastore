@@ -70,7 +70,11 @@ func (d *Datastore) Has(key datastore.Key) (exists bool, err error) {
 }
 
 func (d *Datastore) Delete(key datastore.Key) error {
-	return errors.New("TODO")
+	ds, k := d.lookup(key)
+	if ds == nil {
+		return datastore.ErrNotFound
+	}
+	return ds.Delete(k)
 }
 
 func (d *Datastore) Query(q query.Query) (query.Results, error) {

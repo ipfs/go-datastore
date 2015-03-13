@@ -168,3 +168,40 @@ func TestHas(t *testing.T) {
 		t.Fatalf("wrong value: %v != %v", g, e)
 	}
 }
+
+func TestDeleteNotFound(t *testing.T) {
+	mapds := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/quux"), Datastore: mapds},
+	})
+
+	err := m.Delete(datastore.NewKey("/quux/thud"))
+	if g, e := err, datastore.ErrNotFound; g != e {
+		t.Fatalf("expected ErrNotFound, got: %v\n", g)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	mapds := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/quux"), Datastore: mapds},
+	})
+
+	if err := mapds.Put(datastore.NewKey("/thud"), []byte("foobar")); err != nil {
+		t.Fatalf("Put error: %v", err)
+	}
+
+	err := m.Delete(datastore.NewKey("/quux/thud"))
+	if err != nil {
+		t.Fatalf("Delete error: %v", err)
+	}
+
+	// make sure it disappeared
+	found, err := mapds.Has(datastore.NewKey("/thud"))
+	if err != nil {
+		t.Fatalf("Has error: %v", err)
+	}
+	if g, e := found, false; g != e {
+		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
