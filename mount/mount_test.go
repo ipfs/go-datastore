@@ -5,6 +5,7 @@ import (
 
 	"github.com/jbenet/go-datastore"
 	"github.com/jbenet/go-datastore/mount"
+	"github.com/jbenet/go-datastore/query"
 )
 
 func TestPutBadNothing(t *testing.T) {
@@ -203,5 +204,38 @@ func TestDelete(t *testing.T) {
 	}
 	if g, e := found, false; g != e {
 		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
+
+func TestQuerySimple(t *testing.T) {
+	mapds := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/quux"), Datastore: mapds},
+	})
+
+	const myKey = "/quux/thud"
+	if err := m.Put(datastore.NewKey(myKey), []byte("foobar")); err != nil {
+		t.Fatalf("Put error: %v", err)
+	}
+
+	res, err := m.Query(query.Query{Prefix: "/quux"})
+	if err != nil {
+		t.Fatalf("Query fail: %v\n", err)
+	}
+	entries, err := res.Rest()
+	if err != nil {
+		t.Fatalf("Query Results.Rest fail: %v\n", err)
+	}
+	seen := false
+	for _, e := range entries {
+		switch e.Key {
+		case datastore.NewKey(myKey).String():
+			seen = true
+		default:
+			t.Errorf("saw unexpected key: %q", e.Key)
+		}
+	}
+	if !seen {
+		t.Errorf("did not see wanted key %q in %+v", myKey, entries)
 	}
 }
