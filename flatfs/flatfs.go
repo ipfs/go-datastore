@@ -101,6 +101,12 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 		return err
 	}
 
+	dirF, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer dirF.Close()
+
 	tmp, err := ioutil.TempFile(dir, "put-")
 	if err != nil {
 		return err
@@ -121,6 +127,9 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	if _, err := tmp.Write(val); err != nil {
 		return err
 	}
+	if err := tmp.Sync(); err != nil {
+		return err
+	}
 	if err := tmp.Close(); err != nil {
 		return err
 	}
@@ -131,6 +140,10 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 		return err
 	}
 	removed = true
+
+	if err := dirF.Sync(); err != nil {
+		return err
+	}
 
 	return nil
 }
