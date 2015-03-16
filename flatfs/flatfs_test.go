@@ -8,6 +8,7 @@ import (
 
 	"github.com/jbenet/go-datastore"
 	"github.com/jbenet/go-datastore/flatfs"
+	"github.com/jbenet/go-datastore/query"
 )
 
 func tempdir(t testing.TB) (path string, cleanup func()) {
@@ -274,5 +275,41 @@ func TestDeleteFound(t *testing.T) {
 	_, err = fs.Get(datastore.NewKey("quux"))
 	if g, e := err, datastore.ErrNotFound; g != e {
 		t.Fatalf("expected Get after Delete to give ErrNotFound, got: %v\n", g)
+	}
+}
+
+func TestQuerySimple(t *testing.T) {
+	temp, cleanup := tempdir(t)
+	defer cleanup()
+
+	fs, err := flatfs.New(temp, 2)
+	if err != nil {
+		t.Fatalf("New fail: %v\n", err)
+	}
+	const myKey = "quux"
+	err = fs.Put(datastore.NewKey(myKey), []byte("foobar"))
+	if err != nil {
+		t.Fatalf("Put fail: %v\n", err)
+	}
+
+	res, err := fs.Query(query.Query{KeysOnly: true})
+	if err != nil {
+		t.Fatalf("Query fail: %v\n", err)
+	}
+	entries, err := res.Rest()
+	if err != nil {
+		t.Fatalf("Query Results.Rest fail: %v\n", err)
+	}
+	seen := false
+	for _, e := range entries {
+		switch e.Key {
+		case datastore.NewKey(myKey).String():
+			seen = true
+		default:
+			t.Errorf("saw unexpected key: %q", e.Key)
+		}
+	}
+	if !seen {
+		t.Errorf("did not see wanted key %q in %+v", myKey, entries)
 	}
 }

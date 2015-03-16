@@ -54,6 +54,18 @@ func (fs *Datastore) encode(key datastore.Key) (dir, file string) {
 	return dir, file
 }
 
+func (fs *Datastore) decode(file string) (key datastore.Key, ok bool) {
+	if path.Ext(file) != extension {
+		return datastore.Key{}, false
+	}
+	name := file[:len(file)-len(extension)]
+	k, err := hex.DecodeString(name)
+	if err != nil {
+		return datastore.Key{}, false
+	}
+	return datastore.NewKey(string(k)), true
+}
+
 func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	val, ok := value.([]byte)
 	if !ok {
@@ -141,7 +153,54 @@ func (fs *Datastore) Delete(key datastore.Key) error {
 }
 
 func (fs *Datastore) Query(q query.Query) (query.Results, error) {
-	return nil, errors.New("TODO")
+	if (q.Prefix != "" && q.Prefix != "/") ||
+		len(q.Filters) > 0 ||
+		len(q.Orders) > 0 ||
+		q.Limit > 0 ||
+		q.Offset > 0 ||
+		!q.KeysOnly {
+		// TODO this is overly simplistic, but the only caller is
+		// `ipfs refs local` for now, and this gets us moving.
+		return nil, errors.New("flatfs only supports listing all keys in random order")
+	}
+
+	// TODO this dumb implementation gathers all keys into a single slice.
+	root, err := os.Open(fs.path)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+
+	var res []query.Entry
+	prefixes, err := root.Readdir(0)
+	if err != nil {
+		return nil, err
+	}
+	for _, fi := range prefixes {
+		if !fi.IsDir() || fi.Name()[0] == '.' {
+			continue
+		}
+		child, err := os.Open(path.Join(fs.path, fi.Name()))
+		if err != nil {
+			return nil, err
+		}
+		defer child.Close()
+		objs, err := child.Readdir(0)
+		if err != nil {
+			return nil, err
+		}
+		for _, fi := range objs {
+			if !fi.Mode().IsRegular() || fi.Name()[0] == '.' {
+				continue
+			}
+			key, ok := fs.decode(fi.Name())
+			if !ok {
+				continue
+			}
+			res = append(res, query.Entry{Key: key.String()})
+		}
+	}
+	return query.ResultsWithEntries(q, res), nil
 }
 
 var _ datastore.ThreadSafeDatastore = (*Datastore)(nil)
