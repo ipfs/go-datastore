@@ -66,6 +66,30 @@ func (fs *Datastore) decode(file string) (key datastore.Key, ok bool) {
 	return datastore.NewKey(string(k)), true
 }
 
+func (fs *Datastore) makePrefixDir(dir string) error {
+	if err := os.Mkdir(dir, 0777); err != nil {
+		// EEXIST is safe to ignore here, that just means the prefix
+		// directory already existed.
+		if !os.IsExist(err) {
+			return err
+		}
+	}
+
+	// In theory, if we create a new prefix dir and add a file to
+	// it, the creation of the prefix dir itself might not be
+	// durable yet. Sync the root dir after a successful mkdir of
+	// a prefix dir, just to be paranoid.
+	f, err := os.Open(fs.path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if err := f.Sync(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	val, ok := value.([]byte)
 	if !ok {
@@ -73,12 +97,8 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	}
 
 	dir, path := fs.encode(key)
-	if err := os.Mkdir(dir, 0777); err != nil {
-		// EEXIST is safe to ignore here, that just means the prefix
-		// directory already existed.
-		if !os.IsExist(err) {
-			return err
-		}
+	if err := fs.makePrefixDir(dir); err != nil {
+		return err
 	}
 
 	tmp, err := ioutil.TempFile(dir, "put-")
