@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/jbenet/go-datastore"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/go-os-rename"
 	"github.com/jbenet/go-datastore/query"
 )
 
@@ -124,7 +125,7 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	}
 	closed = true
 
-	err = os.Rename(tmp.Name(), path)
+	err = osrename.Rename(tmp.Name(), path)
 	if err != nil {
 		return err
 	}
