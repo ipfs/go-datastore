@@ -148,7 +148,7 @@ func TestStorage(t *testing.T) {
 
 	const prefixLen = 2
 	const prefix = "7175"
-	const target = prefix + "/71757578.data"
+	const target = prefix + string(os.PathSeparator) + "71757578.data"
 	fs, err := flatfs.New(temp, prefixLen)
 	if err != nil {
 		t.Fatalf("New fail: %v\n", err)
