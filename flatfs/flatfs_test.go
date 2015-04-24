@@ -147,8 +147,8 @@ func TestStorage(t *testing.T) {
 	defer cleanup()
 
 	const prefixLen = 2
-	const prefix = "2f71"
-	const target = prefix + "/2f71757578.data"
+	const prefix = "7175"
+	const target = prefix + "/71757578.data"
 	fs, err := flatfs.New(temp, prefixLen)
 	if err != nil {
 		t.Fatalf("New fail: %v\n", err)
