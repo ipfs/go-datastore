@@ -79,12 +79,7 @@ func (fs *Datastore) makePrefixDir(dir string) error {
 	// it, the creation of the prefix dir itself might not be
 	// durable yet. Sync the root dir after a successful mkdir of
 	// a prefix dir, just to be paranoid.
-	f, err := os.Open(fs.path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err := f.Sync(); err != nil {
+	if err := syncDir(fs.path); err != nil {
 		return err
 	}
 	return nil
@@ -100,12 +95,6 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	if err := fs.makePrefixDir(dir); err != nil {
 		return err
 	}
-
-	dirF, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer dirF.Close()
 
 	tmp, err := ioutil.TempFile(dir, "put-")
 	if err != nil {
@@ -141,10 +130,9 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	}
 	removed = true
 
-	if err := dirF.Sync(); err != nil {
+	if err := syncDir(dir); err != nil {
 		return err
 	}
-
 	return nil
 }
 
