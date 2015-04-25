@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/jbenet/go-datastore"
@@ -182,8 +183,10 @@ func TestStorage(t *testing.T) {
 			if !fi.Mode().IsRegular() {
 				t.Errorf("expected a regular file, mode: %04o", fi.Mode())
 			}
-			if g, e := fi.Mode()&os.ModePerm&0007, os.FileMode(0000); g != e {
-				t.Errorf("file should not be world accessible: %04o", fi.Mode())
+			if runtime.GOOS != "windows" {
+				if g, e := fi.Mode()&os.ModePerm&0007, os.FileMode(0000); g != e {
+					t.Errorf("file should not be world accessible: %04o", fi.Mode())
+				}
 			}
 		default:
 			t.Errorf("saw unexpected directory entry: %q %v", path, fi.Mode())
