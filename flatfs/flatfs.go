@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/jbenet/go-datastore"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/go-os-rename"
 	"github.com/jbenet/go-datastore/query"
 )
 
@@ -47,7 +48,7 @@ func New(path string, prefixLen int) (*Datastore, error) {
 var padding = strings.Repeat("_", maxPrefixLen*hex.EncodedLen(1))
 
 func (fs *Datastore) encode(key datastore.Key) (dir, file string) {
-	safe := hex.EncodeToString(key.Bytes())
+	safe := hex.EncodeToString(key.Bytes()[1:])
 	prefix := (safe + padding)[:fs.hexPrefixLen]
 	dir = path.Join(fs.path, prefix)
 	file = path.Join(dir, safe+extension)
@@ -79,12 +80,7 @@ func (fs *Datastore) makePrefixDir(dir string) error {
 	// it, the creation of the prefix dir itself might not be
 	// durable yet. Sync the root dir after a successful mkdir of
 	// a prefix dir, just to be paranoid.
-	f, err := os.Open(fs.path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err := f.Sync(); err != nil {
+	if err := syncDir(fs.path); err != nil {
 		return err
 	}
 	return nil
@@ -100,12 +96,6 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	if err := fs.makePrefixDir(dir); err != nil {
 		return err
 	}
-
-	dirF, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer dirF.Close()
 
 	tmp, err := ioutil.TempFile(dir, "put-")
 	if err != nil {
@@ -135,16 +125,15 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	}
 	closed = true
 
-	err = os.Rename(tmp.Name(), path)
+	err = osrename.Rename(tmp.Name(), path)
 	if err != nil {
 		return err
 	}
 	removed = true
 
-	if err := dirF.Sync(); err != nil {
+	if err := syncDir(dir); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -210,30 +199,39 @@ func (fs *Datastore) Query(q query.Query) (query.Results, error) {
 		return nil, err
 	}
 	for _, fi := range prefixes {
-		if !fi.IsDir() || fi.Name()[0] == '.' {
-			continue
-		}
-		child, err := os.Open(path.Join(fs.path, fi.Name()))
+		var err error
+		res, err = fs.enumerateKeys(fi, res)
 		if err != nil {
 			return nil, err
-		}
-		defer child.Close()
-		objs, err := child.Readdir(0)
-		if err != nil {
-			return nil, err
-		}
-		for _, fi := range objs {
-			if !fi.Mode().IsRegular() || fi.Name()[0] == '.' {
-				continue
-			}
-			key, ok := fs.decode(fi.Name())
-			if !ok {
-				continue
-			}
-			res = append(res, query.Entry{Key: key.String()})
 		}
 	}
 	return query.ResultsWithEntries(q, res), nil
+}
+
+func (fs *Datastore) enumerateKeys(fi os.FileInfo, res []query.Entry) ([]query.Entry, error) {
+	if !fi.IsDir() || fi.Name()[0] == '.' {
+		return res, nil
+	}
+	child, err := os.Open(path.Join(fs.path, fi.Name()))
+	if err != nil {
+		return nil, err
+	}
+	defer child.Close()
+	objs, err := child.Readdir(0)
+	if err != nil {
+		return nil, err
+	}
+	for _, fi := range objs {
+		if !fi.Mode().IsRegular() || fi.Name()[0] == '.' {
+			return res, nil
+		}
+		key, ok := fs.decode(fi.Name())
+		if !ok {
+			return res, nil
+		}
+		res = append(res, query.Entry{Key: key.String()})
+	}
+	return res, nil
 }
 
 var _ datastore.ThreadSafeDatastore = (*Datastore)(nil)
