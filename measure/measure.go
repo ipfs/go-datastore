@@ -18,9 +18,17 @@ const (
 	maxSize    = int64(1 << 32)
 )
 
+type DatastoreCloser interface {
+	datastore.Datastore
+	Close() error
+}
+
 // New wraps the datastore, providing metrics on the operations. The
 // metrics are registered with names starting with prefix and a dot.
-func New(prefix string, ds datastore.Datastore) datastore.Datastore {
+//
+// If prefix is not unique, New will panic. Call Close to release the
+// prefix.
+func New(prefix string, ds datastore.Datastore) DatastoreCloser {
 	m := &measure{
 		backend: ds,
 
@@ -76,6 +84,7 @@ type measure struct {
 }
 
 var _ datastore.Datastore = (*measure)(nil)
+var _ DatastoreCloser = (*measure)(nil)
 
 func recordLatency(h *metrics.Histogram, start time.Time) {
 	elapsed := time.Now().Sub(start) / time.Microsecond
@@ -137,4 +146,25 @@ func (m *measure) Query(q query.Query) (query.Results, error) {
 		m.queryErr.Add()
 	}
 	return res, err
+}
+
+func (m *measure) Close() error {
+	m.putNum.Remove()
+	m.putErr.Remove()
+	m.putLatency.Remove()
+	m.putSize.Remove()
+	m.getNum.Remove()
+	m.getErr.Remove()
+	m.getLatency.Remove()
+	m.getSize.Remove()
+	m.hasNum.Remove()
+	m.hasErr.Remove()
+	m.hasLatency.Remove()
+	m.deleteNum.Remove()
+	m.deleteErr.Remove()
+	m.deleteLatency.Remove()
+	m.queryNum.Remove()
+	m.queryErr.Remove()
+	m.queryLatency.Remove()
+	return nil
 }
