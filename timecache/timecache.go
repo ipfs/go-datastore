@@ -94,3 +94,8 @@ func (d *datastore) Delete(key ds.Key) (err error) {
 func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 	return d.cache.Query(q)
 }
+
+func (d *datastore) StartBatchOp() ds.Transaction {
+	// sorry, being lazy here
+	return ds.NewBasicTransaction(d)
+}

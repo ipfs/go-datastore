@@ -124,3 +124,7 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 	// query not coalesced yet.
 	return d.child.Query(q)
 }
+
+func (d *datastore) StartBatchOp() ds.Transaction {
+	return ds.NewBasicTransaction(d)
+}

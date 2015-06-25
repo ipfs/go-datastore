@@ -73,3 +73,28 @@ func (d *ktds) Query(q dsq.Query) (dsq.Results, error) {
 
 	return dsq.DerivedResults(qr, ch), nil
 }
+
+func (d *ktds) StartBatchOp() ds.Transaction {
+	return &transformTransaction{
+		dst: d.child.StartBatchOp(),
+		f:   d.ConvertKey,
+	}
+}
+
+type transformTransaction struct {
+	dst ds.Transaction
+
+	f KeyMapping
+}
+
+func (t *transformTransaction) Put(key ds.Key, val interface{}) error {
+	return t.dst.Put(t.f(key), val)
+}
+
+func (t *transformTransaction) Delete(key ds.Key) error {
+	return t.dst.Delete(t.f(key))
+}
+
+func (t *transformTransaction) Commit() error {
+	return t.dst.Commit()
+}

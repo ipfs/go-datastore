@@ -114,3 +114,48 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	r = query.ResultsReplaceQuery(r, q)
 	return r, nil
 }
+
+type mountTransaction struct {
+	mounts map[string]datastore.Transaction
+
+	d *Datastore
+}
+
+func (d *Datastore) StartBatchOp() datastore.Transaction {
+	return &mountTransaction{
+		mounts: make(map[string]datastore.Transaction),
+		d:      d,
+	}
+}
+
+func (mt *mountTransaction) Put(key datastore.Key, val interface{}) error {
+	child, loc, rest := mt.d.lookup(key)
+	t, ok := mt.mounts[loc.String()]
+	if !ok {
+		t = child.StartBatchOp()
+		mt.mounts[loc.String()] = t
+	}
+
+	return t.Put(rest, val)
+}
+
+func (mt *mountTransaction) Delete(key datastore.Key) error {
+	child, loc, rest := mt.d.lookup(key)
+	t, ok := mt.mounts[loc.String()]
+	if !ok {
+		t = child.StartBatchOp()
+		mt.mounts[loc.String()] = t
+	}
+
+	return t.Delete(rest)
+}
+
+func (mt *mountTransaction) Commit() error {
+	for _, t := range mt.mounts {
+		err := t.Commit()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

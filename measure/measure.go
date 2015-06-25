@@ -148,6 +148,67 @@ func (m *measure) Query(q query.Query) (query.Results, error) {
 	return res, err
 }
 
+type measuredTransaction struct {
+	puts    int
+	deletes int
+
+	putts datastore.Transaction
+	delts datastore.Transaction
+
+	m *measure
+}
+
+func (m *measure) StartBatchOp() datastore.Transaction {
+	return &measuredTransaction{
+		putts: m.backend.StartBatchOp(),
+		delts: m.backend.StartBatchOp(),
+
+		m: m,
+	}
+}
+
+func (mt *measuredTransaction) Put(key datastore.Key, val interface{}) error {
+	mt.puts++
+	return mt.putts.Put(key, val)
+}
+
+func (mt *measuredTransaction) Delete(key datastore.Key) error {
+	mt.deletes++
+	return mt.delts.Delete(key)
+}
+
+func (mt *measuredTransaction) Commit() error {
+	if mt.deletes > 0 {
+		before := time.Now()
+		err := mt.delts.Commit()
+		took := int(time.Now().Sub(before)/time.Microsecond) / mt.deletes
+		mt.m.deleteNum.AddN(uint64(mt.deletes))
+		for i := 0; i < mt.deletes; i++ {
+			mt.m.deleteLatency.RecordValue(int64(took))
+		}
+		if err != nil {
+			mt.m.deleteErr.Add()
+			return err
+		}
+	}
+
+	if mt.puts > 0 {
+		before := time.Now()
+		err := mt.putts.Commit()
+		took := int(time.Now().Sub(before)/time.Microsecond) / mt.puts
+		mt.m.putNum.AddN(uint64(mt.puts))
+		for i := 0; i < mt.puts; i++ {
+			mt.m.putLatency.RecordValue(int64(took))
+		}
+		if err != nil {
+			mt.m.putErr.Add()
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (m *measure) Close() error {
 	m.putNum.Remove()
 	m.putErr.Remove()

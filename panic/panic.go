@@ -66,3 +66,38 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 	}
 	return r, nil
 }
+
+type panicTransaction struct {
+	t ds.Transaction
+}
+
+func (p *panicTransaction) Put(key ds.Key, val interface{}) error {
+	err := p.t.Put(key, val)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "panic datastore: %s", err)
+		panic("panic datastore: transaction put failed")
+	}
+	return nil
+}
+
+func (p *panicTransaction) Delete(key ds.Key) error {
+	err := p.t.Delete(key)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "panic datastore: %s", err)
+		panic("panic datastore: transaction delete failed")
+	}
+	return nil
+}
+
+func (p *panicTransaction) Commit() error {
+	err := p.t.Commit()
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "panic datastore: %s", err)
+		panic("panic datastore: transaction commit failed")
+	}
+	return nil
+}
+
+func (d *datastore) StartBatchOp() ds.Transaction {
+	return &panicTransaction{d.child.StartBatchOp()}
+}
