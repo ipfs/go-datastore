@@ -100,40 +100,6 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 	return qr, nil
 }
 
-type ldbBatch struct {
-	b *leveldb.Batch
-	d *datastore
-}
-
-func (d *datastore) StartBatchOp() ds.Transaction {
-	return &ldbBatch{
-		b: new(leveldb.Batch),
-		d: d,
-	}
-}
-
-func (b *ldbBatch) Put(key ds.Key, val interface{}) error {
-	v, ok := val.([]byte)
-	if !ok {
-		return ds.ErrInvalidType
-	}
-	b.b.Put(key.Bytes(), v) // #dealwithit
-	return nil
-}
-
-func (b *ldbBatch) Delete(key ds.Key) error {
-	b.b.Delete(key.Bytes())
-	return nil
-}
-
-func (b *ldbBatch) Commit() error {
-	opts := &opt.WriteOptions{Sync: true}
-	if err := b.d.DB.Write(b.b, opts); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (d *datastore) runQuery(worker goprocess.Process, qrb *dsq.ResultBuilder) {
 
 	var rnge *util.Range

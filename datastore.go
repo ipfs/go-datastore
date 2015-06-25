@@ -67,10 +67,15 @@ type Datastore interface {
 	//   result.AllEntries()
 	//
 	Query(q query.Query) (query.Results, error)
-
-	// StartBatchOp begins a datastore transaction
-	StartBatchOp() Transaction
 }
+
+type BatchingDatastore interface {
+	Datastore
+
+	Batch() (Batch, error)
+}
+
+var ErrBatchUnsupported = errors.New("this datastore does not support batching")
 
 // ThreadSafeDatastore is an interface that all threadsafe datastore should
 // implement to leverage type safety checks.
@@ -108,7 +113,7 @@ func GetBackedHas(ds Datastore, key Key) (bool, error) {
 	}
 }
 
-type Transaction interface {
+type Batch interface {
 	Put(key Key, val interface{}) error
 
 	Delete(key Key) error
