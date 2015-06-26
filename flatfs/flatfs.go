@@ -323,32 +323,32 @@ func (fs *Datastore) enumerateKeys(fi os.FileInfo, res []query.Entry) ([]query.E
 	return res, nil
 }
 
-type flatfsTransaction struct {
+type flatfsBatch struct {
 	puts    map[datastore.Key]interface{}
 	deletes map[datastore.Key]struct{}
 
 	ds *Datastore
 }
 
-func (fs *Datastore) StartBatchOp() datastore.Transaction {
-	return &flatfsTransaction{
+func (fs *Datastore) Batch() datastore.Batch {
+	return &flatfsBatch{
 		puts:    make(map[datastore.Key]interface{}),
 		deletes: make(map[datastore.Key]struct{}),
 		ds:      fs,
 	}
 }
 
-func (bt *flatfsTransaction) Put(key datastore.Key, val interface{}) error {
+func (bt *flatfsBatch) Put(key datastore.Key, val interface{}) error {
 	bt.puts[key] = val
 	return nil
 }
 
-func (bt *flatfsTransaction) Delete(key datastore.Key) error {
+func (bt *flatfsBatch) Delete(key datastore.Key) error {
 	bt.deletes[key] = struct{}{}
 	return nil
 }
 
-func (bt *flatfsTransaction) Commit() error {
+func (bt *flatfsBatch) Commit() error {
 	if err := bt.ds.putMany(bt.puts); err != nil {
 		return err
 	}

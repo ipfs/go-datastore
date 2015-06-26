@@ -63,8 +63,8 @@ func (d *MapDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	return r, nil
 }
 
-func (d *MapDatastore) StartBatchOp() Transaction {
-	return NewBasicTransaction(d)
+func (d *MapDatastore) Batch() Batch {
+	return NewBasicBatch(d)
 }
 
 // NullDatastore stores nothing, but conforms to the API.
@@ -102,8 +102,8 @@ func (d *NullDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	return dsq.ResultsWithEntries(q, nil), nil
 }
 
-func (d *NullDatastore) StartBatchOp() Transaction {
-	return NewBasicTransaction(d)
+func (d *NullDatastore) Batch() Batch {
+	return NewBasicBatch(d)
 }
 
 // LogDatastore logs all accesses through the datastore.
@@ -163,7 +163,7 @@ func (d *LogDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	return d.child.Query(q)
 }
 
-func (d *LogDatastore) StartBatchOp() Transaction {
-	log.Printf("%s: StartBatchOp\n", d.Name)
-	return d.child.StartBatchOp()
+func (d *LogDatastore) Batch() Batch {
+	log.Printf("%s: Batch\n", d.Name)
+	return d.child.Batch()
 }

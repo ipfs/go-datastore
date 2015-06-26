@@ -41,7 +41,7 @@ func (c *Datastore) Query(q dsq.Query) (dsq.Results, error) {
 	return c.D.Query(q)
 }
 
-func (c *Datastore) StartBatchOp() ds.Transaction {
+func (c *Datastore) Batch() ds.Batch {
 	c.F()
-	return c.D.StartBatchOp()
+	return c.D.Batch()
 }

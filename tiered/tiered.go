@@ -93,17 +93,17 @@ func (d tiered) Query(q dsq.Query) (dsq.Results, error) {
 	return d[len(d)-1].Query(q)
 }
 
-type tieredTransaction []ds.Transaction
+type tieredBatch []ds.Batch
 
-func (d tiered) StartBatchOp() ds.Transaction {
-	var out tieredTransaction
+func (d tiered) Batch() ds.Batch {
+	var out tieredBatch
 	for _, ds := range d {
-		out = append(out, ds.StartBatchOp())
+		out = append(out, ds.Batch())
 	}
 	return out
 }
 
-func (t tieredTransaction) Put(key ds.Key, val interface{}) error {
+func (t tieredBatch) Put(key ds.Key, val interface{}) error {
 	for _, ts := range t {
 		err := ts.Put(key, val)
 		if err != nil {
@@ -113,7 +113,7 @@ func (t tieredTransaction) Put(key ds.Key, val interface{}) error {
 	return nil
 }
 
-func (t tieredTransaction) Delete(key ds.Key) error {
+func (t tieredBatch) Delete(key ds.Key) error {
 	for _, ts := range t {
 		err := ts.Delete(key)
 		if err != nil {
@@ -123,7 +123,7 @@ func (t tieredTransaction) Delete(key ds.Key) error {
 	return nil
 }
 
-func (t tieredTransaction) Commit() error {
+func (t tieredBatch) Commit() error {
 	for _, ts := range t {
 		err := ts.Commit()
 		if err != nil {

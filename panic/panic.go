@@ -67,11 +67,11 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 	return r, nil
 }
 
-type panicTransaction struct {
-	t ds.Transaction
+type panicBatch struct {
+	t ds.Batch
 }
 
-func (p *panicTransaction) Put(key ds.Key, val interface{}) error {
+func (p *panicBatch) Put(key ds.Key, val interface{}) error {
 	err := p.t.Put(key, val)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "panic datastore: %s", err)
@@ -80,7 +80,7 @@ func (p *panicTransaction) Put(key ds.Key, val interface{}) error {
 	return nil
 }
 
-func (p *panicTransaction) Delete(key ds.Key) error {
+func (p *panicBatch) Delete(key ds.Key) error {
 	err := p.t.Delete(key)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "panic datastore: %s", err)
@@ -89,7 +89,7 @@ func (p *panicTransaction) Delete(key ds.Key) error {
 	return nil
 }
 
-func (p *panicTransaction) Commit() error {
+func (p *panicBatch) Commit() error {
 	err := p.t.Commit()
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "panic datastore: %s", err)
@@ -98,6 +98,6 @@ func (p *panicTransaction) Commit() error {
 	return nil
 }
 
-func (d *datastore) StartBatchOp() ds.Transaction {
-	return &panicTransaction{d.child.StartBatchOp()}
+func (d *datastore) Batch() ds.Batch {
+	return &panicBatch{d.child.Batch()}
 }

@@ -64,8 +64,8 @@ func (d *MutexDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	return d.child.Query(q)
 }
 
-func (d *MutexDatastore) StartBatchOp() ds.Transaction {
+func (d *MutexDatastore) Batch() ds.Batch {
 	d.RLock()
 	defer d.RUnlock()
-	return d.child.StartBatchOp()
+	return d.child.Batch()
 }

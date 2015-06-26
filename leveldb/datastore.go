@@ -105,7 +105,7 @@ type ldbBatch struct {
 	d *datastore
 }
 
-func (d *datastore) StartBatchOp() ds.Transaction {
+func (d *datastore) Batch() ds.Batch {
 	return &ldbBatch{
 		b: new(leveldb.Batch),
 		d: d,

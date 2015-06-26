@@ -125,6 +125,6 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 	return d.child.Query(q)
 }
 
-func (d *datastore) StartBatchOp() ds.Transaction {
-	return ds.NewBasicTransaction(d)
+func (d *datastore) Batch() ds.Batch {
+	return ds.NewBasicBatch(d)
 }

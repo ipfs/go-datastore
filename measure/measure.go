@@ -148,36 +148,36 @@ func (m *measure) Query(q query.Query) (query.Results, error) {
 	return res, err
 }
 
-type measuredTransaction struct {
+type measuredBatch struct {
 	puts    int
 	deletes int
 
-	putts datastore.Transaction
-	delts datastore.Transaction
+	putts datastore.Batch
+	delts datastore.Batch
 
 	m *measure
 }
 
-func (m *measure) StartBatchOp() datastore.Transaction {
-	return &measuredTransaction{
-		putts: m.backend.StartBatchOp(),
-		delts: m.backend.StartBatchOp(),
+func (m *measure) Batch() datastore.Batch {
+	return &measuredBatch{
+		putts: m.backend.Batch(),
+		delts: m.backend.Batch(),
 
 		m: m,
 	}
 }
 
-func (mt *measuredTransaction) Put(key datastore.Key, val interface{}) error {
+func (mt *measuredBatch) Put(key datastore.Key, val interface{}) error {
 	mt.puts++
 	return mt.putts.Put(key, val)
 }
 
-func (mt *measuredTransaction) Delete(key datastore.Key) error {
+func (mt *measuredBatch) Delete(key datastore.Key) error {
 	mt.deletes++
 	return mt.delts.Delete(key)
 }
 
-func (mt *measuredTransaction) Commit() error {
+func (mt *measuredBatch) Commit() error {
 	if mt.deletes > 0 {
 		before := time.Now()
 		err := mt.delts.Commit()

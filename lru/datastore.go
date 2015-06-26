@@ -55,6 +55,6 @@ func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
 	return nil, errors.New("KeyList not implemented.")
 }
 
-func (d *Datastore) StartBatchOp() ds.Transaction {
-	return ds.NewBasicTransaction(d)
+func (d *Datastore) Batch() ds.Batch {
+	return ds.NewBasicBatch(d)
 }
