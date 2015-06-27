@@ -67,9 +67,6 @@ type Datastore interface {
 	//   result.AllEntries()
 	//
 	Query(q query.Query) (query.Results, error)
-
-	// Batch begins a datastore transaction
-	Batch() Batch
 }
 
 // ThreadSafeDatastore is an interface that all threadsafe datastore should
@@ -106,12 +103,4 @@ func GetBackedHas(ds Datastore, key Key) (bool, error) {
 	default:
 		return false, err
 	}
-}
-
-type Batch interface {
-	Put(key Key, val interface{}) error
-
-	Delete(key Key) error
-
-	Commit() error
 }
