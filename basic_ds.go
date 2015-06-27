@@ -63,6 +63,10 @@ func (d *MapDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	return r, nil
 }
 
+func (d *MapDatastore) Batch() Batch {
+	return NewBasicBatch(d)
+}
+
 // NullDatastore stores nothing, but conforms to the API.
 // Useful to test with.
 type NullDatastore struct {
@@ -96,6 +100,10 @@ func (d *NullDatastore) Delete(key Key) (err error) {
 // Query implements Datastore.Query
 func (d *NullDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	return dsq.ResultsWithEntries(q, nil), nil
+}
+
+func (d *NullDatastore) Batch() Batch {
+	return NewBasicBatch(d)
 }
 
 // LogDatastore logs all accesses through the datastore.
@@ -153,4 +161,9 @@ func (d *LogDatastore) Delete(key Key) (err error) {
 func (d *LogDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	log.Printf("%s: Query\n", d.Name)
 	return d.child.Query(q)
+}
+
+func (d *LogDatastore) Batch() Batch {
+	log.Printf("%s: Batch\n", d.Name)
+	return d.child.Batch()
 }

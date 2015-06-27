@@ -40,3 +40,8 @@ func (c *Datastore) Query(q dsq.Query) (dsq.Results, error) {
 	c.F()
 	return c.D.Query(q)
 }
+
+func (c *Datastore) Batch() ds.Batch {
+	c.F()
+	return c.D.Batch()
+}

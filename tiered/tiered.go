@@ -92,3 +92,43 @@ func (d tiered) Query(q dsq.Query) (dsq.Results, error) {
 	// query always the last (most complete) one
 	return d[len(d)-1].Query(q)
 }
+
+type tieredBatch []ds.Batch
+
+func (d tiered) Batch() ds.Batch {
+	var out tieredBatch
+	for _, ds := range d {
+		out = append(out, ds.Batch())
+	}
+	return out
+}
+
+func (t tieredBatch) Put(key ds.Key, val interface{}) error {
+	for _, ts := range t {
+		err := ts.Put(key, val)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t tieredBatch) Delete(key ds.Key) error {
+	for _, ts := range t {
+		err := ts.Delete(key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t tieredBatch) Commit() error {
+	for _, ts := range t {
+		err := ts.Commit()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
