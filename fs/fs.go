@@ -130,12 +130,6 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	return r, nil
 }
 
-func (d *Datastore) Batch() ds.Batch {
-	// just use basic transaction for now, this datastore
-	// isnt really used in performant code yet
-	return ds.NewBasicBatch(d)
-}
-
 // isDir returns whether given path is a directory
 func isDir(path string) bool {
 	finfo, err := os.Stat(path)
