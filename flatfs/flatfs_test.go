@@ -12,7 +12,7 @@ import (
 	"github.com/jbenet/go-datastore/flatfs"
 	"github.com/jbenet/go-datastore/query"
 
-	rand "github.com/dustin/randbo"
+	rand "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/dustin/randbo"
 )
 
 func tempdir(t testing.TB) (path string, cleanup func()) {
