@@ -1,7 +1,6 @@
 package flatfs_test
 
 import (
-	"bytes"
 	"encoding/base32"
 	"io/ioutil"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"github.com/jbenet/go-datastore"
 	"github.com/jbenet/go-datastore/flatfs"
 	"github.com/jbenet/go-datastore/query"
+	dstest "github.com/jbenet/go-datastore/test"
 
 	rand "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/dustin/randbo"
 )
@@ -330,38 +330,19 @@ func TestBatchPut(t *testing.T) {
 		t.Fatalf("New fail: %v\n", err)
 	}
 
-	batch := fs.Batch()
-	r := rand.New()
-	var blocks [][]byte
-	var keys []datastore.Key
-	for i := 0; i < 20; i++ {
-		blk := make([]byte, 256*1024)
-		r.Read(blk)
-		blocks = append(blocks, blk)
+	dstest.RunBatchTest(t, fs)
+}
 
-		key := datastore.NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
-		keys = append(keys, key)
+func TestBatchDelete(t *testing.T) {
+	temp, cleanup := tempdir(t)
+	defer cleanup()
 
-		err := batch.Put(key, blk)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	err = batch.Commit()
+	fs, err := flatfs.New(temp, 2)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New fail: %v\n", err)
 	}
 
-	for i, k := range keys {
-		blk, err := fs.Get(k)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if !bytes.Equal(blk.([]byte), blocks[i]) {
-			t.Fatal("blocks not correct!")
-		}
-	}
+	dstest.RunBatchDeleteTest(t, fs)
 }
 
 func BenchmarkConsecutivePut(b *testing.B) {
@@ -417,7 +398,10 @@ func BenchmarkBatchedPut(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; {
-		batch := fs.Batch()
+		batch, err := fs.Batch()
+		if err != nil {
+			b.Fatal(err)
+		}
 
 		for n := i; i-n < 512 && i < b.N; i++ {
 			err := batch.Put(keys[i], blocks[i])

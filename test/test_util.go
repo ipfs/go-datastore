@@ -1,26 +1,29 @@
-package datastore
+package dstest
 
 import (
 	"bytes"
 	"encoding/base32"
 	"testing"
 
+	dstore "github.com/jbenet/go-datastore"
 	rand "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/dustin/randbo"
 )
 
-func TestBasicBatch(t *testing.T) {
-	ds := NewMapDatastore()
-	batch := NewBasicBatch(ds)
+func RunBatchTest(t *testing.T, ds dstore.BatchingDatastore) {
+	batch, err := ds.Batch()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	r := rand.New()
 	var blocks [][]byte
-	var keys []Key
+	var keys []dstore.Key
 	for i := 0; i < 20; i++ {
 		blk := make([]byte, 256*1024)
 		r.Read(blk)
 		blocks = append(blocks, blk)
 
-		key := NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
+		key := dstore.NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
 		keys = append(keys, key)
 
 		err := batch.Put(key, blk)
@@ -28,7 +31,17 @@ func TestBasicBatch(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	err := batch.Commit()
+
+	// Ensure they are not in the datastore before comitting
+	for _, k := range keys {
+		_, err := ds.Get(k)
+		if err == nil {
+			t.Fatal("should not have found this block")
+		}
+	}
+
+	// commit, write them to the datastore
+	err = batch.Commit()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,16 +58,14 @@ func TestBasicBatch(t *testing.T) {
 	}
 }
 
-func TestBasicBatchDelete(t *testing.T) {
-	ds := NewMapDatastore()
-
+func RunBatchDeleteTest(t *testing.T, ds dstore.BatchingDatastore) {
 	r := rand.New()
-	var keys []Key
+	var keys []dstore.Key
 	for i := 0; i < 20; i++ {
 		blk := make([]byte, 16)
 		r.Read(blk)
 
-		key := NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
+		key := dstore.NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
 		keys = append(keys, key)
 
 		err := ds.Put(key, blk)
@@ -63,14 +74,18 @@ func TestBasicBatchDelete(t *testing.T) {
 		}
 	}
 
-	batch := NewBasicBatch(ds)
+	batch, err := ds.Batch()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	for _, k := range keys {
 		err := batch.Delete(k)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	err := batch.Commit()
+	err = batch.Commit()
 	if err != nil {
 		t.Fatal(err)
 	}

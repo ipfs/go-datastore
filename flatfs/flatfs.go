@@ -330,12 +330,12 @@ type flatfsBatch struct {
 	ds *Datastore
 }
 
-func (fs *Datastore) Batch() datastore.Batch {
+func (fs *Datastore) Batch() (datastore.Batch, error) {
 	return &flatfsBatch{
 		puts:    make(map[datastore.Key]interface{}),
 		deletes: make(map[datastore.Key]struct{}),
 		ds:      fs,
-	}
+	}, nil
 }
 
 func (bt *flatfsBatch) Put(key datastore.Key, val interface{}) error {
