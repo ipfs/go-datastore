@@ -1,6 +1,7 @@
 package flatfs_test
 
 import (
+	"bytes"
 	"encoding/base32"
 	"io/ioutil"
 	"os"
@@ -317,6 +318,49 @@ func TestQuerySimple(t *testing.T) {
 	}
 	if !seen {
 		t.Errorf("did not see wanted key %q in %+v", myKey, entries)
+	}
+}
+
+func TestBatchPut(t *testing.T) {
+	temp, cleanup := tempdir(t)
+	defer cleanup()
+
+	fs, err := flatfs.New(temp, 2)
+	if err != nil {
+		t.Fatalf("New fail: %v\n", err)
+	}
+
+	batch := fs.Batch()
+	r := rand.New()
+	var blocks [][]byte
+	var keys []datastore.Key
+	for i := 0; i < 20; i++ {
+		blk := make([]byte, 256*1024)
+		r.Read(blk)
+		blocks = append(blocks, blk)
+
+		key := datastore.NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
+		keys = append(keys, key)
+
+		err := batch.Put(key, blk)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	err = batch.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i, k := range keys {
+		blk, err := fs.Get(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !bytes.Equal(blk.([]byte), blocks[i]) {
+			t.Fatal("blocks not correct!")
+		}
 	}
 }
 
