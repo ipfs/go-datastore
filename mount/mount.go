@@ -4,6 +4,7 @@ package mount
 
 import (
 	"errors"
+	"io"
 	"strings"
 
 	"github.com/jbenet/go-datastore"
@@ -115,6 +116,18 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	return r, nil
 }
 
+func (d *Datastore) Close() error {
+	for _, d := range d.mounts {
+		if c, ok := d.Datastore.(io.Closer); ok {
+			err := c.Close()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 type mountBatch struct {
 	mounts map[string]datastore.Batch
 
@@ -132,7 +145,7 @@ func (mt *mountBatch) lookupBatch(key datastore.Key) (datastore.Batch, datastore
 	child, loc, rest := mt.d.lookup(key)
 	t, ok := mt.mounts[loc.String()]
 	if !ok {
-		bds, ok := child.(datastore.BatchingDatastore)
+		bds, ok := child.(datastore.Batching)
 		if !ok {
 			return nil, datastore.NewKey(""), datastore.ErrBatchUnsupported
 		}

@@ -17,14 +17,14 @@ var _ datastore.ThreadSafeDatastore = &Datastore{}
 
 var ErrInvalidType = errors.New("redis datastore: invalid type error. this datastore only supports []byte values")
 
-func NewExpiringDatastore(client *redis.Client, ttl time.Duration) (datastore.ThreadSafeDatastore, error) {
+func NewExpiringDatastore(client *redis.Client, ttl time.Duration) (*Datastore, error) {
 	return &Datastore{
 		client: client,
 		ttl:    ttl,
 	}, nil
 }
 
-func NewDatastore(client *redis.Client) (datastore.ThreadSafeDatastore, error) {
+func NewDatastore(client *redis.Client) (*Datastore, error) {
 	return &Datastore{
 		client: client,
 	}, nil
@@ -83,3 +83,11 @@ func (ds *Datastore) Query(q query.Query) (query.Results, error) {
 }
 
 func (ds *Datastore) IsThreadSafe() {}
+
+func (ds *Datastore) Batch() (datastore.Batch, error) {
+	return nil, datastore.ErrBatchUnsupported
+}
+
+func (ds *Datastore) Close() error {
+	return ds.client.Close()
+}
