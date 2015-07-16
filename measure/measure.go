@@ -28,7 +28,7 @@ type DatastoreCloser interface {
 //
 // If prefix is not unique, New will panic. Call Close to release the
 // prefix.
-func New(prefix string, ds datastore.Datastore) DatastoreCloser {
+func New(prefix string, ds datastore.Datastore) *measure {
 	m := &measure{
 		backend: ds,
 
