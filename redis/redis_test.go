@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fzzy/radix/redis"
 	datastore "github.com/jbenet/go-datastore"
+	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/fzzy/radix/redis"
 
 	dstest "github.com/jbenet/go-datastore/test"
 )

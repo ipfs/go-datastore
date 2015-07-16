@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"io"
 	"sync"
 
 	ds "github.com/jbenet/go-datastore"
@@ -67,7 +68,7 @@ func (d *MutexDatastore) Query(q dsq.Query) (dsq.Results, error) {
 func (d *MutexDatastore) Batch() (ds.Batch, error) {
 	d.RLock()
 	defer d.RUnlock()
-	bds, ok := d.child.(ds.BatchingDatastore)
+	bds, ok := d.child.(ds.Batching)
 	if !ok {
 		return nil, ds.ErrBatchUnsupported
 	}
@@ -79,6 +80,15 @@ func (d *MutexDatastore) Batch() (ds.Batch, error) {
 	return &syncBatch{
 		batch: b,
 	}, nil
+}
+
+func (d *MutexDatastore) Close() error {
+	d.RWMutex.Lock()
+	defer d.RWMutex.Unlock()
+	if c, ok := d.child.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
 }
 
 type syncBatch struct {
