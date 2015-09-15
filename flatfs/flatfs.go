@@ -10,11 +10,16 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/jbenet/go-datastore"
 	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/go-os-rename"
 	"github.com/jbenet/go-datastore/query"
+
+	logging "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("flatfs")
 
 const (
 	extension    = ".data"
@@ -93,12 +98,32 @@ func (fs *Datastore) makePrefixDirNoSync(dir string) error {
 	return nil
 }
 
+var putMaxRetries = 3
+
 func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	val, ok := value.([]byte)
 	if !ok {
 		return datastore.ErrInvalidType
 	}
 
+	var err error
+	for i := 0; i < putMaxRetries; i++ {
+		err = fs.doPut(key, val)
+		if err == nil {
+			return nil
+		}
+
+		if !strings.Contains(err.Error(), "too many open files") {
+			return err
+		}
+
+		log.Error("too many open files, retrying in %dms", 100*i)
+		time.Sleep(time.Millisecond * 100 * time.Duration(i))
+	}
+	return err
+}
+
+func (fs *Datastore) doPut(key datastore.Key, val []byte) error {
 	dir, path := fs.encode(key)
 	if err := fs.makePrefixDir(dir); err != nil {
 		return err
