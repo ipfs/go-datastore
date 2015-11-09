@@ -34,11 +34,14 @@ type Datastore struct {
 	path string
 	// length of the dir splay prefix, in bytes of hex digits
 	hexPrefixLen int
+
+	// sychronize all writes and directory changes for added safety
+	sync bool
 }
 
 var _ datastore.Datastore = (*Datastore)(nil)
 
-func New(path string, prefixLen int) (*Datastore, error) {
+func New(path string, prefixLen int, sync bool) (*Datastore, error) {
 	if prefixLen <= 0 || prefixLen > maxPrefixLen {
 		return nil, ErrBadPrefixLen
 	}
@@ -81,8 +84,10 @@ func (fs *Datastore) makePrefixDir(dir string) error {
 	// it, the creation of the prefix dir itself might not be
 	// durable yet. Sync the root dir after a successful mkdir of
 	// a prefix dir, just to be paranoid.
-	if err := syncDir(fs.path); err != nil {
-		return err
+	if fs.sync {
+		if err := syncDir(fs.path); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -149,8 +154,10 @@ func (fs *Datastore) doPut(key datastore.Key, val []byte) error {
 	if _, err := tmp.Write(val); err != nil {
 		return err
 	}
-	if err := tmp.Sync(); err != nil {
-		return err
+	if fs.sync {
+		if err := tmp.Sync(); err != nil {
+			return err
+		}
 	}
 	if err := tmp.Close(); err != nil {
 		return err
@@ -163,8 +170,10 @@ func (fs *Datastore) doPut(key datastore.Key, val []byte) error {
 	}
 	removed = true
 
-	if err := syncDir(dir); err != nil {
-		return err
+	if fs.sync {
+		if err := syncDir(dir); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -214,8 +223,10 @@ func (fs *Datastore) putMany(data map[datastore.Key]interface{}) error {
 	// Now we sync everything
 	// sync and close files
 	for fi, _ := range files {
-		if err := fi.Sync(); err != nil {
-			return err
+		if fs.sync {
+			if err := fi.Sync(); err != nil {
+				return err
+			}
 		}
 
 		if err := fi.Close(); err != nil {
@@ -237,15 +248,17 @@ func (fs *Datastore) putMany(data map[datastore.Key]interface{}) error {
 	}
 
 	// now sync the dirs for those files
-	for _, dir := range dirsToSync {
-		if err := syncDir(dir); err != nil {
+	if fs.sync {
+		for _, dir := range dirsToSync {
+			if err := syncDir(dir); err != nil {
+				return err
+			}
+		}
+
+		// sync top flatfs dir
+		if err := syncDir(fs.path); err != nil {
 			return err
 		}
-	}
-
-	// sync top flatfs dir
-	if err := syncDir(fs.path); err != nil {
-		return err
 	}
 
 	return nil
