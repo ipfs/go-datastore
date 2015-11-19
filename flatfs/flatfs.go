@@ -49,6 +49,7 @@ func New(path string, prefixLen int, sync bool) (*Datastore, error) {
 		path: path,
 		// convert from binary bytes to bytes of hex encoding
 		hexPrefixLen: prefixLen * hex.EncodedLen(1),
+		sync:         sync,
 	}
 	return fs, nil
 }
