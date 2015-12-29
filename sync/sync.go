@@ -92,24 +92,24 @@ func (d *MutexDatastore) Close() error {
 }
 
 type syncBatch struct {
-	lk    sync.Mutex
 	batch ds.Batch
+	mds   *MutexDatastore
 }
 
 func (b *syncBatch) Put(key ds.Key, val interface{}) error {
-	b.lk.Lock()
-	defer b.lk.Unlock()
+	b.mds.Lock()
+	defer b.mds.Unlock()
 	return b.batch.Put(key, val)
 }
 
 func (b *syncBatch) Delete(key ds.Key) error {
-	b.lk.Lock()
-	defer b.lk.Unlock()
+	b.mds.Lock()
+	defer b.mds.Unlock()
 	return b.batch.Delete(key)
 }
 
 func (b *syncBatch) Commit() error {
-	b.lk.Lock()
-	defer b.lk.Unlock()
+	b.mds.Lock()
+	defer b.mds.Unlock()
 	return b.batch.Commit()
 }
