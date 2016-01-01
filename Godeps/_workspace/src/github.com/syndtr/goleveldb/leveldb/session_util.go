@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/journal"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/storage"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/journal"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/storage"
 )
 
 // Logging.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	context "github.com/jbenet/go-datastore/Godeps/_workspace/src/golang.org/x/net/context"
+	context "github.com/ipfs/go-datastore/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 // StandardLogger provides API compatibility with standard printf loggers

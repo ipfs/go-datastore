@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
 // init sets up sane defaults

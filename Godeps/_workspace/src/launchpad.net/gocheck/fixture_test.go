@@ -3,7 +3,7 @@
 package gocheck_test
 
 import (
-	. "github.com/jbenet/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
+	. "github.com/ipfs/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
 )
 
 // -----------------------------------------------------------------------

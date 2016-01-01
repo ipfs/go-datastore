@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/fzzy/radix/redis/resp"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/fzzy/radix/redis/resp"
 )
 
 const (

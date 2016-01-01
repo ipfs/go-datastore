@@ -1,12 +1,12 @@
 package leveldb
 
 import (
-	ds "github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
-	dsq "github.com/jbenet/go-datastore/query"
+	ds "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
+	dsq "github.com/ipfs/go-datastore/query"
 )
 
 type datastore struct {

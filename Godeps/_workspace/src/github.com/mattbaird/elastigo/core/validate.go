@@ -14,7 +14,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
 )
 
 // Validate allows a user to validate a potentially expensive query without executing it.

@@ -6,9 +6,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/codahale/metrics"
-	"github.com/jbenet/go-datastore/query"
+	"github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/codahale/metrics"
+	"github.com/ipfs/go-datastore/query"
 )
 
 // Histogram measurements exceeding these limits are dropped. TODO

@@ -14,7 +14,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
 )
 
 // MoreLikeThis allows the caller to get documents that are “like” a specified document.

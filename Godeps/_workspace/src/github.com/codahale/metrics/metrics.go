@@ -31,7 +31,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/codahale/hdrhistogram"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/codahale/hdrhistogram"
 )
 
 // A Counter is a monotonically increasing unsigned integer.

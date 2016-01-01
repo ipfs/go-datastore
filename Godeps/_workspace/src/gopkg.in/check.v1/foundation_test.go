@@ -8,7 +8,7 @@ package check_test
 
 import (
 	"fmt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/gopkg.in/check.v1"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/gopkg.in/check.v1"
 	"log"
 	"os"
 	"regexp"

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/satori/go.uuid"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/satori/go.uuid"
 )
 
 // Metadata is a convenience type for generic maps

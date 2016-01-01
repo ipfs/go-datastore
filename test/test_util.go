@@ -5,8 +5,8 @@ import (
 	"encoding/base32"
 	"testing"
 
-	dstore "github.com/jbenet/go-datastore"
-	rand "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/dustin/randbo"
+	dstore "github.com/ipfs/go-datastore"
+	rand "github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/dustin/randbo"
 )
 
 func RunBatchTest(t *testing.T, ds dstore.Batching) {

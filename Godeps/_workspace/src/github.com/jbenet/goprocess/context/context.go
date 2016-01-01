@@ -2,7 +2,7 @@ package goprocessctx
 
 import (
 	context "code.google.com/p/go.net/context"
-	goprocess "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
+	goprocess "github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
 )
 
 // WithContext constructs and returns a Process that respects

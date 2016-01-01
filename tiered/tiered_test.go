@@ -3,9 +3,9 @@ package tiered
 import (
 	"testing"
 
-	ds "github.com/jbenet/go-datastore"
-	dscb "github.com/jbenet/go-datastore/callback"
-	dsq "github.com/jbenet/go-datastore/query"
+	ds "github.com/ipfs/go-datastore"
+	dscb "github.com/ipfs/go-datastore/callback"
+	dsq "github.com/ipfs/go-datastore/query"
 )
 
 func testHas(t *testing.T, dses []ds.Datastore, k ds.Key, v interface{}) {

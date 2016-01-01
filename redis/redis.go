@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	datastore "github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/fzzy/radix/redis"
-	query "github.com/jbenet/go-datastore/query"
+	datastore "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/fzzy/radix/redis"
+	query "github.com/ipfs/go-datastore/query"
 )
 
 var _ datastore.Datastore = &Datastore{}

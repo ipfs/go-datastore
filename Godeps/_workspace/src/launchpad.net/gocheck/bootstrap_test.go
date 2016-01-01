@@ -14,7 +14,7 @@ package gocheck_test
 
 import (
 	"fmt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
 	"strings"
 )
 

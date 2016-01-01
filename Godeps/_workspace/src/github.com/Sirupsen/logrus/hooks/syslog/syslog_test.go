@@ -1,7 +1,7 @@
 package logrus_syslog
 
 import (
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 	"log/syslog"
 	"testing"
 )

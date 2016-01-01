@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	ds "github.com/jbenet/go-datastore"
-	dscb "github.com/jbenet/go-datastore/callback"
-	dssync "github.com/jbenet/go-datastore/sync"
+	ds "github.com/ipfs/go-datastore"
+	dscb "github.com/ipfs/go-datastore/callback"
+	dssync "github.com/ipfs/go-datastore/sync"
 )
 
 type mock struct {

@@ -1,6 +1,6 @@
 package log
 
-import "github.com/jbenet/go-datastore/Godeps/_workspace/src/golang.org/x/net/context"
+import "github.com/ipfs/go-datastore/Godeps/_workspace/src/golang.org/x/net/context"
 
 func ExampleEventLogger() {
 	{

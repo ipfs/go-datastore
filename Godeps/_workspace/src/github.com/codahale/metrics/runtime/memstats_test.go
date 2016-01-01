@@ -3,7 +3,7 @@ package runtime
 import (
 	"testing"
 
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/codahale/metrics"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/codahale/metrics"
 )
 
 func TestMemStats(t *testing.T) {

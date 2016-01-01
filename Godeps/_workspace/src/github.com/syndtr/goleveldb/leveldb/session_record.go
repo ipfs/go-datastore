@@ -12,7 +12,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 type byteReader interface {

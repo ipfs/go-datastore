@@ -6,7 +6,7 @@ package gocheck_test
 import (
 	"flag"
 	"fmt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
 	"os"
 	"regexp"
 	"runtime"

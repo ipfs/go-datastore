@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
 )
 
 func ExampleGo() {

@@ -3,9 +3,9 @@ package mount_test
 import (
 	"testing"
 
-	"github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/mount"
-	"github.com/jbenet/go-datastore/query"
+	"github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/mount"
+	"github.com/ipfs/go-datastore/query"
 )
 
 func TestPutBadNothing(t *testing.T) {

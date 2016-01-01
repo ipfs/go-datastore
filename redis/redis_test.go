@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	datastore "github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/fzzy/radix/redis"
+	datastore "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/fzzy/radix/redis"
 
-	dstest "github.com/jbenet/go-datastore/test"
+	dstest "github.com/ipfs/go-datastore/test"
 )
 
 const RedisEnv = "REDIS_DATASTORE_TEST_HOST"

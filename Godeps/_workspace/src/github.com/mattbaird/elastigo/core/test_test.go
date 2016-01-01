@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
 	"io"
 	"log"
 	"net/http"

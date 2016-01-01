@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/bugsnag/bugsnag-go"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/Sirupsen/logrus"
+	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/Sirupsen/logrus"
 )
 
 type bugsnagHook struct{}
