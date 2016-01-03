@@ -79,6 +79,7 @@ func (d *MutexDatastore) Batch() (ds.Batch, error) {
 	}
 	return &syncBatch{
 		batch: b,
+		mds:   d,
 	}, nil
 }
 
