@@ -320,7 +320,7 @@ func (fs *Datastore) Query(q query.Query) (query.Results, error) {
 		defer close(reschan)
 		err := filepath.Walk(fs.path, func(path string, info os.FileInfo, err error) error {
 
-			if !info.Mode().IsRegular() || info.Name()[0] == '.' {
+			if !info.Mode().IsRegular() || strings.HasPrefix(info.Name(), ".") {
 				return nil
 			}
 
