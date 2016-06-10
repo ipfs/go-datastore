@@ -9,9 +9,9 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	query "github.com/ipfs/go-datastore/query"
 
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/codahale/blake2"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/api"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/mattbaird/elastigo/core"
+	"github.com/codahale/blake2"
+	"github.com/mattbaird/elastigo/api"
+	"github.com/mattbaird/elastigo/core"
 )
 
 // Currently, elastigo does not allow connecting to multiple elasticsearch

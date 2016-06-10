@@ -7,7 +7,7 @@ import (
 	"time"
 
 	datastore "github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/fzzy/radix/redis"
+	"github.com/fzzy/radix/redis"
 
 	dstest "github.com/ipfs/go-datastore/test"
 )

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	. "github.com/ipfs/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
+	. "launchpad.net/gocheck"
 
 	ds "github.com/ipfs/go-datastore"
 	kt "github.com/ipfs/go-datastore/keytransform"

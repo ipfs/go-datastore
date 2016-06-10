@@ -2,10 +2,10 @@ package leveldb
 
 import (
 	ds "github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/jbenet/goprocess"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/syndtr/goleveldb/leveldb/util"
 	dsq "github.com/ipfs/go-datastore/query"
 )
 

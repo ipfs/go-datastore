@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	. "github.com/ipfs/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
+	. "launchpad.net/gocheck"
 
 	ds "github.com/ipfs/go-datastore"
 	fs "github.com/ipfs/go-datastore/fs"
