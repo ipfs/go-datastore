@@ -2,11 +2,11 @@ package leveldb
 
 import (
 	ds "github.com/ipfs/go-datastore"
+	dsq "github.com/ipfs/go-datastore/query"
 	"github.com/jbenet/goprocess"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	dsq "github.com/ipfs/go-datastore/query"
 )
 
 type datastore struct {

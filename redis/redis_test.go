@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	datastore "github.com/ipfs/go-datastore"
 	"github.com/fzzy/radix/redis"
+	datastore "github.com/ipfs/go-datastore"
 
 	dstest "github.com/ipfs/go-datastore/test"
 )

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	datastore "github.com/ipfs/go-datastore"
 	"github.com/fzzy/radix/redis"
+	datastore "github.com/ipfs/go-datastore"
 	query "github.com/ipfs/go-datastore/query"
 )
 
