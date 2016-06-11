@@ -13,7 +13,7 @@ import (
 	"github.com/ipfs/go-datastore/query"
 	dstest "github.com/ipfs/go-datastore/test"
 
-	rand "github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/dustin/randbo"
+	rand "github.com/dustin/randbo"
 )
 
 func tempdir(t testing.TB) (path string, cleanup func()) {

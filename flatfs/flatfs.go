@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/jbenet/go-os-rename"
 	"github.com/ipfs/go-datastore/query"
+	"github.com/jbenet/go-os-rename"
 
-	logging "github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/ipfs/go-log"
+	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("flatfs")

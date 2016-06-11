@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/codahale/metrics"
 	"github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/codahale/metrics"
 	"github.com/ipfs/go-datastore/query"
 )
 

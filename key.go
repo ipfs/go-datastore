@@ -4,7 +4,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ipfs/go-datastore/Godeps/_workspace/src/github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 
 	dsq "github.com/ipfs/go-datastore/query"
 )

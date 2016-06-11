@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	ds "github.com/ipfs/go-datastore"
-	. "github.com/ipfs/go-datastore/Godeps/_workspace/src/gopkg.in/check.v1"
+	. "gopkg.in/check.v1"
 	lru "github.com/ipfs/go-datastore/lru"
 )
 
