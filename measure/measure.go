@@ -6,9 +6,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/codahale/metrics"
-	"github.com/jbenet/go-datastore/query"
+	"github.com/codahale/metrics"
+	"github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/query"
 )
 
 // Histogram measurements exceeding these limits are dropped. TODO
@@ -179,10 +179,9 @@ func (m *measure) Batch() (datastore.Batch, error) {
 func (mt *measuredBatch) Put(key datastore.Key, val interface{}) error {
 	mt.puts++
 	valb, ok := val.([]byte)
-	if !ok {
-		return datastore.ErrInvalidType
+	if ok {
+		_ = mt.m.putSize.RecordValue(int64(len(valb)))
 	}
-	_ = mt.m.putSize.RecordValue(int64(len(valb)))
 	return mt.putts.Put(key, val)
 }
 

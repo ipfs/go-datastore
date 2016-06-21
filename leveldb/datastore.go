@@ -1,12 +1,12 @@
 package leveldb
 
 import (
-	ds "github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/syndtr/goleveldb/leveldb/util"
-	dsq "github.com/jbenet/go-datastore/query"
+	ds "github.com/ipfs/go-datastore"
+	dsq "github.com/ipfs/go-datastore/query"
+	"github.com/jbenet/goprocess"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 type datastore struct {
@@ -58,11 +58,17 @@ func (d *datastore) Has(key ds.Key) (exists bool, err error) {
 }
 
 func (d *datastore) Delete(key ds.Key) (err error) {
-	err = d.DB.Delete(key.Bytes(), nil)
-	if err == leveldb.ErrNotFound {
+	// leveldb Delete will not return an error if the key doesn't
+	// exist (see https://github.com/syndtr/goleveldb/issues/109),
+	// so check that the key exists first and if not return an
+	// error
+	exists, err := d.DB.Has(key.Bytes(), nil)
+	if !exists {
 		return ds.ErrNotFound
+	} else if err != nil {
+		return err
 	}
-	return err
+	return d.DB.Delete(key.Bytes(), nil)
 }
 
 func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {

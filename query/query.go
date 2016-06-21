@@ -1,7 +1,7 @@
 package query
 
 import (
-	goprocess "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/goprocess"
+	goprocess "github.com/jbenet/goprocess"
 )
 
 /*

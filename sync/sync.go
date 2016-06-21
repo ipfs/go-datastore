@@ -4,8 +4,8 @@ import (
 	"io"
 	"sync"
 
-	ds "github.com/jbenet/go-datastore"
-	dsq "github.com/jbenet/go-datastore/query"
+	ds "github.com/ipfs/go-datastore"
+	dsq "github.com/ipfs/go-datastore/query"
 )
 
 // MutexDatastore contains a child datastire and a mutex.
@@ -79,6 +79,7 @@ func (d *MutexDatastore) Batch() (ds.Batch, error) {
 	}
 	return &syncBatch{
 		batch: b,
+		mds:   d,
 	}, nil
 }
 

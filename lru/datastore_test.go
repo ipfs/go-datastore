@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"testing"
 
-	ds "github.com/jbenet/go-datastore"
-	. "github.com/jbenet/go-datastore/Godeps/_workspace/src/gopkg.in/check.v1"
-	lru "github.com/jbenet/go-datastore/lru"
+	ds "github.com/ipfs/go-datastore"
+	. "gopkg.in/check.v1"
+	lru "github.com/ipfs/go-datastore/lru"
 )
 
 // Hook up gocheck into the "go test" runner.

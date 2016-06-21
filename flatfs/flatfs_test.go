@@ -8,12 +8,12 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/flatfs"
-	"github.com/jbenet/go-datastore/query"
-	dstest "github.com/jbenet/go-datastore/test"
+	"github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/flatfs"
+	"github.com/ipfs/go-datastore/query"
+	dstest "github.com/ipfs/go-datastore/test"
 
-	rand "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/dustin/randbo"
+	rand "github.com/dustin/randbo"
 )
 
 func tempdir(t testing.TB) (path string, cleanup func()) {

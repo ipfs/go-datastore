@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/jbenet/go-os-rename"
-	"github.com/jbenet/go-datastore/query"
+	"github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/query"
+	"github.com/jbenet/go-os-rename"
 
-	logging "github.com/jbenet/go-datastore/Godeps/_workspace/src/github.com/ipfs/go-log"
+	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("flatfs")
@@ -319,6 +319,10 @@ func (fs *Datastore) Query(q query.Query) (query.Results, error) {
 	go func() {
 		defer close(reschan)
 		err := filepath.Walk(fs.path, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				log.Errorf("Walk func in Query got error: %v", err)
+				return err
+			}
 
 			if !info.Mode().IsRegular() || strings.HasPrefix(info.Name(), ".") {
 				return nil

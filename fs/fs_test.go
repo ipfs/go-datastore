@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	. "github.com/jbenet/go-datastore/Godeps/_workspace/src/launchpad.net/gocheck"
+	. "launchpad.net/gocheck"
 
-	ds "github.com/jbenet/go-datastore"
-	fs "github.com/jbenet/go-datastore/fs"
-	query "github.com/jbenet/go-datastore/query"
+	ds "github.com/ipfs/go-datastore"
+	fs "github.com/ipfs/go-datastore/fs"
+	query "github.com/ipfs/go-datastore/query"
 )
 
 // Hook up gocheck into the "go test" runner.

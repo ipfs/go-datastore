@@ -7,9 +7,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/jbenet/go-datastore"
-	"github.com/jbenet/go-datastore/keytransform"
-	"github.com/jbenet/go-datastore/query"
+	"github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/keytransform"
+	"github.com/ipfs/go-datastore/query"
 )
 
 var (

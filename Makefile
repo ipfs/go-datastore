@@ -19,6 +19,3 @@ watch:
 	# for portability, use watchmedo -- pip install watchmedo
 	@watchmedo shell-command --patterns="*.go;" --recursive \
 		--command='make' .
-
-godep:
-	go get github.com/tools/godep

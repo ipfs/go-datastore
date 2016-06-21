@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	ds "github.com/jbenet/go-datastore"
-	dsq "github.com/jbenet/go-datastore/query"
+	ds "github.com/ipfs/go-datastore"
+	dsq "github.com/ipfs/go-datastore/query"
 )
 
 // op keys
