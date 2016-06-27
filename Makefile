@@ -1,21 +1,13 @@
-build:
-	go build
+test: deps
+	go test -race -v ./...
 
-test: build
-	go test -race -cpu=5 -v ./...
+export IPFS_API ?= v04x.ipfs.io
 
-# saves/vendors third-party dependencies to Godeps/_workspace
-# -r flag rewrites import paths to use the vendored path
-# ./... performs operation on all packages in tree
-vendor: godep
-	godep save -r ./...
+gx:
+	go get -u github.com/whyrusleeping/gx
+	go get -u github.com/whyrusleeping/gx-go
 
-deps:
-	go get ./...
+deps: gx
+	gx --verbose install --global
+	gx-go rewrite
 
-watch:
-	-make
-	@echo "[watching *.go; for recompilation]"
-	# for portability, use watchmedo -- pip install watchmedo
-	@watchmedo shell-command --patterns="*.go;" --recursive \
-		--command='make' .

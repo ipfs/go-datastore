@@ -4,7 +4,6 @@
 package flatfs
 
 import (
-	"encoding/hex"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -33,8 +32,8 @@ var (
 
 type Datastore struct {
 	path string
-	// length of the dir splay prefix, in bytes of hex digits
-	hexPrefixLen int
+	// length of the dir splay prefix
+	prefixLen int
 
 	// sychronize all writes and directory changes for added safety
 	sync bool
@@ -47,21 +46,19 @@ func New(path string, prefixLen int, sync bool) (*Datastore, error) {
 		return nil, ErrBadPrefixLen
 	}
 	fs := &Datastore{
-		path: path,
-		// convert from binary bytes to bytes of hex encoding
-		hexPrefixLen: prefixLen * hex.EncodedLen(1),
-		sync:         sync,
+		path:      path,
+		prefixLen: prefixLen,
+		sync:      sync,
 	}
 	return fs, nil
 }
 
-var padding = strings.Repeat("_", maxPrefixLen*hex.EncodedLen(1))
+var padding = strings.Repeat("_", maxPrefixLen)
 
 func (fs *Datastore) encode(key datastore.Key) (dir, file string) {
-	safe := hex.EncodeToString(key.Bytes()[1:])
-	prefix := (safe + padding)[:fs.hexPrefixLen]
+	prefix := (key.String() + padding)[:fs.prefixLen]
 	dir = path.Join(fs.path, prefix)
-	file = path.Join(dir, safe+extension)
+	file = path.Join(dir, key.String()+extension)
 	return dir, file
 }
 
@@ -70,11 +67,7 @@ func (fs *Datastore) decode(file string) (key datastore.Key, ok bool) {
 		return datastore.Key{}, false
 	}
 	name := file[:len(file)-len(extension)]
-	k, err := hex.DecodeString(name)
-	if err != nil {
-		return datastore.Key{}, false
-	}
-	return datastore.NewKey(string(k)), true
+	return datastore.NewKey(name), true
 }
 
 func (fs *Datastore) makePrefixDir(dir string) error {
