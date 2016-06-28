@@ -56,9 +56,10 @@ func New(path string, prefixLen int, sync bool) (*Datastore, error) {
 var padding = strings.Repeat("_", maxPrefixLen)
 
 func (fs *Datastore) encode(key datastore.Key) (dir, file string) {
-	prefix := (key.String() + padding)[:fs.prefixLen]
+	noslash := key.String()[1:]
+	prefix := (noslash + padding)[:fs.prefixLen]
 	dir = path.Join(fs.path, prefix)
-	file = path.Join(dir, key.String()+extension)
+	file = path.Join(dir, noslash+extension)
 	return dir, file
 }
 
