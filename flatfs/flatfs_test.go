@@ -152,7 +152,7 @@ func TestStorage(t *testing.T) {
 	defer cleanup()
 
 	const prefixLen = 2
-	const prefix = "q"
+	const prefix = "qu"
 	const target = prefix + string(os.PathSeparator) + "quux.data"
 	fs, err := flatfs.New(temp, prefixLen, false)
 	if err != nil {
