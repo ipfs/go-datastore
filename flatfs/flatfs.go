@@ -309,7 +309,7 @@ func (fs *Datastore) Query(q query.Query) (query.Results, error) {
 		return nil, errors.New("flatfs only supports listing all keys in random order")
 	}
 
-	reschan := make(chan query.Result)
+	reschan := make(chan query.Result, query.KeysOnlyBufSize)
 	go func() {
 		defer close(reschan)
 		err := filepath.Walk(fs.path, func(path string, info os.FileInfo, err error) error {
