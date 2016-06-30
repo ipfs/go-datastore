@@ -179,10 +179,16 @@ func (rb *ResultBuilder) Results() Results {
 	}
 }
 
+const KeysOnlyBufSize = 128
+
 func NewResultBuilder(q Query) *ResultBuilder {
+	bufSize := 1
+	if q.KeysOnly {
+		bufSize = KeysOnlyBufSize
+	}
 	b := &ResultBuilder{
 		Query:  q,
-		Output: make(chan Result),
+		Output: make(chan Result, bufSize),
 	}
 	b.Process = goprocess.WithTeardown(func() error {
 		close(b.Output)
