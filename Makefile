@@ -10,4 +10,5 @@ gx:
 deps: gx
 	gx --verbose install --global
 	gx-go rewrite
+	go get -t ./...
 
