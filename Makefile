@@ -12,3 +12,8 @@ deps: gx
 	gx-go rewrite
 	go get -t ./...
 
+benchmark:
+	gx --verbose install --global
+	gx-go rewrite
+	cd leveldb && ./run-benchmark.sh
+	cd flatfs && ./run-benchmark.sh

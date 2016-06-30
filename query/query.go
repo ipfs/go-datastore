@@ -179,7 +179,7 @@ func (rb *ResultBuilder) Results() Results {
 	}
 }
 
-const KeysOnlyBufSize = 128
+var KeysOnlyBufSize = 128
 
 func NewResultBuilder(q Query) *ResultBuilder {
 	bufSize := 1

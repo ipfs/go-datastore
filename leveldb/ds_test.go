@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"math/rand"
+	"time"
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
@@ -25,7 +27,7 @@ var testcases = map[string]string{
 //
 //  d, close := newDS(t)
 //  defer close()
-func newDS(t *testing.T) (*datastore, func()) {
+func newDS(t testing.TB) (*datastore, func()) {
 	path, err := ioutil.TempDir("/tmp", "testing_leveldb_")
 	if err != nil {
 		t.Fatal(err)
@@ -122,3 +124,4 @@ func expectMatches(t *testing.T, expect []string, actualR dsq.Results) {
 		}
 	}
 }
+

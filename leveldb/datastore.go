@@ -5,6 +5,7 @@ import (
 	dsq "github.com/ipfs/go-datastore/query"
 	"github.com/jbenet/goprocess"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
@@ -156,5 +157,50 @@ func (d *datastore) Batch() (ds.Batch, error) {
 func (d *datastore) Close() (err error) {
 	return d.DB.Close()
 }
+
+type IterQuery struct {
+	Prefix   string // namespaces the query to results whose keys have Prefix
+	KeysOnly bool   // return only keys.
+}
+
+func (d *datastore) Iterate(prefix string) Iterator {
+	if prefix == "" {
+		return &iter{d.DB.NewIterator(nil, nil)}
+	} else {
+		return &iter{d.DB.NewIterator(util.BytesPrefix([]byte(prefix)), nil)}
+	}
+}
+
+type Iterator interface {
+	Next() bool
+	Key() string
+	Value() interface{}
+	Error() error
+	Close() error
+}
+
+type iter struct {
+	iter iterator.Iterator
+}
+
+// func (i *iter) Next() bool {
+// 	more := i.iter.Next()
+// 	if !more {
+// 		i.Result = dsq.Result{dsq.Entry{"", nil}, nil}
+// 		return false
+// 	} else if i.KeysOnly {
+// 		i.Result = dsq.Result{dsq.Entry{string(i.iter.Key()), nil}, nil}
+// 		return true
+// 	} else {
+// 		i.Result = dsq.Result{dsq.Entry{string(i.iter.Key()), i.iter.Value()}, nil}
+// 		return true
+// 	}
+// }
+
+func (i *iter) Next() bool         { return i.iter.Next() }
+func (i *iter) Key() string        { return string(i.iter.Key()) }
+func (i *iter) Value() interface{} { return i.iter.Value() }
+func (i *iter) Error() error       { return nil }
+func (i *iter) Close() error       { i.iter.Release(); return nil }
 
 func (d *datastore) IsThreadSafe() {}
