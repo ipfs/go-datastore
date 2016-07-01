@@ -118,7 +118,7 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 			return err
 		}
 
-		log.Error("too many open files, retrying in %dms", 100*i)
+		log.Errorf("too many open files, retrying in %dms", 100*i)
 		time.Sleep(time.Millisecond * 100 * time.Duration(i))
 	}
 	return err
