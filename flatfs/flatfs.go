@@ -313,6 +313,9 @@ func (fs *Datastore) Query(q query.Query) (query.Results, error) {
 	go func() {
 		defer close(reschan)
 		err := filepath.Walk(fs.path, func(path string, info os.FileInfo, err error) error {
+			if os.IsNotExist(err) {
+				return nil
+			}
 			if err != nil {
 				log.Errorf("Walk func in Query got error: %v", err)
 				return err
