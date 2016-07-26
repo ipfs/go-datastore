@@ -147,14 +147,40 @@ func (d *datastore) runQuery(worker goprocess.Process, qrb *dsq.ResultBuilder) {
 	}
 }
 
-func (d *datastore) Batch() (ds.Batch, error) {
-	// TODO: implement batch on leveldb
-	return nil, ds.ErrBatchUnsupported
-}
-
 // LevelDB needs to be closed.
 func (d *datastore) Close() (err error) {
 	return d.DB.Close()
 }
 
 func (d *datastore) IsThreadSafe() {}
+
+type leveldbBatch struct {
+	b  *leveldb.Batch
+	db *leveldb.DB
+}
+
+func (d *datastore) Batch() (ds.Batch, error) {
+	return &leveldbBatch{
+		b:  new(leveldb.Batch),
+		db: d.DB,
+	}, nil
+}
+
+func (b *leveldbBatch) Put(key ds.Key, value interface{}) error {
+	val, ok := value.([]byte)
+	if !ok {
+		return ds.ErrInvalidType
+	}
+
+	b.b.Put(key.Bytes(), val)
+	return nil
+}
+
+func (b *leveldbBatch) Commit() error {
+	return b.db.Write(b.b, nil)
+}
+
+func (b *leveldbBatch) Delete(key ds.Key) error {
+	b.b.Delete(key.Bytes())
+	return nil
+}
