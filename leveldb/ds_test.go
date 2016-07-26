@@ -122,3 +122,36 @@ func expectMatches(t *testing.T, expect []string, actualR dsq.Results) {
 		}
 	}
 }
+
+func TestBatching(t *testing.T) {
+	d, done := newDS(t)
+	defer done()
+
+	b, err := d.Batch()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for k, v := range testcases {
+		err := b.Put(ds.NewKey(k), []byte(v))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	err = b.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for k, v := range testcases {
+		val, err := d.Get(ds.NewKey(k))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if v != string(val.([]byte)) {
+			t.Fatal("got wrong data!")
+		}
+	}
+}
