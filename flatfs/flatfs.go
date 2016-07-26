@@ -108,7 +108,7 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 	}
 
 	var err error
-	for i := 0; i < putMaxRetries; i++ {
+	for i := 1; i <= putMaxRetries; i++ {
 		err = fs.doPut(key, val)
 		if err == nil {
 			break
@@ -119,7 +119,7 @@ func (fs *Datastore) Put(key datastore.Key, value interface{}) error {
 		}
 
 		log.Errorf("too many open files, retrying in %dms", 100*i)
-		time.Sleep(time.Millisecond * 100 * time.Duration(i+1))
+		time.Sleep(time.Millisecond * 100 * time.Duration(i))
 	}
 	return err
 }
