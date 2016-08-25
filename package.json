@@ -26,12 +26,6 @@
       "version": "0.0.0"
     },
     {
-      "author": "codahale",
-      "hash": "QmV3NSS3A1kX5s28r7yLczhDsXzkgo65cqRgKFXYunWZmD",
-      "name": "metrics",
-      "version": "0.0.0"
-    },
-    {
       "author": "fzzy",
       "hash": "QmTsDAZ4xQsVkTwR299nBfYtjrbG9B1pJcheKodubm99Wr",
       "name": "radix",
