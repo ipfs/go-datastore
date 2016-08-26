@@ -3,9 +3,9 @@ package dstest
 import (
 	"bytes"
 	"encoding/base32"
+	"math/rand"
 	"testing"
 
-	rand "github.com/dustin/randbo"
 	dstore "github.com/ipfs/go-datastore"
 )
 
@@ -15,12 +15,11 @@ func RunBatchTest(t *testing.T, ds dstore.Batching) {
 		t.Fatal(err)
 	}
 
-	r := rand.New()
 	var blocks [][]byte
 	var keys []dstore.Key
 	for i := 0; i < 20; i++ {
 		blk := make([]byte, 256*1024)
-		r.Read(blk)
+		rand.Read(blk)
 		blocks = append(blocks, blk)
 
 		key := dstore.NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
@@ -59,11 +58,10 @@ func RunBatchTest(t *testing.T, ds dstore.Batching) {
 }
 
 func RunBatchDeleteTest(t *testing.T, ds dstore.Batching) {
-	r := rand.New()
 	var keys []dstore.Key
 	for i := 0; i < 20; i++ {
 		blk := make([]byte, 16)
-		r.Read(blk)
+		rand.Read(blk)
 
 		key := dstore.NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
 		keys = append(keys, key)
