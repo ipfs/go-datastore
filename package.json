@@ -18,12 +18,6 @@
       "hash": "QmQopLATEYMNg7dVqZRNDfeE2S1yKy8zrRh5xnYiuqeZBn",
       "name": "goprocess",
       "version": "0.0.0"
-    },
-    {
-      "author": "hashicorp",
-      "hash": "QmVYxfoJQiZijTgPNHCHgHELvQpbsJNTg6Crmc3dQkj3yy",
-      "name": "golang-lru",
-      "version": "0.0.0"
     }
   ],
   "gxVersion": "0.7.0",
