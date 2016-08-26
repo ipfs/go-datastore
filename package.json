@@ -14,12 +14,6 @@
       "version": "1.0.0"
     },
     {
-      "author": "syndtr",
-      "hash": "QmbBhyDKsY4mbY6xsKt3qu9Y7FPvMJ6qbD8AMjYYvPRw1g",
-      "name": "goleveldb",
-      "version": "0.0.1"
-    },
-    {
       "author": "whyrusleeping",
       "hash": "QmQopLATEYMNg7dVqZRNDfeE2S1yKy8zrRh5xnYiuqeZBn",
       "name": "goprocess",
