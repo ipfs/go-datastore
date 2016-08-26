@@ -20,12 +20,6 @@
       "version": "0.0.0"
     },
     {
-      "author": "fzzy",
-      "hash": "QmTsDAZ4xQsVkTwR299nBfYtjrbG9B1pJcheKodubm99Wr",
-      "name": "radix",
-      "version": "0.5.6"
-    },
-    {
       "author": "hashicorp",
       "hash": "QmVYxfoJQiZijTgPNHCHgHELvQpbsJNTg6Crmc3dQkj3yy",
       "name": "golang-lru",
