@@ -107,8 +107,8 @@ func (k Key) Reverse() Key {
 }
 
 // Namespaces returns the `namespaces` making up this Key.
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").List()
-//   ["Comedy", "MontyPythong", "Actor:JohnCleese"]
+//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Namespaces()
+//   ["Comedy", "MontyPython", "Actor:JohnCleese"]
 func (k Key) Namespaces() []string {
 	return k.List()
 }
@@ -122,22 +122,22 @@ func (k Key) BaseNamespace() string {
 }
 
 // Type returns the "type" of this key (value of last namespace).
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").List()
+//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Type()
 //   "Actor"
 func (k Key) Type() string {
 	return NamespaceType(k.BaseNamespace())
 }
 
 // Name returns the "name" of this key (field of last namespace).
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").List()
-//   "Actor"
+//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").Name()
+//   "JohnCleese"
 func (k Key) Name() string {
 	return NamespaceValue(k.BaseNamespace())
 }
 
 // Instance returns an "instance" of this type key (appends value to namespace).
-//   NewKey("/Comedy/MontyPython/Actor:JohnCleese").List()
-//   "JohnCleese"
+//   NewKey("/Comedy/MontyPython/Actor").Instance("JohnClesse")
+//   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
 func (k Key) Instance(s string) Key {
 	return NewKey(k.string + ":" + s)
 }
@@ -162,14 +162,14 @@ func (k Key) Parent() Key {
 }
 
 // Child returns the `child` Key of this Key.
-//   NewKey("/Comedy/MontyPython").Child("Actor:JohnCleese")
+//   NewKey("/Comedy/MontyPython").Child(NewKey("Actor:JohnCleese"))
 //   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
 func (k Key) Child(k2 Key) Key {
 	return NewKey(k.string + "/" + k2.string)
 }
 
 // ChildString returns the `child` Key of this Key -- string helper.
-//   NewKey("/Comedy/MontyPython").Child("Actor:JohnCleese")
+//   NewKey("/Comedy/MontyPython").ChildString("Actor:JohnCleese")
 //   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
 func (k Key) ChildString(s string) Key {
 	return NewKey(k.string + "/" + s)
