@@ -60,11 +60,11 @@ type Datastore interface {
 	//   result, _ := ds.Query(q)
 	//
 	//   // use the channel interface; result may come in at different times
-	//   for entry := range result.Entries() { ... }
+	//   for entry := range result.Next() { ... }
 	//
-	//	 // or wait for the query to be completely done
-	//   result.Wait()
-	//   result.AllEntries()
+	//   // or wait for the query to be completely done
+	//   entries, _ := result.Rest()
+	//   for entry := range entries { ... }
 	//
 	Query(q query.Query) (query.Results, error)
 }
