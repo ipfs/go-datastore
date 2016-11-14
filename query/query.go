@@ -106,10 +106,11 @@ type Result struct {
 //   }
 //
 type Results interface {
-	Query() Query           // the query these Results correspond to
-	Next() <-chan Result    // returns a channel to wait for the next result
-	Rest() ([]Entry, error) // waits till processing finishes, returns all entries at once.
-	Close() error           // client may call Close to signal early exit
+	Query() Query             // the query these Results correspond to
+	Next() <-chan Result      // returns a channel to wait for the next result
+	NextSync() (Result, bool) // blocks and waits to return the next result, second paramter returns false when results are exhausted
+	Rest() ([]Entry, error)   // waits till processing finishes, returns all entries at once.
+	Close() error             // client may call Close to signal early exit
 
 	// Process returns a goprocess.Process associated with these results.
 	// most users will not need this function (Close is all they want),
@@ -127,6 +128,11 @@ type results struct {
 
 func (r *results) Next() <-chan Result {
 	return r.res
+}
+
+func (r *results) NextSync() (Result, bool) {
+	val, ok := <-r.res
+	return val, ok
 }
 
 func (r *results) Rest() ([]Entry, error) {
