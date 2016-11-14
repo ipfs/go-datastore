@@ -58,7 +58,13 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 		return nil, err
 	}
 
-	ch := make(chan dsq.Result)
+	var ch chan dsq.Result
+	if q.KeysOnly {
+		ch = make(chan dsq.Result, dsq.KeysOnlyBufSize)
+	} else {
+		ch = make(chan dsq.Result)
+	}
+
 	go func() {
 		defer close(ch)
 		defer qr.Close()
