@@ -4,9 +4,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/satori/go.uuid"
-
 	dsq "github.com/ipfs/go-datastore/query"
+
+	"github.com/satori/go.uuid"
+	base32 "github.com/whyrusleeping/base32"
 )
 
 /*
@@ -56,6 +57,10 @@ func RawKey(s string) Key {
 	}
 
 	return Key{s}
+}
+
+func NewSafeKey(s string) Key {
+	return Key{base32.RawStdEncoding.EncodeToString([]byte(s))}
 }
 
 // KeyWithNamespaces constructs a key out of a namespace slice.
