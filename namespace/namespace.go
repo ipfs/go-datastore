@@ -2,7 +2,6 @@ package namespace
 
 import (
 	"fmt"
-	"strings"
 
 	ds "github.com/ipfs/go-datastore"
 	ktds "github.com/ipfs/go-datastore/keytransform"
@@ -29,8 +28,8 @@ func PrefixTransform(prefix ds.Key) ktds.KeyTransform {
 				panic("expected prefix not found")
 			}
 
-			s := strings.TrimPrefix(k.String(), prefix.String())
-			return ds.NewKey(s)
+			s := k.String()[len(prefix.String()):]
+			return ds.RawKey(s)
 		},
 	}
 }
@@ -70,7 +69,7 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 				continue
 			}
 
-			k := ds.NewKey(r.Entry.Key)
+			k := ds.RawKey(r.Entry.Key)
 			if !d.prefix.IsAncestorOf(k) {
 				continue
 			}
