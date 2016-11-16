@@ -60,7 +60,7 @@ func (d *ktds) Query(q dsq.Query) (dsq.Results, error) {
 		return nil, err
 	}
 
-	ch := make(chan dsq.Result)
+	ch := make(chan dsq.Result, cap(qr.Next()))
 	go func() {
 		defer close(ch)
 		defer qr.Close()
