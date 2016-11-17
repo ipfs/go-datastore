@@ -20,9 +20,14 @@ type DSSuite struct{}
 var _ = Suite(&DSSuite{})
 
 func (ks *DSSuite) TestBasic(c *C) {
+	ks.testBasic(c, "abc")
+	ks.testBasic(c, "")
+}
+
+func (ks *DSSuite) testBasic(c *C, prefix string) {
 
 	mpds := ds.NewMapDatastore()
-	nsds := ns.Wrap(mpds, ds.NewKey("abc"))
+	nsds := ns.Wrap(mpds, ds.NewKey(prefix))
 
 	keys := strsToKeys([]string{
 		"foo",
@@ -43,7 +48,7 @@ func (ks *DSSuite) TestBasic(c *C) {
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v1.([]byte), []byte(k.String())), Equals, true)
 
-		v2, err := mpds.Get(ds.NewKey("abc").Child(k))
+		v2, err := mpds.Get(ds.NewKey(prefix).Child(k))
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v2.([]byte), []byte(k.String())), Equals, true)
 	}
