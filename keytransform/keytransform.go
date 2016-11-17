@@ -67,7 +67,7 @@ func (d *ktds) Query(q dsq.Query) (dsq.Results, error) {
 
 		for r := range qr.Next() {
 			if r.Error == nil {
-				r.Entry.Key = d.InvertKey(ds.NewKey(r.Entry.Key)).String()
+				r.Entry.Key = d.InvertKey(ds.RawKey(r.Entry.Key)).String()
 			}
 			ch <- r
 		}

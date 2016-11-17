@@ -40,6 +40,24 @@ func NewKey(s string) Key {
 	return k
 }
 
+// RawKey creates a new Key without safety checking the input. Use with care.
+func RawKey(s string) Key {
+	// accept an empty string and fix it to avoid special cases
+	// elsewhere
+	if len(s) == 0 {
+		return Key{"/"}
+	}
+
+	// perform a quick sanity check that the key is in the correct
+	// format, if it is not then it is a programmer error and it is
+	// okay to panic
+	if len(s) == 0 || s[0] != '/' || (len(s) > 1 && s[len(s)-1] == '/') {
+		panic("invalid datastore key: " + s)
+	}
+
+	return Key{s}
+}
+
 // KeyWithNamespaces constructs a key out of a namespace slice.
 func KeyWithNamespaces(ns []string) Key {
 	return NewKey(strings.Join(ns, "/"))
@@ -156,7 +174,7 @@ func (k Key) Path() Key {
 func (k Key) Parent() Key {
 	n := k.List()
 	if len(n) == 1 {
-		return NewKey("/")
+		return RawKey("/")
 	}
 	return NewKey(strings.Join(n[:len(n)-1], "/"))
 }
@@ -165,7 +183,14 @@ func (k Key) Parent() Key {
 //   NewKey("/Comedy/MontyPython").Child(NewKey("Actor:JohnCleese"))
 //   NewKey("/Comedy/MontyPython/Actor:JohnCleese")
 func (k Key) Child(k2 Key) Key {
-	return NewKey(k.string + "/" + k2.string)
+	switch {
+	case k.string == "/":
+		return k2
+	case k2.string == "/":
+		return k
+	default:
+		return RawKey(k.string + k2.string)
+	}
 }
 
 // ChildString returns the `child` Key of this Key -- string helper.
