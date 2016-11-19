@@ -65,7 +65,14 @@ func KeyWithNamespaces(ns []string) Key {
 
 // Clean up a Key, using path.Clean.
 func (k *Key) Clean() {
-	k.string = path.Clean("/" + k.string)
+	switch {
+	case len(k.string) == 0:
+		k.string = "/"
+	case k.string[0] == '/':
+		k.string = path.Clean(k.string)
+	default:
+		k.string = path.Clean("/" + k.string)
+	}
 }
 
 // Strings is the string value of Key
