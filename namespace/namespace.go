@@ -23,6 +23,10 @@ func PrefixTransform(prefix ds.Key) ktds.KeyTransform {
 
 		// Invert removes the prefix. panics if prefix not found.
 		Invert: func(k ds.Key) ds.Key {
+			if prefix.String() == "/" {
+				return k
+			}
+
 			if !prefix.IsAncestorOf(k) {
 				fmt.Errorf("Expected prefix (%s) in key (%s)", prefix, k)
 				panic("expected prefix not found")
