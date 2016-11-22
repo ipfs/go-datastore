@@ -255,9 +255,124 @@ func ResultsWithEntries(q Query, res []Entry) Results {
 }
 
 func ResultsReplaceQuery(r Results, q Query) Results {
-	return &results{
-		query: q,
-		proc:  r.Process(),
-		res:   r.Next(),
+	switch r := r.(type) {
+	case *results:
+		// note: not using field names to make sure all fields are copied
+		return &results{q, r.proc, r.res}
+	case *resultsIter:
+		// note: not using field names to make sure all fields are copied
+		lr := r.legacyResults
+		if lr != nil {
+			lr = &results{q, lr.proc, lr.res}
+		}
+		return &resultsIter{q, r.next, r.close, lr}
+	default:
+		panic("unknown results type")
 	}
+}
+
+//
+// ResultFromIterator provides an alternative way to to construct
+// results without the use of channels.
+//
+
+func ResultsFromIterator(q Query, iter Iterator) Results {
+	return &resultsIter{
+		query: q,
+		next:  iter.Next,
+		close: iter.Close,
+	}
+}
+
+type Iterator struct {
+	Next  func() (Result, bool)
+	Close func() error
+}
+
+type resultsIter struct {
+	query         Query
+	next          func() (Result, bool)
+	close         func() error
+	legacyResults *results
+}
+
+func (r *resultsIter) Next() <-chan Result {
+	//println("oops Next() called, need legacyResults")
+	if r.legacyResults == nil {
+		r.legacyResults = legacyResultsFromIter(r.query, r.next)
+	}
+	return r.legacyResults.Next()
+}
+
+func (r *resultsIter) NextSync() (Result, bool) {
+	res, ok := r.next()
+	if !ok {
+		r.Close()
+	}
+	return res, ok
+}
+
+func (r *resultsIter) Rest() ([]Entry, error) {
+	var es []Entry
+	for {
+		e, ok := r.NextSync()
+		if !ok {
+			break
+		}
+		if e.Error != nil {
+			return es, e.Error
+		}
+		es = append(es, e.Entry)
+	}
+	return es, nil
+}
+
+func (r *resultsIter) Process() goprocess.Process {
+	//println("oops Process() called, need a legacyResult")
+	if r.legacyResults == nil {
+		r.legacyResults = legacyResultsFromIter(r.query, r.next)
+	}
+	return r.legacyResults.Process()
+}
+
+func (r *resultsIter) Close() error {
+	var err1, err2 error
+	if r.legacyResults != nil {
+		err1 = r.legacyResults.Close()
+	}
+	if r.close != nil {
+		err2 = r.close()
+		if err2 != nil {
+			return err2
+		}
+		r.close = nil
+	}
+	return err1
+}
+
+func (r *resultsIter) Query() Query {
+	return r.query
+}
+
+func legacyResultsFromIter(q Query, next func() (Result, bool)) *results {
+	b := NewResultBuilder(q)
+
+	// go consume all the entries and add them to the results.
+	b.Process.Go(func(worker goprocess.Process) {
+		for {
+			e, ok := next()
+			if !ok {
+				break
+			}
+			select {
+			case b.Output <- e:
+			case <-worker.Closing(): // client told us to close early
+				return
+			}
+		}
+		return
+	})
+
+	go b.Process.CloseAfterChildren()
+	return b.Results().(*results)
 }
