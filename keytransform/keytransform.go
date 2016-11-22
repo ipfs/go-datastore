@@ -60,20 +60,21 @@ func (d *ktds) Query(q dsq.Query) (dsq.Results, error) {
 		return nil, err
 	}
 
-	ch := make(chan dsq.Result, cap(qr.Next()))
-	go func() {
-		defer close(ch)
-		defer qr.Close()
-
-		for r := range qr.Next() {
+	return dsq.ResultsFromIterator(q, dsq.Iterator{
+		Next: func() (dsq.Result, bool) {
+			r, ok := qr.NextSync()
+			if !ok {
+				return r, false
+			}
 			if r.Error == nil {
 				r.Entry.Key = d.InvertKey(ds.RawKey(r.Entry.Key)).String()
 			}
-			ch <- r
-		}
-	}()
-
-	return dsq.DerivedResults(qr, ch), nil
+			return r, true
+		},
+		Close: func() error {
+			return qr.Close()
+		},
+	}), nil
 }
 
 func (d *ktds) Close() error {
