@@ -185,10 +185,11 @@ func (rb *ResultBuilder) Results() Results {
 	}
 }
 
+const NormalBufSize = 1
 const KeysOnlyBufSize = 128
 
 func NewResultBuilder(q Query) *ResultBuilder {
-	bufSize := 1
+	bufSize := NormalBufSize
 	if q.KeysOnly {
 		bufSize = KeysOnlyBufSize
 	}
