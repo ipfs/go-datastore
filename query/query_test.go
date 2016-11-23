@@ -146,13 +146,13 @@ func testResultsFromIterator(t *testing.T, getKeys func(rs Results) []string, cl
 }
 
 func testResultsFromIteratorWClose(t *testing.T, getKeys func(rs Results) []string) {
-	closeCalled := false
+	closeCalled := 0
 	testResultsFromIterator(t, getKeys, func() error {
-		closeCalled = true
+		closeCalled++
 		return nil
 	})
-	if !closeCalled {
-		t.Errorf("close not called")
+	if closeCalled != 1 {
+		t.Errorf("close called %d times, expect it to be called just once", closeCalled)
 	}
 }
 
