@@ -277,6 +277,9 @@ func ResultsReplaceQuery(r Results, q Query) Results {
 //
 
 func ResultsFromIterator(q Query, iter Iterator) Results {
+	if iter.Close == nil {
+		iter.Close = noopClose
+	}
 	return &resultsIter{
 		query: q,
 		next:  iter.Next,
@@ -284,9 +287,13 @@ func ResultsFromIterator(q Query, iter Iterator) Results {
 	}
 }
 
+func noopClose() error {
+	return nil
+}
+
 type Iterator struct {
 	Next  func() (Result, bool)
-	Close func() error
+	Close func() error // note: might be called more than once
 }
 
 type resultsIter struct {
@@ -297,19 +304,20 @@ type resultsIter struct {
 }
 
 func (r *resultsIter) Next() <-chan Result {
-	//println("oops Next() called, need legacyResults")
-	if r.legacyResults == nil {
-		r.legacyResults = legacyResultsFromIter(r.query, r.next)
-	}
+	r.useLegacyResults()
 	return r.legacyResults.Next()
 }
 
 func (r *resultsIter) NextSync() (Result, bool) {
-	res, ok := r.next()
-	if !ok {
-		r.Close()
+	if r.legacyResults != nil {
+		return r.legacyResults.NextSync()
+	} else {
+		res, ok := r.next()
+		if !ok {
+			r.close()
+		}
+		return res, ok
 	}
-	return res, ok
 }
 
 func (r *resultsIter) Rest() ([]Entry, error) {
@@ -328,39 +336,34 @@ func (r *resultsIter) Rest() ([]Entry, error) {
 }
 
 func (r *resultsIter) Process() goprocess.Process {
-	//println("oops Process() called, need a legacyResult")
-	if r.legacyResults == nil {
-		r.legacyResults = legacyResultsFromIter(r.query, r.next)
-	}
+	r.useLegacyResults()
 	return r.legacyResults.Process()
 }
 
 func (r *resultsIter) Close() error {
-	var err1, err2 error
 	if r.legacyResults != nil {
-		err1 = r.legacyResults.Close()
+		return r.legacyResults.Close()
+	} else {
+		return r.close()
 	}
-	if r.close != nil {
-		err2 = r.close()
-		if err2 != nil {
-			return err2
-		}
-		r.close = nil
-	}
-	return err1
 }
 
 func (r *resultsIter) Query() Query {
 	return r.query
 }
 
-func legacyResultsFromIter(q Query, next func() (Result, bool)) *results {
-	b := NewResultBuilder(q)
+func (r *resultsIter) useLegacyResults() {
+	if r.legacyResults != nil {
+		return
+	}
+
+	b := NewResultBuilder(r.query)
 
 	// go consume all the entries and add them to the results.
 	b.Process.Go(func(worker goprocess.Process) {
+		defer r.close()
 		for {
-			e, ok := next()
+			e, ok := r.next()
 			if !ok {
 				break
 			}
@@ -374,5 +377,6 @@ func legacyResultsFromIter(q Query, next func() (Result, bool)) *results {
 	})
 
 	go b.Process.CloseAfterChildren()
-	return b.Results().(*results)
+
+	r.legacyResults = b.Results().(*results)
 }
