@@ -61,29 +61,29 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 		return nil, err
 	}
 
-	ch := make(chan dsq.Result, cap(qr.Next()))
+	return dsq.ResultsFromIterator(q, dsq.Iterator{
+		Next: func() (dsq.Result, bool) {
+			for {
+				r, ok := qr.NextSync()
+				if !ok {
+					return r, false
+				}
+				if r.Error != nil {
+					return r, true
+				}
+				k := ds.RawKey(r.Entry.Key)
+				if !d.prefix.IsAncestorOf(k) {
+					continue
+				}
 
-	go func() {
-		defer close(ch)
-		defer qr.Close()
-
-		for r := range qr.Next() {
-			if r.Error != nil {
-				ch <- r
-				continue
+				r.Entry.Key = d.Datastore.InvertKey(k).String()
+				return r, true
 			}
-
-			k := ds.RawKey(r.Entry.Key)
-			if !d.prefix.IsAncestorOf(k) {
-				continue
-			}
-
-			r.Entry.Key = d.Datastore.InvertKey(k).String()
-			ch <- r
-		}
-	}()
-
-	return dsq.DerivedResults(qr, ch), nil
+		},
+		Close: func() error {
+			return qr.Close()
+		},
+	}), nil
 }
 
 func (d *datastore) Batch() (ds.Batch, error) {

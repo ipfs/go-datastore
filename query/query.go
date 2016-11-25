@@ -106,10 +106,11 @@ type Result struct {
 //   }
 //
 type Results interface {
-	Query() Query           // the query these Results correspond to
-	Next() <-chan Result    // returns a channel to wait for the next result
-	Rest() ([]Entry, error) // waits till processing finishes, returns all entries at once.
-	Close() error           // client may call Close to signal early exit
+	Query() Query             // the query these Results correspond to
+	Next() <-chan Result      // returns a channel to wait for the next result
+	NextSync() (Result, bool) // blocks and waits to return the next result, second paramter returns false when results are exhausted
+	Rest() ([]Entry, error)   // waits till processing finishes, returns all entries at once.
+	Close() error             // client may call Close to signal early exit
 
 	// Process returns a goprocess.Process associated with these results.
 	// most users will not need this function (Close is all they want),
@@ -127,6 +128,11 @@ type results struct {
 
 func (r *results) Next() <-chan Result {
 	return r.res
+}
+
+func (r *results) NextSync() (Result, bool) {
+	val, ok := <-r.res
+	return val, ok
 }
 
 func (r *results) Rest() ([]Entry, error) {
@@ -179,10 +185,11 @@ func (rb *ResultBuilder) Results() Results {
 	}
 }
 
+const NormalBufSize = 1
 const KeysOnlyBufSize = 128
 
 func NewResultBuilder(q Query) *ResultBuilder {
-	bufSize := 1
+	bufSize := NormalBufSize
 	if q.KeysOnly {
 		bufSize = KeysOnlyBufSize
 	}
@@ -248,9 +255,128 @@ func ResultsWithEntries(q Query, res []Entry) Results {
 }
 
 func ResultsReplaceQuery(r Results, q Query) Results {
-	return &results{
-		query: q,
-		proc:  r.Process(),
-		res:   r.Next(),
+	switch r := r.(type) {
+	case *results:
+		// note: not using field names to make sure all fields are copied
+		return &results{q, r.proc, r.res}
+	case *resultsIter:
+		// note: not using field names to make sure all fields are copied
+		lr := r.legacyResults
+		if lr != nil {
+			lr = &results{q, lr.proc, lr.res}
+		}
+		return &resultsIter{q, r.next, r.close, lr}
+	default:
+		panic("unknown results type")
 	}
+}
+
+//
+// ResultFromIterator provides an alternative way to to construct
+// results without the use of channels.
+//
+
+func ResultsFromIterator(q Query, iter Iterator) Results {
+	if iter.Close == nil {
+		iter.Close = noopClose
+	}
+	return &resultsIter{
+		query: q,
+		next:  iter.Next,
+		close: iter.Close,
+	}
+}
+
+func noopClose() error {
+	return nil
+}
+
+type Iterator struct {
+	Next  func() (Result, bool)
+	Close func() error // note: might be called more than once
+}
+
+type resultsIter struct {
+	query         Query
+	next          func() (Result, bool)
+	close         func() error
+	legacyResults *results
+}
+
+func (r *resultsIter) Next() <-chan Result {
+	r.useLegacyResults()
+	return r.legacyResults.Next()
+}
+
+func (r *resultsIter) NextSync() (Result, bool) {
+	if r.legacyResults != nil {
+		return r.legacyResults.NextSync()
+	} else {
+		res, ok := r.next()
+		if !ok {
+			r.close()
+		}
+		return res, ok
+	}
+}
+
+func (r *resultsIter) Rest() ([]Entry, error) {
+	var es []Entry
+	for {
+		e, ok := r.NextSync()
+		if !ok {
+			break
+		}
+		if e.Error != nil {
+			return es, e.Error
+		}
+		es = append(es, e.Entry)
+	}
+	return es, nil
+}
+
+func (r *resultsIter) Process() goprocess.Process {
+	r.useLegacyResults()
+	return r.legacyResults.Process()
+}
+
+func (r *resultsIter) Close() error {
+	if r.legacyResults != nil {
+		return r.legacyResults.Close()
+	} else {
+		return r.close()
+	}
+}
+
+func (r *resultsIter) Query() Query {
+	return r.query
+}
+
+func (r *resultsIter) useLegacyResults() {
+	if r.legacyResults != nil {
+		return
+	}
+
+	b := NewResultBuilder(r.query)
+
+	// go consume all the entries and add them to the results.
+	b.Process.Go(func(worker goprocess.Process) {
+		defer r.close()
+		for {
+			e, ok := r.next()
+			if !ok {
+				break
+			}
+			select {
+			case b.Output <- e:
+			case <-worker.Closing(): // client told us to close early
+				return
+			}
+		}
+		return
+	})
+
+	go b.Process.CloseAfterChildren()
+
+	r.legacyResults = b.Results().(*results)
 }

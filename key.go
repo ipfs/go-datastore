@@ -4,9 +4,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/satori/go.uuid"
-
 	dsq "github.com/ipfs/go-datastore/query"
+
+	"github.com/satori/go.uuid"
 )
 
 /*
