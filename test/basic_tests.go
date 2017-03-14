@@ -95,8 +95,9 @@ func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
 	count := 100
 	for i := 0; i < count; i++ {
 		s := fmt.Sprintf("%dkey%d", i, i)
-		keystrs = append(keystrs, s)
-		keys = append(keys, dstore.NewKey(s))
+		dsk := dstore.NewKey(s)
+		keystrs = append(keystrs, dsk.String())
+		keys = append(keys, dsk)
 		buf := make([]byte, 64)
 		rand.Read(buf)
 		values = append(values, buf)
