@@ -2,6 +2,8 @@ package fs_test
 
 import (
 	"bytes"
+	"io/ioutil"
+	"path"
 	"testing"
 
 	. "launchpad.net/gocheck"
@@ -93,4 +95,20 @@ func strsToKeys(strs []string) []ds.Key {
 		keys[i] = ds.NewKey(s)
 	}
 	return keys
+}
+
+func (ks *DSSuite) TestFilename(c *C) {
+	err := ks.ds.Put(ds.NewKey("greeting"), []byte("Hello, world"))
+	c.Check(err, Equals, nil)
+	fis, err := ioutil.ReadDir(path.Join(ks.dir))
+	c.Check(err, Equals, nil)
+	var names []string
+	for _, fi := range fis {
+		switch n := fi.Name(); n {
+		case ".", "..":
+		default:
+			names = append(names, n)
+		}
+	}
+	c.Check(names, DeepEquals, []string{"greeting" + fs.ObjectKeySuffix})
 }
