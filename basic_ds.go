@@ -169,15 +169,54 @@ func (d *LogDatastore) Delete(key Key) (err error) {
 // Query implements Datastore.Query
 func (d *LogDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	log.Printf("%s: Query\n", d.Name)
+	log.Printf("%s: q.Prefix: %s\n", d.Name, q.Prefix)
+	log.Printf("%s: q.KeysOnly: %s\n", d.Name, q.KeysOnly)
+	log.Printf("%s: q.Filters: %d\n", d.Name, len(q.Filters))
+	log.Printf("%s: q.Orders: %d\n", d.Name, len(q.Orders))
+	log.Printf("%s: q.Offset: %d\n", d.Name, q.Offset)
+
 	return d.child.Query(q)
+}
+
+// LogBatch logs all accesses through the batch.
+type LogBatch struct {
+	Name  string
+	child Batch
 }
 
 func (d *LogDatastore) Batch() (Batch, error) {
 	log.Printf("%s: Batch\n", d.Name)
 	if bds, ok := d.child.(Batching); ok {
-		return bds.Batch()
+		b, err := bds.Batch()
+
+		if err != nil {
+			return nil, err
+		}
+		return &LogBatch{
+			Name:  d.Name,
+			child: b,
+		}, nil
 	}
 	return nil, ErrBatchUnsupported
+}
+
+// Put implements Batch.Put
+func (d *LogBatch) Put(key Key, value interface{}) (err error) {
+	log.Printf("%s: BatchPut %s\n", d.Name, key)
+	// log.Printf("%s: Put %s ```%s```", d.Name, key, value)
+	return d.child.Put(key, value)
+}
+
+// Delete implements Batch.Delete
+func (d *LogBatch) Delete(key Key) (err error) {
+	log.Printf("%s: BatchDelete %s\n", d.Name, key)
+	return d.child.Delete(key)
+}
+
+// Commit implements Batch.Commit
+func (d *LogBatch) Commit() (err error) {
+	log.Printf("%s: BatchCommit\n", d.Name)
+	return d.child.Commit()
 }
 
 func (d *LogDatastore) Close() error {
