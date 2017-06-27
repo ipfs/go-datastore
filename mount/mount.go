@@ -5,6 +5,7 @@ package mount
 import (
 	"errors"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/ipfs/go-datastore"
@@ -21,12 +22,27 @@ type Mount struct {
 	Datastore datastore.Datastore
 }
 
+type MountSlice []Mount
+
+func (m MountSlice) Len() int {
+	return len(m)
+}
+
+func (m MountSlice) Less(i, j int) bool {
+	return m[i].Prefix.String() > m[j].Prefix.String()
+}
+
+func (m MountSlice) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
+}
+
 func New(mounts []Mount) *Datastore {
 	// make a copy so we're sure it doesn't mutate
 	m := make([]Mount, len(mounts))
 	for i, v := range mounts {
 		m[i] = v
 	}
+	sort.Sort(MountSlice(m))
 	return &Datastore{mounts: m}
 }
 

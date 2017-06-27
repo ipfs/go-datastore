@@ -239,3 +239,40 @@ func TestQuerySimple(t *testing.T) {
 		t.Errorf("did not see wanted key %q in %+v", myKey, entries)
 	}
 }
+
+func TestLookupPrio(t *testing.T) {
+	mapds0 := datastore.NewMapDatastore()
+	mapds1 := datastore.NewMapDatastore()
+
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/"), Datastore: mapds0},
+		{Prefix: datastore.NewKey("/foo"), Datastore: mapds1},
+	})
+
+	m.Put(datastore.NewKey("/foo/bar"), "123")
+	m.Put(datastore.NewKey("/baz"), "234")
+
+	found, err := mapds0.Has(datastore.NewKey("/baz"))
+	if err != nil {
+		t.Fatalf("Has error: %v", err)
+	}
+	if g, e := found, true; g != e {
+		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+
+	found, err = mapds0.Has(datastore.NewKey("/foo/bar"))
+	if err != nil {
+		t.Fatalf("Has error: %v", err)
+	}
+	if g, e := found, false; g != e {
+		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+
+	found, err = mapds1.Has(datastore.NewKey("/bar"))
+	if err != nil {
+		t.Fatalf("Has error: %v", err)
+	}
+	if g, e := found, true; g != e {
+		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
