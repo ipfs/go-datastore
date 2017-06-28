@@ -5,11 +5,11 @@ package syncmount
 import (
 	"errors"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 
 	ds "github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-datastore/keytransform"
 	"github.com/ipfs/go-datastore/query"
 )
 
@@ -28,6 +28,7 @@ func New(mounts []Mount) *Datastore {
 	for i, v := range mounts {
 		m[i] = v
 	}
+	sort.Slice(m, func(i, j int) bool { return m[i].Prefix.String() > m[j].Prefix.String() })
 	return &Datastore{mounts: m}
 }
 
@@ -49,6 +50,41 @@ func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
 		}
 	}
 	return nil, ds.NewKey("/"), key
+}
+
+// lookupAll returns all mounts that might contain keys that are descendant of <key>
+//
+// Matching: /ao/e
+//
+// /          B /ao/e
+// /a/        not matching
+// /ao/       B /e
+// /ao/e/     A /
+// /ao/e/uh/  A /
+// /aoe/      not matching
+func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest []ds.Key) {
+	d.lk.Lock()
+	defer d.lk.Unlock()
+
+	for _, m := range d.mounts {
+		p := m.Prefix.String()
+		if len(p) > 1 {
+			p = p + "/"
+		}
+
+		if strings.HasPrefix(p, key.String()) {
+			dst = append(dst, m.Datastore)
+			mountpoint = append(mountpoint, m.Prefix)
+			rest = append(rest, ds.NewKey("/"))
+		} else if strings.HasPrefix(key.String(), p) {
+			r := strings.TrimPrefix(key.String(), m.Prefix.String())
+
+			dst = append(dst, m.Datastore)
+			mountpoint = append(mountpoint, m.Prefix)
+			rest = append(rest, ds.NewKey(r))
+		}
+	}
+	return dst, mountpoint, rest
 }
 
 func (d *Datastore) Put(key ds.Key, value interface{}) error {
@@ -88,36 +124,65 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		len(q.Orders) > 0 ||
 		q.Limit > 0 ||
 		q.Offset > 0 {
-		// TODO this is overly simplistic, but the only caller is
-		// `ipfs refs local` for now, and this gets us moving.
+		// TODO this is still overly simplistic, but the only callers are
+		// `ipfs refs local` and ipfs-ds-convert.
 		return nil, errors.New("mount only supports listing all prefixed keys in random order")
 	}
-	key := ds.NewKey(q.Prefix)
-	cds, mount, k := d.lookup(key)
-	if cds == nil {
-		return nil, errors.New("mount only supports listing a mount point")
-	}
-	// TODO support listing cross mount points too
+	prefix := ds.NewKey(q.Prefix)
+	dses, mounts, rests := d.lookupAll(prefix)
 
-	// delegate the query to the mounted datastore, while adjusting
-	// keys in and out
-	q2 := q
-	q2.Prefix = k.String()
-	wrapDS := keytransform.Wrap(cds, &keytransform.Pair{
-		Convert: func(ds.Key) ds.Key {
-			panic("this should never be called")
-		},
-		Invert: func(k ds.Key) ds.Key {
-			return mount.Child(k)
-		},
-	})
+	// current itorator state
+	var res query.Results
+	var dst ds.Datastore
+	var mount ds.Key
+	var rest ds.Key
+	i := 0
 
-	r, err := wrapDS.Query(q2)
-	if err != nil {
-		return nil, err
-	}
-	r = query.ResultsReplaceQuery(r, q)
-	return r, nil
+	return query.ResultsFromIterator(q, query.Iterator{
+		Next: func() (query.Result, bool) {
+			var r query.Result
+			var more bool
+
+			for try := true; try; try = len(dses) > i {
+				if dst == nil {
+					if len(dses) <= i {
+						//This should not happen normally
+						return query.Result{}, false
+					}
+
+					dst = dses[i]
+					mount = mounts[i]
+					rest = rests[i]
+
+					q2 := q
+					q2.Prefix = rest.String()
+					r, err := dst.Query(q2)
+					if err != nil {
+						return query.Result{Error: err}, false
+					}
+					res = r
+				}
+
+				r, more = res.NextSync()
+				if !more {
+					dst = nil
+					i++
+					more = len(dses) > i
+				} else {
+					break
+				}
+			}
+
+			r.Key = mount.Child(ds.RawKey(r.Key)).String()
+			return r, more
+		},
+		Close: func() error {
+			if len(mounts) > i {
+				return res.Close()
+			}
+			return nil
+		},
+	}), nil
 }
 
 func (d *Datastore) IsThreadSafe() {}
