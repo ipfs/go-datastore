@@ -240,6 +240,60 @@ func TestQuerySimple(t *testing.T) {
 	}
 }
 
+func TestQueryCross(t *testing.T) {
+	mapds0 := datastore.NewMapDatastore()
+	mapds1 := datastore.NewMapDatastore()
+	mapds2 := datastore.NewMapDatastore()
+	mapds3 := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/foo"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/bar"), Datastore: mapds2},
+		{Prefix: datastore.NewKey("/baz"), Datastore: mapds3},
+		{Prefix: datastore.NewKey("/"), Datastore: mapds0},
+	})
+
+	m.Put(datastore.NewKey("/foo/lorem"), "123")
+	m.Put(datastore.NewKey("/bar/ipsum"), "234")
+	m.Put(datastore.NewKey("/bar/dolor"), "345")
+	m.Put(datastore.NewKey("/baz/sit"), "456")
+	m.Put(datastore.NewKey("/banana"), "567")
+
+	res, err := m.Query(query.Query{Prefix: "/ba"})
+	if err != nil {
+		t.Fatalf("Query fail: %v\n", err)
+	}
+	entries, err := res.Rest()
+	if err != nil {
+		t.Fatalf("Query Results.Rest fail: %v\n", err)
+	}
+	seen := 0
+
+	expect := map[string]string{
+		"/foo/lorem": "y u here",
+		"/bar/ipsum": "234",
+		"/bar/dolor": "345",
+		"/baz/sit":   "456",
+		"/banana":    "567",
+	}
+	for _, e := range entries {
+		v := expect[e.Key]
+		if v == "" {
+			t.Errorf("unexpected key %s", e.Key)
+		}
+
+		if v != e.Value {
+			t.Errorf("key value didn't match expected %s: '%s' - '%s'", e.Key, v, e.Value)
+		}
+
+		expect[e.Key] = "seen"
+		seen++
+	}
+
+	if seen != 4 {
+		t.Errorf("expected to see 3 values, saw %d", seen)
+	}
+}
+
 func TestLookupPrio(t *testing.T) {
 	mapds0 := datastore.NewMapDatastore()
 	mapds1 := datastore.NewMapDatastore()
