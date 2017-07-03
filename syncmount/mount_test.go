@@ -238,6 +238,11 @@ func TestQuerySimple(t *testing.T) {
 	if !seen {
 		t.Errorf("did not see wanted key %q in %+v", myKey, entries)
 	}
+
+	err = res.Close()
+	if err != nil {
+		t.Errorf("result.Close failed %d", err)
+	}
 }
 
 func TestQueryCross(t *testing.T) {
@@ -291,6 +296,11 @@ func TestQueryCross(t *testing.T) {
 
 	if seen != 4 {
 		t.Errorf("expected to see 3 values, saw %d", seen)
+	}
+
+	err = res.Close()
+	if err != nil {
+		t.Errorf("result.Close failed %d", err)
 	}
 }
 

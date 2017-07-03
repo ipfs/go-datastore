@@ -126,9 +126,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 
 	// current itorator state
 	var res query.Results
-	var ds datastore.Datastore
 	var mount datastore.Key
-	var rest datastore.Key
 	i := 0
 
 	return query.ResultsFromIterator(q, query.Iterator{
@@ -137,19 +135,19 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 			var more bool
 
 			for try := true; try; try = len(dses) > i {
-				if ds == nil {
+				if res == nil {
 					if len(dses) <= i {
 						//This should not happen normally
 						return query.Result{}, false
 					}
 
-					ds = dses[i]
+					dst := dses[i]
 					mount = mounts[i]
-					rest = rests[i]
+					rest := rests[i]
 
 					q2 := q
 					q2.Prefix = rest.String()
-					r, err := ds.Query(q2)
+					r, err := dst.Query(q2)
 					if err != nil {
 						return query.Result{Error: err}, false
 					}
@@ -158,7 +156,12 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 
 				r, more = res.NextSync()
 				if !more {
-					ds = nil
+					err := res.Close()
+					if err != nil {
+						return query.Result{Error: err}, false
+					}
+					res = nil
+
 					i++
 					more = len(dses) > i
 				} else {
@@ -170,7 +173,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 			return r, more
 		},
 		Close: func() error {
-			if len(mounts) > i {
+			if len(mounts) > i && res != nil {
 				return res.Close()
 			}
 			return nil
