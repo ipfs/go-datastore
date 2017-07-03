@@ -78,6 +78,65 @@ func (ks *DSSuite) testBasic(c *C, prefix string) {
 	}
 }
 
+func (ks *DSSuite) TestQuery(c *C) {
+	mpds := ds.NewMapDatastore()
+	nsds := ns.Wrap(mpds, ds.NewKey("/foo"))
+
+	keys := strsToKeys([]string{
+		"abc/foo",
+		"bar/foo",
+		"foo/bar",
+		"foo/bar/baz",
+		"foo/baz/abc",
+		"xyz/foo",
+	})
+
+	for _, k := range keys {
+		err := mpds.Put(k, []byte(k.String()))
+		c.Check(err, Equals, nil)
+	}
+
+	qres, err := nsds.Query(dsq.Query{})
+	c.Check(err, Equals, nil)
+
+	expect := []dsq.Entry{
+		{Key:"/bar", Value: []byte("/foo/bar")},
+		{Key:"/bar/baz", Value: []byte("/foo/bar/baz")},
+		{Key:"/baz/abc", Value: []byte("/foo/baz/abc")},
+	}
+
+	results, err := qres.Rest()
+	c.Check(err, Equals, nil)
+
+	for i, ent := range results {
+		c.Check(ent.Key, Equals, expect[i].Key)
+		entval, _ := ent.Value.([]byte)
+		expval, _ := expect[i].Value.([]byte)
+		c.Check(string(entval), Equals, string(expval))
+	}
+
+	err = qres.Close()
+	c.Check(err, Equals, nil)
+
+	qres, err = nsds.Query(dsq.Query{Prefix:"bar"})
+	c.Check(err, Equals, nil)
+
+	expect = []dsq.Entry{
+		{Key:"/bar", Value: []byte("/foo/bar")},
+		{Key:"/bar/baz", Value: []byte("/foo/bar/baz")},
+	}
+
+	results, err = qres.Rest()
+	c.Check(err, Equals, nil)
+
+	for i, ent := range results {
+		c.Check(ent.Key, Equals, expect[i].Key)
+		entval, _ := ent.Value.([]byte)
+		expval, _ := expect[i].Value.([]byte)
+		c.Check(string(entval), Equals, string(expval))
+	}
+}
+
 func strsToKeys(strs []string) []ds.Key {
 	keys := make([]ds.Key, len(strs))
 	for i, s := range strs {
