@@ -100,13 +100,14 @@ func (ks *DSSuite) TestQuery(c *C) {
 	c.Check(err, Equals, nil)
 
 	expect := []dsq.Entry{
-		{Key:"/bar", Value: []byte("/foo/bar")},
-		{Key:"/bar/baz", Value: []byte("/foo/bar/baz")},
-		{Key:"/baz/abc", Value: []byte("/foo/baz/abc")},
+		{Key: "/bar", Value: []byte("/foo/bar")},
+		{Key: "/bar/baz", Value: []byte("/foo/bar/baz")},
+		{Key: "/baz/abc", Value: []byte("/foo/baz/abc")},
 	}
 
 	results, err := qres.Rest()
 	c.Check(err, Equals, nil)
+	sort.Slice(results, func(i, j int) bool { return results[i].Key < results[j].Key })
 
 	for i, ent := range results {
 		c.Check(ent.Key, Equals, expect[i].Key)
@@ -118,16 +119,17 @@ func (ks *DSSuite) TestQuery(c *C) {
 	err = qres.Close()
 	c.Check(err, Equals, nil)
 
-	qres, err = nsds.Query(dsq.Query{Prefix:"bar"})
+	qres, err = nsds.Query(dsq.Query{Prefix: "bar"})
 	c.Check(err, Equals, nil)
 
 	expect = []dsq.Entry{
-		{Key:"/bar", Value: []byte("/foo/bar")},
-		{Key:"/bar/baz", Value: []byte("/foo/bar/baz")},
+		{Key: "/bar", Value: []byte("/foo/bar")},
+		{Key: "/bar/baz", Value: []byte("/foo/bar/baz")},
 	}
 
 	results, err = qres.Rest()
 	c.Check(err, Equals, nil)
+	sort.Slice(results, func(i, j int) bool { return results[i].Key < results[j].Key })
 
 	for i, ent := range results {
 		c.Check(ent.Key, Equals, expect[i].Key)
