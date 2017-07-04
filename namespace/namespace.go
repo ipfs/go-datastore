@@ -55,7 +55,9 @@ type datastore struct {
 }
 
 // Query implements Query, inverting keys on the way back out.
+// This function assumes that child datastore.Query returns ordered results
 func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
+	q.Prefix = d.prefix.Child(ds.NewKey(q.Prefix)).String()
 	qr, err := d.raw.Query(q)
 	if err != nil {
 		return nil, err
@@ -73,7 +75,7 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 				}
 				k := ds.RawKey(r.Entry.Key)
 				if !d.prefix.IsAncestorOf(k) {
-					continue
+					return dsq.Result{}, false
 				}
 
 				r.Entry.Key = d.Datastore.InvertKey(k).String()

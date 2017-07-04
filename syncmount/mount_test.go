@@ -1,6 +1,7 @@
 package syncmount_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/ipfs/go-datastore"
@@ -238,6 +239,11 @@ func TestQuerySimple(t *testing.T) {
 	if !seen {
 		t.Errorf("did not see wanted key %q in %+v", myKey, entries)
 	}
+
+	err = res.Close()
+	if err != nil {
+		t.Errorf("result.Close failed %d", err)
+	}
 }
 
 func TestQueryCross(t *testing.T) {
@@ -292,6 +298,11 @@ func TestQueryCross(t *testing.T) {
 	if seen != 4 {
 		t.Errorf("expected to see 3 values, saw %d", seen)
 	}
+
+	err = res.Close()
+	if err != nil {
+		t.Errorf("result.Close failed %d", err)
+	}
 }
 
 func TestLookupPrio(t *testing.T) {
@@ -328,5 +339,35 @@ func TestLookupPrio(t *testing.T) {
 	}
 	if g, e := found, true; g != e {
 		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
+
+type errQueryDS struct {
+	datastore.NullDatastore
+}
+
+func (d *errQueryDS) Query(q query.Query) (query.Results, error) {
+	return nil, errors.New("test error")
+}
+
+func TestErrQueryClose(t *testing.T) {
+	eqds := &errQueryDS{}
+	mds := datastore.NewMapDatastore()
+
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/"), Datastore: mds},
+		{Prefix: datastore.NewKey("/foo"), Datastore: eqds},
+	})
+
+	m.Put(datastore.NewKey("/baz"), "123")
+
+	qr, err := m.Query(query.Query{})
+	if err != nil {
+		t.Fatalf("Query error: %v", err)
+	}
+
+	e, ok := qr.NextSync()
+	if ok != false || e.Error == nil {
+		t.Errorf("Query was ok or q.Error was nil")
 	}
 }
