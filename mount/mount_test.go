@@ -1,6 +1,7 @@
 package mount_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/ipfs/go-datastore"
@@ -338,5 +339,35 @@ func TestLookupPrio(t *testing.T) {
 	}
 	if g, e := found, true; g != e {
 		t.Fatalf("wrong value: %v != %v", g, e)
+	}
+}
+
+type errQueryDS struct {
+	datastore.NullDatastore
+}
+
+func (d *errQueryDS) Query(q query.Query) (query.Results, error) {
+	return nil, errors.New("test error")
+}
+
+func TestErrQueryClose(t *testing.T) {
+	eqds := &errQueryDS{}
+	mds := datastore.NewMapDatastore()
+
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/"), Datastore: mds},
+		{Prefix: datastore.NewKey("/foo"), Datastore: eqds},
+	})
+
+	m.Put(datastore.NewKey("/baz"), "123")
+
+	qr, err := m.Query(query.Query{})
+	if err != nil {
+		t.Fatalf("Query error: %v", err)
+	}
+
+	e, ok := qr.NextSync()
+	if ok != false || e.Error == nil {
+		t.Errorf("Query was ok or q.Error was nil")
 	}
 }
