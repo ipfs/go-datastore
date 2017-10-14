@@ -93,6 +93,15 @@ type CheckedDatastore interface {
 	Check() error
 }
 
+// CheckedDatastore is an interface that should be implemented by datastores
+// which want to provide a mechanism to check data integrity and/or
+// error correction
+type ScrubbedDatastore interface {
+	Datastore
+
+	Scrub() error
+}
+
 // GCDatastore is an interface that should be implemented by datastores which
 // don't free disk space by just removing data from them
 type GCDatastore interface {
