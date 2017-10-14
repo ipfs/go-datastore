@@ -4,6 +4,7 @@ package mount
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -247,6 +248,39 @@ func (mt *mountBatch) Commit() error {
 		err := t.Commit()
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func (d *Datastore) Check() error {
+	for _, m := range d.mounts {
+		if c, ok := m.Datastore.(datastore.CheckedDatastore); ok {
+			if err := c.Check(); err != nil {
+				return fmt.Errorf("checking datastore at %s: %s", m.Prefix.String(), err.Error())
+			}
+		}
+	}
+	return nil
+}
+
+func (d *Datastore) Scrub() error {
+	for _, m := range d.mounts {
+		if c, ok := m.Datastore.(datastore.ScrubbedDatastore); ok {
+			if err := c.Scrub(); err != nil {
+				return fmt.Errorf("scrubbing datastore at %s: %s", m.Prefix.String(), err.Error())
+			}
+		}
+	}
+	return nil
+}
+
+func (d *Datastore) CollectGarbage() error {
+	for _, m := range d.mounts {
+		if c, ok := m.Datastore.(datastore.GCDatastore); ok {
+			if err := c.CollectGarbage(); err != nil {
+				return fmt.Errorf("gc on datastore at %s: %s", m.Prefix.String(), err.Error())
+			}
 		}
 	}
 	return nil

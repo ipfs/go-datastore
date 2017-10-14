@@ -7,6 +7,7 @@ import (
 	"github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
 	mount "github.com/ipfs/go-datastore/syncmount"
+	dstest "github.com/ipfs/go-datastore/test"
 )
 
 func TestPutBadNothing(t *testing.T) {
@@ -369,5 +370,24 @@ func TestErrQueryClose(t *testing.T) {
 	e, ok := qr.NextSync()
 	if ok != false || e.Error == nil {
 		t.Errorf("Query was ok or q.Error was nil")
+	}
+}
+
+func TestMaintenanceFunctions(t *testing.T) {
+	mapds := dstest.NewTestDatastore(true)
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/"), Datastore: mapds},
+	})
+
+	if err:= m.Check(); err.Error() != "checking datastore at /: test error" {
+		t.Errorf("Unexpected Check() error: %s", err)
+	}
+
+	if err:= m.CollectGarbage(); err.Error() != "gc on datastore at /: test error" {
+		t.Errorf("Unexpected CollectGarbage() error: %s", err)
+	}
+
+	if err:= m.Scrub(); err.Error() != "scrubbing datastore at /: test error" {
+		t.Errorf("Unexpected Scrub() error: %s", err)
 	}
 }

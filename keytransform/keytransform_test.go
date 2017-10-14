@@ -10,6 +10,7 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	kt "github.com/ipfs/go-datastore/keytransform"
 	dsq "github.com/ipfs/go-datastore/query"
+	dstest "github.com/ipfs/go-datastore/test"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -35,7 +36,7 @@ func (ks *DSSuite) TestBasic(c *C) {
 		},
 	}
 
-	mpds := ds.NewMapDatastore()
+	mpds := dstest.NewTestDatastore(true)
 	ktds := kt.Wrap(mpds, pair)
 
 	keys := strsToKeys([]string{
@@ -88,6 +89,18 @@ func (ks *DSSuite) TestBasic(c *C) {
 
 	c.Log("listA: ", listA)
 	c.Log("listB: ", listB)
+
+	if err := ktds.Check(); err != dstest.TestError {
+		c.Errorf("Unexpected Check() error: %s", err)
+	}
+
+	if err := ktds.CollectGarbage(); err != dstest.TestError {
+		c.Errorf("Unexpected CollectGarbage() error: %s", err)
+	}
+
+	if err := ktds.Scrub(); err != dstest.TestError {
+		c.Errorf("Unexpected Scrub() error: %s", err)
+	}
 }
 
 func strsToKeys(strs []string) []ds.Key {

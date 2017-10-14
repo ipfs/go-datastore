@@ -3,10 +3,15 @@ package dstest
 import (
 	"bytes"
 	"encoding/base32"
+	"errors"
 	"math/rand"
 	"testing"
 
 	dstore "github.com/ipfs/go-datastore"
+)
+
+var (
+	TestError = errors.New("test error")
 )
 
 func RunBatchTest(t *testing.T, ds dstore.Batching) {
@@ -94,4 +99,38 @@ func RunBatchDeleteTest(t *testing.T, ds dstore.Batching) {
 			t.Fatal("shouldnt have found block")
 		}
 	}
+}
+
+type testDatastore struct {
+	testErrors bool
+
+	*dstore.MapDatastore
+}
+
+func NewTestDatastore(testErrors bool) *testDatastore {
+	return &testDatastore{
+		testErrors:   testErrors,
+		MapDatastore: dstore.NewMapDatastore(),
+	}
+}
+
+func (d *testDatastore) Check() error {
+	if d.testErrors {
+		return TestError
+	}
+	return nil
+}
+
+func (d *testDatastore) Scrub() error {
+	if d.testErrors {
+		return TestError
+	}
+	return nil
+}
+
+func (d *testDatastore) CollectGarbage() error {
+	if d.testErrors {
+		return TestError
+	}
+	return nil
 }
