@@ -117,6 +117,8 @@ func (b *syncBatch) Commit() error {
 
 func (d *MutexDatastore) Check() error {
 	if c, ok := d.child.(ds.CheckedDatastore); ok {
+		d.RWMutex.Lock()
+		defer d.RWMutex.Unlock()
 		return c.Check()
 	}
 	return nil
@@ -124,6 +126,8 @@ func (d *MutexDatastore) Check() error {
 
 func (d *MutexDatastore) Scrub() error {
 	if c, ok := d.child.(ds.ScrubbedDatastore); ok {
+		d.RWMutex.Lock()
+		defer d.RWMutex.Unlock()
 		return c.Scrub()
 	}
 	return nil
@@ -131,6 +135,8 @@ func (d *MutexDatastore) Scrub() error {
 
 func (d *MutexDatastore) CollectGarbage() error {
 	if c, ok := d.child.(ds.GCDatastore); ok {
+		d.RWMutex.Lock()
+		defer d.RWMutex.Unlock()
 		return c.CollectGarbage()
 	}
 	return nil
