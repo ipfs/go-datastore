@@ -163,6 +163,7 @@ func TestKeyMarshalJSON(t *testing.T) {
 		err  string
 	}{
 		{NewKey("/a/b/c"), []byte("\"/a/b/c\""), ""},
+		{NewKey("/shouldescapekey\"/with/quote"), []byte("\"/shouldescapekey\"/with/quote\""), ""},
 	}
 
 	for i, c := range cases {
@@ -172,6 +173,16 @@ func TestKeyMarshalJSON(t *testing.T) {
 		}
 		if !bytes.Equal(c.data, out) {
 			t.Errorf("case %d value mismatch: expected: %s, got: %s", i, string(c.data), string(out))
+		}
+
+		if c.err == "" {
+			key := Key{}
+			if err := key.UnmarshalJSON(out); err != nil {
+				t.Errorf("case %d error parsing key from json output: %s", i, err.Error())
+			}
+			if !c.key.Equal(key) {
+				t.Errorf("case %d parsed key from json output mismatch. expected: %s, got: %s", i, c.key.String(), key.String())
+			}
 		}
 	}
 }
