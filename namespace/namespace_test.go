@@ -10,6 +10,7 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	ns "github.com/ipfs/go-datastore/namespace"
 	dsq "github.com/ipfs/go-datastore/query"
+	dstest "github.com/ipfs/go-datastore/test"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -79,7 +80,7 @@ func (ks *DSSuite) testBasic(c *C, prefix string) {
 }
 
 func (ks *DSSuite) TestQuery(c *C) {
-	mpds := ds.NewMapDatastore()
+	mpds := dstest.NewTestDatastore(true)
 	nsds := ns.Wrap(mpds, ds.NewKey("/foo"))
 
 	keys := strsToKeys([]string{
@@ -136,6 +137,18 @@ func (ks *DSSuite) TestQuery(c *C) {
 		entval, _ := ent.Value.([]byte)
 		expval, _ := expect[i].Value.([]byte)
 		c.Check(string(entval), Equals, string(expval))
+	}
+
+	if err := nsds.Datastore.(ds.CheckedDatastore).Check(); err != dstest.TestError {
+		c.Errorf("Unexpected Check() error: %s", err)
+	}
+
+	if err := nsds.Datastore.(ds.GCDatastore).CollectGarbage(); err != dstest.TestError {
+		c.Errorf("Unexpected CollectGarbage() error: %s", err)
+	}
+
+	if err := nsds.Datastore.(ds.ScrubbedDatastore).Scrub(); err != dstest.TestError {
+		c.Errorf("Unexpected Scrub() error: %s", err)
 	}
 }
 

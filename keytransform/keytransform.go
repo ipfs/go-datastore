@@ -117,3 +117,24 @@ func (t *transformBatch) Delete(key ds.Key) error {
 func (t *transformBatch) Commit() error {
 	return t.dst.Commit()
 }
+
+func (d *ktds) Check() error {
+	if c, ok := d.child.(ds.CheckedDatastore); ok {
+		return c.Check()
+	}
+	return nil
+}
+
+func (d *ktds) Scrub() error {
+	if c, ok := d.child.(ds.ScrubbedDatastore); ok {
+		return c.Scrub()
+	}
+	return nil
+}
+
+func (d *ktds) CollectGarbage() error {
+	if c, ok := d.child.(ds.GCDatastore); ok {
+		return c.CollectGarbage()
+	}
+	return nil
+}

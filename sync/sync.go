@@ -114,3 +114,24 @@ func (b *syncBatch) Commit() error {
 	defer b.mds.Unlock()
 	return b.batch.Commit()
 }
+
+func (d *MutexDatastore) Check() error {
+	if c, ok := d.child.(ds.CheckedDatastore); ok {
+		return c.Check()
+	}
+	return nil
+}
+
+func (d *MutexDatastore) Scrub() error {
+	if c, ok := d.child.(ds.ScrubbedDatastore); ok {
+		return c.Scrub()
+	}
+	return nil
+}
+
+func (d *MutexDatastore) CollectGarbage() error {
+	if c, ok := d.child.(ds.GCDatastore); ok {
+		return c.CollectGarbage()
+	}
+	return nil
+}

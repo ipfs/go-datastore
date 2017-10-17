@@ -81,7 +81,33 @@ var ErrBatchUnsupported = errors.New("this datastore does not support batching")
 // implement to leverage type safety checks.
 type ThreadSafeDatastore interface {
 	Datastore
+
 	IsThreadSafe()
+}
+
+// CheckedDatastore is an interface that should be implemented by datastores
+// which may need checking on-disk data integrity.
+type CheckedDatastore interface {
+	Datastore
+
+	Check() error
+}
+
+// CheckedDatastore is an interface that should be implemented by datastores
+// which want to provide a mechanism to check data integrity and/or
+// error correction
+type ScrubbedDatastore interface {
+	Datastore
+
+	Scrub() error
+}
+
+// GCDatastore is an interface that should be implemented by datastores which
+// don't free disk space by just removing data from them
+type GCDatastore interface {
+	Datastore
+
+	CollectGarbage() error
 }
 
 // Errors

@@ -92,3 +92,36 @@ func (d tiered) Query(q dsq.Query) (dsq.Results, error) {
 	// query always the last (most complete) one
 	return d[len(d)-1].Query(q)
 }
+
+func (d tiered) Check() error {
+	for i, child := range d {
+		if c, ok := child.(ds.CheckedDatastore); ok {
+			if err := c.Check(); err != nil {
+				return fmt.Errorf("checking datastore %d: %s", i, err.Error())
+			}
+		}
+	}
+	return nil
+}
+
+func (d tiered) Scrub() error {
+	for i, child := range d {
+		if c, ok := child.(ds.ScrubbedDatastore); ok {
+			if err := c.Scrub(); err != nil {
+				return fmt.Errorf("scrubbing datastore at %d: %s", i, err.Error())
+			}
+		}
+	}
+	return nil
+}
+
+func (d tiered) CollectGarbage() error {
+	for i, child := range d {
+		if c, ok := child.(ds.GCDatastore); ok {
+			if err := c.CollectGarbage(); err != nil {
+				return fmt.Errorf("gc on datastore at %d: %s", i, err.Error())
+			}
+		}
+	}
+	return nil
+}

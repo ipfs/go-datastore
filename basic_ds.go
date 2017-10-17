@@ -226,3 +226,24 @@ func (d *LogDatastore) Close() error {
 	}
 	return nil
 }
+
+func (d *LogDatastore) Check() error {
+	if c, ok := d.child.(CheckedDatastore); ok {
+		return c.Check()
+	}
+	return nil
+}
+
+func (d *LogDatastore) Scrub() error {
+	if c, ok := d.child.(ScrubbedDatastore); ok {
+		return c.Scrub()
+	}
+	return nil
+}
+
+func (d *LogDatastore) CollectGarbage() error {
+	if c, ok := d.child.(GCDatastore); ok {
+		return c.CollectGarbage()
+	}
+	return nil
+}
