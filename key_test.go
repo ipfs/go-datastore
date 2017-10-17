@@ -194,8 +194,8 @@ func TestKeyUnmarshalJSON(t *testing.T) {
 		err  string
 	}{
 		{[]byte("\"/a/b/c\""), NewKey("/a/b/c"), ""},
-		{[]byte{}, NewKey("/"), "too short to unmarshal json string"},
-		{[]byte{'"'}, NewKey("/"), "too short to unmarshal json string"},
+		{[]byte{}, NewKey("/"), "too short to unmarshal key to json string"},
+		{[]byte{'"'}, NewKey("/"), "too short to unmarshal key to json string"},
 		{[]byte(`""`), NewKey("/"), ""},
 	}
 
