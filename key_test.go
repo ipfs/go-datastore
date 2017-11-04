@@ -163,7 +163,7 @@ func TestKeyMarshalJSON(t *testing.T) {
 		err  string
 	}{
 		{NewKey("/a/b/c"), []byte("\"/a/b/c\""), ""},
-		{NewKey("/shouldescapekey\"/with/quote"), []byte("\"/shouldescapekey\"/with/quote\""), ""},
+		{NewKey("/shouldescapekey\"/with/quote"), []byte("\"/shouldescapekey\\\"/with/quote\""), ""},
 	}
 
 	for i, c := range cases {
@@ -194,9 +194,9 @@ func TestKeyUnmarshalJSON(t *testing.T) {
 		err  string
 	}{
 		{[]byte("\"/a/b/c\""), NewKey("/a/b/c"), ""},
-		{[]byte{}, NewKey("/"), "too short to unmarshal key to json string"},
-		{[]byte{'"'}, NewKey("/"), "too short to unmarshal key to json string"},
-		{[]byte(`""`), NewKey("/"), ""},
+		{[]byte{}, Key{}, "unexpected end of JSON input"},
+		{[]byte{'"'}, Key{}, "unexpected end of JSON input"},
+		{[]byte(`""`), NewKey(""), ""},
 	}
 
 	for i, c := range cases {
