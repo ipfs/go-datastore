@@ -1,8 +1,6 @@
 package namespace
 
 import (
-	"fmt"
-
 	ds "github.com/ipfs/go-datastore"
 	ktds "github.com/ipfs/go-datastore/keytransform"
 	dsq "github.com/ipfs/go-datastore/query"
@@ -28,7 +26,6 @@ func PrefixTransform(prefix ds.Key) ktds.KeyTransform {
 			}
 
 			if !prefix.IsAncestorOf(k) {
-				fmt.Errorf("Expected prefix (%s) in key (%s)", prefix, k)
 				panic("expected prefix not found")
 			}
 
