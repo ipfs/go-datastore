@@ -227,7 +227,6 @@ func ResultsWithChan(q Query, res <-chan Result) Results {
 				}
 			}
 		}
-		return
 	})
 
 	go b.Process.CloseAfterChildren()
