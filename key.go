@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"encoding/json"
 	"path"
 	"strings"
 
@@ -230,6 +231,23 @@ func (k Key) IsDescendantOf(other Key) bool {
 // IsTopLevel returns whether this key has only one namespace.
 func (k Key) IsTopLevel() bool {
 	return len(k.List()) == 1
+}
+
+// MarshalJSON implements the json.Marshaler interface,
+// keys are represented as JSON strings
+func (k Key) MarshalJSON() ([]byte, error) {
+	return json.Marshal(k.String())
+}
+
+// MarshalJSON implements the json.Unmarshaler interface,
+// keys will parse any value specified as a key to a string
+func (k *Key) UnmarshalJSON(data []byte) error {
+	var key string
+	if err := json.Unmarshal(data, &key); err != nil {
+		return err
+	}
+	*k = NewKey(key)
+	return nil
 }
 
 // RandomKey returns a randomly (uuid) generated key.
