@@ -159,7 +159,7 @@ func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
 
 	for i, s := range keystrs {
 		if outkeys[i] != s {
-			t.Fatal("in key output, got %s but expected %s", outkeys[i], s)
+			t.Fatalf("in key output, got %s but expected %s", outkeys[i], s)
 		}
 	}
 

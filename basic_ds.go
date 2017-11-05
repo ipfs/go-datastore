@@ -170,7 +170,7 @@ func (d *LogDatastore) Delete(key Key) (err error) {
 func (d *LogDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	log.Printf("%s: Query\n", d.Name)
 	log.Printf("%s: q.Prefix: %s\n", d.Name, q.Prefix)
-	log.Printf("%s: q.KeysOnly: %s\n", d.Name, q.KeysOnly)
+	log.Printf("%s: q.KeysOnly: %v\n", d.Name, q.KeysOnly)
 	log.Printf("%s: q.Filters: %d\n", d.Name, len(q.Filters))
 	log.Printf("%s: q.Orders: %d\n", d.Name, len(q.Orders))
 	log.Printf("%s: q.Offset: %d\n", d.Name, q.Offset)

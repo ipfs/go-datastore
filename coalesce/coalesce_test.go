@@ -121,7 +121,7 @@ func TestCoalesceSameGet(t *testing.T) {
 				errs <- err
 			}
 			if v != "bar" {
-				errs <- fmt.Errorf("v is not bar", v)
+				errs <- fmt.Errorf("v is not bar: %v", v)
 			}
 			done <- struct{}{}
 		}()
@@ -133,7 +133,7 @@ func TestCoalesceSameGet(t *testing.T) {
 				errs <- err
 			}
 			if v != "baz" {
-				errs <- fmt.Errorf("v is not baz", v)
+				errs <- fmt.Errorf("v is not baz: %v", v)
 			}
 			done <- struct{}{}
 		}()
