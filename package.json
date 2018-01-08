@@ -9,9 +9,9 @@
   "gxDependencies": [
     {
       "author": "satori",
-      "hash": "QmcyaFHbyiZfoX5GTpcqqCPYmbjYNAhRDekXSJPFHdYNSV",
+      "hash": "QmcBWojPoNh4qm7zvv4qiepvCnnc7ALS9qcp7TNwwxT1gT",
       "name": "go.uuid",
-      "version": "1.0.0"
+      "version": "1.1.0"
     },
     {
       "author": "whyrusleeping",
