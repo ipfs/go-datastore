@@ -4,6 +4,7 @@
 [![](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](http://ipfs.io/)
 [![](https://img.shields.io/badge/freenode-%23ipfs-blue.svg?style=flat-square)](http://webchat.freenode.net/?channels=%23ipfs)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+[![GoDoc](https://godoc.org/github.com/ipfs/go-datastore?status.svg)](https://godoc.org/github.com/ipfs/go-datastore)
 
 > key-value datastore interfaces
 
@@ -15,7 +16,7 @@ Based on [datastore.py](https://github.com/datastore/datastore).
 
 ## Documentation
 
-https://godoc.org/github.com/jbenet/go-datastore
+https://godoc.org/github.com/ipfs/go-datastore
 
 ## Contribute
 
