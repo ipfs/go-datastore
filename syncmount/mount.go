@@ -203,6 +203,20 @@ func (d *Datastore) Close() error {
 	return nil
 }
 
+// DiskUsage returns the sum of DiskUsages for the mounted datastores.
+// Non PersistentDatastores will not be accounted.
+func (d *Datastore) DiskUsage() (uint64, error) {
+	var duTotal uint64 = 0
+	for _, d := range d.mounts {
+		du, err := ds.DiskUsage(d.Datastore)
+		duTotal += du
+		if err != nil {
+			return duTotal, err
+		}
+	}
+	return duTotal, nil
+}
+
 type mountBatch struct {
 	mounts map[string]ds.Batch
 	lk     sync.Mutex

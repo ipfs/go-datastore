@@ -166,6 +166,13 @@ func (d *LogDatastore) Delete(key Key) (err error) {
 	return d.child.Delete(key)
 }
 
+// DiskUsage implements the PersistentDatastore interface.
+func (d *LogDatastore) DiskUsage() (uint64, error) {
+	du, err := DiskUsage(d.child)
+	log.Printf("%s: DiskUsage: %d\n", d.Name, du)
+	return du, err
+}
+
 // Query implements Datastore.Query
 func (d *LogDatastore) Query(q dsq.Query) (dsq.Results, error) {
 	log.Printf("%s: Query\n", d.Name)

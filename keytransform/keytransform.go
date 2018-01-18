@@ -84,6 +84,11 @@ func (d *ktds) Close() error {
 	return nil
 }
 
+// DiskUsage implements the PersistentDatastore interface.
+func (d *ktds) DiskUsage() (uint64, error) {
+	return ds.DiskUsage(d.child)
+}
+
 func (d *ktds) Batch() (ds.Batch, error) {
 	bds, ok := d.child.(ds.Batching)
 	if !ok {

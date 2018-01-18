@@ -87,6 +87,30 @@ func (ks *DSSuite) TestBasic(c *C) {
 	}
 }
 
+func (ks *DSSuite) TestDiskUsage(c *C) {
+	keys := strsToKeys([]string{
+		"foo",
+		"foo/bar",
+		"foo/bar/baz",
+		"foo/barb",
+		"foo/bar/bazb",
+		"foo/bar/baz/barb",
+	})
+
+	for _, k := range keys {
+		err := ks.ds.Put(k, []byte(k.String()))
+		c.Check(err, Equals, nil)
+	}
+
+	if ps, ok := ks.ds.(ds.PersistentDatastore); ok {
+		if s, err := ps.DiskUsage(); s <= 100 || err != nil {
+			c.Error("unexpected size is: ", s)
+		}
+	} else {
+		c.Error("should implement PersistentDatastore")
+	}
+}
+
 func strsToKeys(strs []string) []ds.Key {
 	keys := make([]ds.Key, len(strs))
 	for i, s := range strs {

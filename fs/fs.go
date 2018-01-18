@@ -1,5 +1,5 @@
 // Package fs is a simple Datastore implementation that stores keys
-// are directories and files, mirroring the key. That is, the key
+// as directories and files, mirroring the key. That is, the key
 // "/foo/bar" is stored as file "PATH/foo/bar/.dsobject".
 //
 // This means key some segments will not work. For example, the
@@ -20,6 +20,7 @@ package fs
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -156,4 +157,20 @@ func (d *Datastore) Close() error {
 
 func (d *Datastore) Batch() (ds.Batch, error) {
 	return ds.NewBasicBatch(d), nil
+}
+
+// DiskUsage returns the disk size used by the datastore in bytes.
+func (d *Datastore) DiskUsage() (uint64, error) {
+	var du uint64
+	err := filepath.Walk(d.path, func(p string, f os.FileInfo, err error) error {
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		if f != nil {
+			du += uint64(f.Size())
+		}
+		return nil
+	})
+	return du, err
 }
