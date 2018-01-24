@@ -35,14 +35,11 @@ func New(mounts []Mount) *Datastore {
 
 type Datastore struct {
 	mounts []Mount
-	lk     sync.Mutex
 }
 
 var _ ds.Datastore = (*Datastore)(nil)
 
 func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
-	d.lk.Lock()
-	defer d.lk.Unlock()
 	for _, m := range d.mounts {
 		if m.Prefix.Equal(key) || m.Prefix.IsAncestorOf(key) {
 			s := strings.TrimPrefix(key.String(), m.Prefix.String())
@@ -64,9 +61,6 @@ func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
 // /ao/e/uh/  A /
 // /aoe/      not matching
 func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest []ds.Key) {
-	d.lk.Lock()
-	defer d.lk.Unlock()
-
 	for _, m := range d.mounts {
 		p := m.Prefix.String()
 		if len(p) > 1 {
@@ -257,6 +251,9 @@ func (mt *mountBatch) Delete(key ds.Key) error {
 }
 
 func (mt *mountBatch) Commit() error {
+	mt.lk.Lock()
+	defer mt.lk.Unlock()
+
 	for _, t := range mt.mounts {
 		err := t.Commit()
 		if err != nil {
