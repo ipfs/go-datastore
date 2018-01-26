@@ -95,7 +95,7 @@ type CheckedDatastore interface {
 
 // CheckedDatastore is an interface that should be implemented by datastores
 // which want to provide a mechanism to check data integrity and/or
-// error correction
+// error correction.
 type ScrubbedDatastore interface {
 	Datastore
 
@@ -103,11 +103,31 @@ type ScrubbedDatastore interface {
 }
 
 // GCDatastore is an interface that should be implemented by datastores which
-// don't free disk space by just removing data from them
+// don't free disk space by just removing data from them.
 type GCDatastore interface {
 	Datastore
 
 	CollectGarbage() error
+}
+
+// PersistentDatastore is an interface that should be implemented by datastores
+// which can report disk usage.
+type PersistentDatastore interface {
+	Datastore
+
+	// DiskUsage returns the space used by a datastore, in bytes.
+	DiskUsage() (uint64, error)
+}
+
+// DiskUsage checks if a Datastore is a
+// PersistentDatastore and returns its DiskUsage(),
+// otherwise returns 0.
+func DiskUsage(d Datastore) (uint64, error) {
+	persDs, ok := d.(PersistentDatastore)
+	if !ok {
+		return 0, nil
+	}
+	return persDs.DiskUsage()
 }
 
 // Errors

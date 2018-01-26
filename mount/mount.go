@@ -194,6 +194,19 @@ func (d *Datastore) Close() error {
 	return nil
 }
 
+// DiskUsage implements the PersistentDatastore interface.
+func (d *Datastore) DiskUsage() (uint64, error) {
+	var duTotal uint64 = 0
+	for _, d := range d.mounts {
+		du, err := datastore.DiskUsage(d.Datastore)
+		duTotal += du
+		if err != nil {
+			return duTotal, err
+		}
+	}
+	return duTotal, nil
+}
+
 type mountBatch struct {
 	mounts map[string]datastore.Batch
 

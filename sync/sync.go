@@ -92,6 +92,13 @@ func (d *MutexDatastore) Close() error {
 	return nil
 }
 
+// DiskUsage implements the PersistentDatastore interface.
+func (d *MutexDatastore) DiskUsage() (uint64, error) {
+	d.RLock()
+	defer d.RUnlock()
+	return ds.DiskUsage(d.child)
+}
+
 type syncBatch struct {
 	batch ds.Batch
 	mds   *MutexDatastore

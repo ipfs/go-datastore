@@ -1,7 +1,9 @@
 package tiered
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	ds "github.com/ipfs/go-datastore"
@@ -85,6 +87,37 @@ func (d tiered) Delete(key ds.Key) (err error) {
 		return err
 	}
 	return nil
+}
+
+// DiskUsage returns the sum of DiskUsages from the datastores.
+// Non PersistentDatastores are not accounted.
+func (d tiered) DiskUsage() (uint64, error) {
+	var duTotal uint64 = 0
+	errs := []string{}
+	var lock sync.Mutex
+
+	var wg sync.WaitGroup
+	for _, cd := range d {
+		wg.Add(1)
+		go func(cd ds.Datastore) {
+			defer wg.Done()
+			du, err := ds.DiskUsage(cd)
+			lock.Lock()
+			defer lock.Unlock()
+
+			if err != nil {
+				errs = append(errs, err.Error())
+			}
+			duTotal += du
+		}(cd)
+	}
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return duTotal, errors.New(strings.Join(errs, "\n"))
+	}
+
+	return duTotal, nil
 }
 
 // Query returns a list of keys in the datastore

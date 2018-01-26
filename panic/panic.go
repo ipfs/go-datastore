@@ -79,6 +79,15 @@ func (d *datastore) Close() error {
 	return nil
 }
 
+// DiskUsage implements the PersistentDatastore interface.
+func (d *datastore) DiskUsage() (uint64, error) {
+	du, err := ds.DiskUsage(d.child)
+	if err != nil {
+		panic(err)
+	}
+	return du, nil
+}
+
 func (d *datastore) Batch() (ds.Batch, error) {
 	b, err := d.child.(ds.Batching).Batch()
 	if err != nil {

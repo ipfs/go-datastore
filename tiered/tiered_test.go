@@ -64,6 +64,19 @@ func TestTiered(t *testing.T) {
 	testHas(t, td, ds.NewKey("foo"), "bar2")
 }
 
+func TestTieredDiskUsage(t *testing.T) {
+	d1 := ds.NewMapDatastore()
+	d2 := ds.NewMapDatastore()
+	d3 := ds.NewMapDatastore()
+	d4 := ds.NewMapDatastore()
+
+	td := New(d1, d2, d3, d4)
+	td.Put(ds.NewKey("foo"), "bar")
+	if du, err := td.DiskUsage(); du != 0 || err != nil {
+		t.Error("tiered datastore size should be 0")
+	}
+}
+
 func TestQueryCallsLast(t *testing.T) {
 	var d1n, d2n, d3n int
 	d1 := dscb.Wrap(ds.NewMapDatastore(), func() { d1n++ })
