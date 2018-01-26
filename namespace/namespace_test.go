@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	. "launchpad.net/gocheck"
+	. "github.com/go-check/check"
 
 	ds "github.com/ipfs/go-datastore"
 	ns "github.com/ipfs/go-datastore/namespace"
