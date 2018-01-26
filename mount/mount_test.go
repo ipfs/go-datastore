@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-datastore/mount"
 	"github.com/ipfs/go-datastore/query"
+	mount "github.com/ipfs/go-datastore/mount"
 	dstest "github.com/ipfs/go-datastore/test"
 )
 

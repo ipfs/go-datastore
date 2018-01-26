@@ -25,6 +25,6 @@
   "license": "MIT",
   "name": "go-datastore",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "1.4.1"
+  "version": "2.1.0"
 }
 

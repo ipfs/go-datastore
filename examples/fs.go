@@ -15,7 +15,7 @@
 // This package is intended for exploratory use, where the user would
 // examine the file system manually, and should only be used with
 // human-friendly, trusted keys. You have been warned.
-package fs
+package examples
 
 import (
 	"fmt"

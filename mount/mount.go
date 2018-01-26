@@ -1,5 +1,5 @@
 // Package mount provides a Datastore that has other Datastores
-// mounted at various key prefixes.
+// mounted at various key prefixes and is threadsafe
 package mount
 
 import (
@@ -8,8 +8,9 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync"
 
-	"github.com/ipfs/go-datastore"
+	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
 )
 
@@ -18,8 +19,8 @@ var (
 )
 
 type Mount struct {
-	Prefix    datastore.Key
-	Datastore datastore.Datastore
+	Prefix    ds.Key
+	Datastore ds.Datastore
 }
 
 func New(mounts []Mount) *Datastore {
@@ -36,17 +37,17 @@ type Datastore struct {
 	mounts []Mount
 }
 
-var _ datastore.Datastore = (*Datastore)(nil)
+var _ ds.Datastore = (*Datastore)(nil)
 
-func (d *Datastore) lookup(key datastore.Key) (ds datastore.Datastore, mountpoint, rest datastore.Key) {
+func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
 	for _, m := range d.mounts {
 		if m.Prefix.Equal(key) || m.Prefix.IsAncestorOf(key) {
 			s := strings.TrimPrefix(key.String(), m.Prefix.String())
-			k := datastore.NewKey(s)
+			k := ds.NewKey(s)
 			return m.Datastore, m.Prefix, k
 		}
 	}
-	return nil, datastore.NewKey("/"), key
+	return nil, ds.NewKey("/"), key
 }
 
 // lookupAll returns all mounts that might contain keys that are descendant of <key>
@@ -59,7 +60,7 @@ func (d *Datastore) lookup(key datastore.Key) (ds datastore.Datastore, mountpoin
 // /ao/e/     A /
 // /ao/e/uh/  A /
 // /aoe/      not matching
-func (d *Datastore) lookupAll(key datastore.Key) (ds []datastore.Datastore, mountpoint, rest []datastore.Key) {
+func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest []ds.Key) {
 	for _, m := range d.mounts {
 		p := m.Prefix.String()
 		if len(p) > 1 {
@@ -67,50 +68,50 @@ func (d *Datastore) lookupAll(key datastore.Key) (ds []datastore.Datastore, moun
 		}
 
 		if strings.HasPrefix(p, key.String()) {
-			ds = append(ds, m.Datastore)
+			dst = append(dst, m.Datastore)
 			mountpoint = append(mountpoint, m.Prefix)
-			rest = append(rest, datastore.NewKey("/"))
+			rest = append(rest, ds.NewKey("/"))
 		} else if strings.HasPrefix(key.String(), p) {
 			r := strings.TrimPrefix(key.String(), m.Prefix.String())
 
-			ds = append(ds, m.Datastore)
+			dst = append(dst, m.Datastore)
 			mountpoint = append(mountpoint, m.Prefix)
-			rest = append(rest, datastore.NewKey(r))
+			rest = append(rest, ds.NewKey(r))
 		}
 	}
-	return ds, mountpoint, rest
+	return dst, mountpoint, rest
 }
 
-func (d *Datastore) Put(key datastore.Key, value interface{}) error {
-	ds, _, k := d.lookup(key)
-	if ds == nil {
+func (d *Datastore) Put(key ds.Key, value interface{}) error {
+	cds, _, k := d.lookup(key)
+	if cds == nil {
 		return ErrNoMount
 	}
-	return ds.Put(k, value)
+	return cds.Put(k, value)
 }
 
-func (d *Datastore) Get(key datastore.Key) (value interface{}, err error) {
-	ds, _, k := d.lookup(key)
-	if ds == nil {
-		return nil, datastore.ErrNotFound
+func (d *Datastore) Get(key ds.Key) (value interface{}, err error) {
+	cds, _, k := d.lookup(key)
+	if cds == nil {
+		return nil, ds.ErrNotFound
 	}
-	return ds.Get(k)
+	return cds.Get(k)
 }
 
-func (d *Datastore) Has(key datastore.Key) (exists bool, err error) {
-	ds, _, k := d.lookup(key)
-	if ds == nil {
+func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
+	cds, _, k := d.lookup(key)
+	if cds == nil {
 		return false, nil
 	}
-	return ds.Has(k)
+	return cds.Has(k)
 }
 
-func (d *Datastore) Delete(key datastore.Key) error {
-	ds, _, k := d.lookup(key)
-	if ds == nil {
-		return datastore.ErrNotFound
+func (d *Datastore) Delete(key ds.Key) error {
+	cds, _, k := d.lookup(key)
+	if cds == nil {
+		return ds.ErrNotFound
 	}
-	return ds.Delete(k)
+	return cds.Delete(k)
 }
 
 func (d *Datastore) Query(q query.Query) (query.Results, error) {
@@ -122,12 +123,12 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		// `ipfs refs local` and ipfs-ds-convert.
 		return nil, errors.New("mount only supports listing all prefixed keys in random order")
 	}
-	prefix := datastore.NewKey(q.Prefix)
+	prefix := ds.NewKey(q.Prefix)
 	dses, mounts, rests := d.lookupAll(prefix)
 
 	// current itorator state
 	var res query.Results
-	var mount datastore.Key
+	var mount ds.Key
 	i := 0
 
 	return query.ResultsFromIterator(q, query.Iterator{
@@ -170,7 +171,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 				}
 			}
 
-			r.Key = mount.Child(datastore.RawKey(r.Key)).String()
+			r.Key = mount.Child(ds.RawKey(r.Key)).String()
 			return r, more
 		},
 		Close: func() error {
@@ -181,6 +182,8 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		},
 	}), nil
 }
+
+func (d *Datastore) IsThreadSafe() {}
 
 func (d *Datastore) Close() error {
 	for _, d := range d.mounts {
@@ -194,11 +197,12 @@ func (d *Datastore) Close() error {
 	return nil
 }
 
-// DiskUsage implements the PersistentDatastore interface.
+// DiskUsage returns the sum of DiskUsages for the mounted datastores.
+// Non PersistentDatastores will not be accounted.
 func (d *Datastore) DiskUsage() (uint64, error) {
 	var duTotal uint64 = 0
 	for _, d := range d.mounts {
-		du, err := datastore.DiskUsage(d.Datastore)
+		du, err := ds.DiskUsage(d.Datastore)
 		duTotal += du
 		if err != nil {
 			return duTotal, err
@@ -208,37 +212,41 @@ func (d *Datastore) DiskUsage() (uint64, error) {
 }
 
 type mountBatch struct {
-	mounts map[string]datastore.Batch
+	mounts map[string]ds.Batch
+	lk     sync.Mutex
 
 	d *Datastore
 }
 
-func (d *Datastore) Batch() (datastore.Batch, error) {
+func (d *Datastore) Batch() (ds.Batch, error) {
 	return &mountBatch{
-		mounts: make(map[string]datastore.Batch),
+		mounts: make(map[string]ds.Batch),
 		d:      d,
 	}, nil
 }
 
-func (mt *mountBatch) lookupBatch(key datastore.Key) (datastore.Batch, datastore.Key, error) {
+func (mt *mountBatch) lookupBatch(key ds.Key) (ds.Batch, ds.Key, error) {
+	mt.lk.Lock()
+	defer mt.lk.Unlock()
+
 	child, loc, rest := mt.d.lookup(key)
 	t, ok := mt.mounts[loc.String()]
 	if !ok {
-		bds, ok := child.(datastore.Batching)
+		bds, ok := child.(ds.Batching)
 		if !ok {
-			return nil, datastore.NewKey(""), datastore.ErrBatchUnsupported
+			return nil, ds.NewKey(""), ds.ErrBatchUnsupported
 		}
 		var err error
 		t, err = bds.Batch()
 		if err != nil {
-			return nil, datastore.NewKey(""), err
+			return nil, ds.NewKey(""), err
 		}
 		mt.mounts[loc.String()] = t
 	}
 	return t, rest, nil
 }
 
-func (mt *mountBatch) Put(key datastore.Key, val interface{}) error {
+func (mt *mountBatch) Put(key ds.Key, val interface{}) error {
 	t, rest, err := mt.lookupBatch(key)
 	if err != nil {
 		return err
@@ -247,7 +255,7 @@ func (mt *mountBatch) Put(key datastore.Key, val interface{}) error {
 	return t.Put(rest, val)
 }
 
-func (mt *mountBatch) Delete(key datastore.Key) error {
+func (mt *mountBatch) Delete(key ds.Key) error {
 	t, rest, err := mt.lookupBatch(key)
 	if err != nil {
 		return err
@@ -257,6 +265,9 @@ func (mt *mountBatch) Delete(key datastore.Key) error {
 }
 
 func (mt *mountBatch) Commit() error {
+	mt.lk.Lock()
+	defer mt.lk.Unlock()
+
 	for _, t := range mt.mounts {
 		err := t.Commit()
 		if err != nil {
@@ -268,7 +279,7 @@ func (mt *mountBatch) Commit() error {
 
 func (d *Datastore) Check() error {
 	for _, m := range d.mounts {
-		if c, ok := m.Datastore.(datastore.CheckedDatastore); ok {
+		if c, ok := m.Datastore.(ds.CheckedDatastore); ok {
 			if err := c.Check(); err != nil {
 				return fmt.Errorf("checking datastore at %s: %s", m.Prefix.String(), err.Error())
 			}
@@ -279,7 +290,7 @@ func (d *Datastore) Check() error {
 
 func (d *Datastore) Scrub() error {
 	for _, m := range d.mounts {
-		if c, ok := m.Datastore.(datastore.ScrubbedDatastore); ok {
+		if c, ok := m.Datastore.(ds.ScrubbedDatastore); ok {
 			if err := c.Scrub(); err != nil {
 				return fmt.Errorf("scrubbing datastore at %s: %s", m.Prefix.String(), err.Error())
 			}
@@ -290,7 +301,7 @@ func (d *Datastore) Scrub() error {
 
 func (d *Datastore) CollectGarbage() error {
 	for _, m := range d.mounts {
-		if c, ok := m.Datastore.(datastore.GCDatastore); ok {
+		if c, ok := m.Datastore.(ds.GCDatastore); ok {
 			if err := c.CollectGarbage(); err != nil {
 				return fmt.Errorf("gc on datastore at %s: %s", m.Prefix.String(), err.Error())
 			}
