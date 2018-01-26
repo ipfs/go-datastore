@@ -1,4 +1,4 @@
-package syncmount_test
+package mount_test
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
-	mount "github.com/ipfs/go-datastore/syncmount"
+	mount "github.com/ipfs/go-datastore/mount"
 	dstest "github.com/ipfs/go-datastore/test"
 )
 

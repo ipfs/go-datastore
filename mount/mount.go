@@ -1,6 +1,6 @@
 // Package mount provides a Datastore that has other Datastores
 // mounted at various key prefixes and is threadsafe
-package syncmount
+package mount
 
 import (
 	"errors"
