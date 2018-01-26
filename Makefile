@@ -1,6 +1,3 @@
-test: deps
-	go test -race -v ./...
-
 export IPFS_API ?= v04x.ipfs.io
 
 gx:
@@ -10,5 +7,3 @@ gx:
 deps: gx
 	gx --verbose install --global
 	gx-go rewrite
-	go get -t ./...
-
