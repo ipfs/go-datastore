@@ -7,7 +7,6 @@ import (
 	. "launchpad.net/gocheck"
 
 	ds "github.com/ipfs/go-datastore"
-	fs "github.com/ipfs/go-datastore/fs"
 	query "github.com/ipfs/go-datastore/query"
 )
 
@@ -23,15 +22,15 @@ var _ = Suite(&DSSuite{})
 
 func (ks *DSSuite) SetUpTest(c *C) {
 	ks.dir = c.MkDir()
-	ks.ds, _ = fs.NewDatastore(ks.dir)
+	ks.ds, _ = NewDatastore(ks.dir)
 }
 
 func (ks *DSSuite) TestOpen(c *C) {
-	_, err := fs.NewDatastore("/tmp/foo/bar/baz")
+	_, err := NewDatastore("/tmp/foo/bar/baz")
 	c.Assert(err, Not(Equals), nil)
 
 	// setup ds
-	_, err = fs.NewDatastore(ks.dir)
+	_, err = NewDatastore(ks.dir)
 	c.Assert(err, Equals, nil)
 }
 
