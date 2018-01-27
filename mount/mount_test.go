@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-datastore/query"
 	mount "github.com/ipfs/go-datastore/mount"
+	"github.com/ipfs/go-datastore/query"
 	dstest "github.com/ipfs/go-datastore/test"
 )
 
@@ -379,15 +379,15 @@ func TestMaintenanceFunctions(t *testing.T) {
 		{Prefix: datastore.NewKey("/"), Datastore: mapds},
 	})
 
-	if err:= m.Check(); err.Error() != "checking datastore at /: test error" {
+	if err := m.Check(); err.Error() != "checking datastore at /: test error" {
 		t.Errorf("Unexpected Check() error: %s", err)
 	}
 
-	if err:= m.CollectGarbage(); err.Error() != "gc on datastore at /: test error" {
+	if err := m.CollectGarbage(); err.Error() != "gc on datastore at /: test error" {
 		t.Errorf("Unexpected CollectGarbage() error: %s", err)
 	}
 
-	if err:= m.Scrub(); err.Error() != "scrubbing datastore at /: test error" {
+	if err := m.Scrub(); err.Error() != "scrubbing datastore at /: test error" {
 		t.Errorf("Unexpected Scrub() error: %s", err)
 	}
 }

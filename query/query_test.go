@@ -1,9 +1,9 @@
 package query
 
 import (
+	"reflect"
 	"strings"
 	"testing"
-	"reflect"
 )
 
 var sampleKeys = []string{
@@ -184,4 +184,3 @@ func getKeysViaChan(rs Results) []string {
 	}
 	return ret
 }
-

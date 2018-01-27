@@ -18,6 +18,12 @@
       "hash": "QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP",
       "name": "goprocess",
       "version": "1.0.0"
+    },
+    {
+      "author": "gustavo",
+      "hash": "QmYBJ8BXPDTMnzLFdv4rS5kbR1fUFASDVDpK7ZbeWMx6hq",
+      "name": "go-check",
+      "version": "1.0.0"
     }
   ],
   "gxVersion": "0.7.0",
