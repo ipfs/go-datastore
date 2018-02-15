@@ -24,6 +24,12 @@
       "hash": "QmYBJ8BXPDTMnzLFdv4rS5kbR1fUFASDVDpK7ZbeWMx6hq",
       "name": "go-check",
       "version": "1.0.0"
+    },
+    {
+      "author": "hsanjuan",
+      "hash": "QmRJVNatYJwTAHgdSM1Xef9QVQ1Ch3XHdmcrykjP5Y4soL",
+      "name": "go-ipfs-delay",
+      "version": "0.0.1"
     }
   ],
   "gxVersion": "0.7.0",
