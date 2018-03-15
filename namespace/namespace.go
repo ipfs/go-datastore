@@ -85,6 +85,11 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 	}), nil
 }
 
+// DiskUsage implements the PersistentDatastore interface.
+func (d *datastore) DiskUsage() (uint64, error) {
+	return ds.DiskUsage(d.raw)
+}
+
 func (d *datastore) Batch() (ds.Batch, error) {
 	if bds, ok := d.Datastore.(ds.Batching); ok {
 		return bds.Batch()

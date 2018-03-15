@@ -43,6 +43,17 @@ func (d *Datastore) runOp(op func() error) error {
 	return fmt.Errorf(errFmtString, err)
 }
 
+// DiskUsage implements the PersistentDatastore interface.
+func (d *Datastore) DiskUsage() (uint64, error) {
+	var size uint64
+	err := d.runOp(func() error {
+		var err error
+		size, err = ds.DiskUsage(d.Batching)
+		return err
+	})
+	return size, err
+}
+
 // Get retrieves a value given a key.
 func (d *Datastore) Get(k ds.Key) (interface{}, error) {
 	var val interface{}

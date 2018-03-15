@@ -76,6 +76,14 @@ func (d *Failstore) Query(q dsq.Query) (dsq.Results, error) {
 	return d.child.Query(q)
 }
 
+// DiskUsage implements the PersistentDatastore interface.
+func (d *Failstore) DiskUsage() (uint64, error) {
+	if err := d.errfunc("disk-usage"); err != nil {
+		return 0, err
+	}
+	return ds.DiskUsage(d.child)
+}
+
 // FailBatch implements batching operations on the Failstore.
 type FailBatch struct {
 	cb     ds.Batch
