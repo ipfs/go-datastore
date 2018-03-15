@@ -92,3 +92,8 @@ func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
 
 	return d.child.Query(q)
 }
+
+// DiskUsage implements the PersistentDatastore interface.
+func (d *Datastore) DiskUsage() (uint64, error) {
+	return ds.DiskUsage(d.child)
+}

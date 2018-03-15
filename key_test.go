@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	. "github.com/go-check/check"
 	. "github.com/ipfs/go-datastore"
-	. "gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
