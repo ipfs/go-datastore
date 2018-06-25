@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"errors"
+	"time"
 
 	query "github.com/ipfs/go-datastore/query"
 )
@@ -128,6 +129,31 @@ func DiskUsage(d Datastore) (uint64, error) {
 		return 0, nil
 	}
 	return persDs.DiskUsage()
+}
+
+// TTLDatastore is an interface that should be implemented by datastores that
+// support expiring entries.
+type TTLDatastore interface {
+	Datastore
+
+	PutWithTTL(key Key, value interface{}, ttl time.Duration) error
+	SetTTL(key Key, ttl time.Duration) error
+}
+
+// Txn is an interface for transactions that can be committed or rolled back.
+type Txn interface {
+	Datastore
+
+	Commit() error
+	Rollback()
+}
+
+// TxDatastore is an interface that should be implemented by datastores that
+// support transactions.
+type TxDatastore interface {
+	Datastore
+
+	NewTransaction() Txn
 }
 
 // Errors
