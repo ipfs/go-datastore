@@ -7,7 +7,7 @@ import (
 
 	dsq "github.com/ipfs/go-datastore/query"
 
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 /*
@@ -254,7 +254,7 @@ func (k *Key) UnmarshalJSON(data []byte) error {
 //   RandomKey()
 //   NewKey("/f98719ea086343f7b71f32ea9d9d521d")
 func RandomKey() Key {
-	return NewKey(strings.Replace(uuid.Must(uuid.NewV4()).String(), "-", "", -1))
+	return NewKey(strings.Replace(uuid.New().String(), "-", "", -1))
 }
 
 /*
