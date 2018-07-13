@@ -8,12 +8,6 @@
   },
   "gxDependencies": [
     {
-      "author": "satori",
-      "hash": "QmcBWojPoNh4qm7zvv4qiepvCnnc7ALS9qcp7TNwwxT1gT",
-      "name": "go.uuid",
-      "version": "1.1.0"
-    },
-    {
       "author": "whyrusleeping",
       "hash": "QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP",
       "name": "goprocess",
@@ -30,6 +24,12 @@
       "hash": "QmRJVNatYJwTAHgdSM1Xef9QVQ1Ch3XHdmcrykjP5Y4soL",
       "name": "go-ipfs-delay",
       "version": "0.0.1"
+    },
+    {
+      "author": "google",
+      "hash": "QmSSeQqc5QeuefkaM6JFV5tSF9knLUkXKVhW1eYRiqe72W",
+      "name": "uuid",
+      "version": "0.1.0"
     }
   ],
   "gxVersion": "0.7.0",
