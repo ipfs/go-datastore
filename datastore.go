@@ -150,7 +150,7 @@ type Txn interface {
 
 // TxDatastore is an interface that should be implemented by datastores that
 // support transactions.
-type TxDatastore interface {
+type TxnDatastore interface {
 	Datastore
 
 	NewTransaction(readOnly bool) Txn
