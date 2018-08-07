@@ -140,12 +140,24 @@ type TTLDatastore interface {
 	SetTTL(key Key, ttl time.Duration) error
 }
 
-// Txn is an interface for transactions that can be committed or rolled back.
+// Txn is an interface for transactions that can be committed or discarded.
 type Txn interface {
+	// Txn extends the Datastore type. Txns allow users to batch queries and
+	// mutations to the Datastore into atomic groups, or transactions. Actions
+	// performed on a transaction will not take hold until a successful call to
+	// Commit has been made. Likewise, transactions can be aborted by calling
+	// Discard before a successful Commit has been made.
 	Datastore
 
+	// Commit finalizes a transaction, attempting to commit it to the Datastore.
+	// May return an error if the transaction has gone stale. The presence of an
+	// error is an indication that the data was not committed to the Datastore.
 	Commit() error
-	Rollback()
+	// Discard throws away changes recorded in a transaction without committing
+	// them to the underlying Datastore. Any calls made to Discard after Commit
+	// has been successfully called will have no effect on the transaction and
+	// state of the Datastore, making it safe to defer.
+	Discard()
 }
 
 // TxDatastore is an interface that should be implemented by datastores that
