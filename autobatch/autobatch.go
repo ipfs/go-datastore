@@ -30,9 +30,14 @@ func NewAutoBatching(d ds.Batching, size int) *Datastore {
 
 // Delete deletes a key/value
 func (d *Datastore) Delete(k ds.Key) error {
+	_, found := d.buffer[k]
 	delete(d.buffer, k)
 
-	return d.child.Delete(k)
+	err := d.child.Delete(k)
+	if found && err == ds.ErrNotFound {
+		return nil
+	}
+	return err
 }
 
 // Get retrieves a value given a key.
