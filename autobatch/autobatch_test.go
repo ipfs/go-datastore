@@ -6,27 +6,11 @@ import (
 	"testing"
 
 	ds "github.com/ipfs/go-datastore"
+	dstest "github.com/ipfs/go-datastore/test"
 )
 
-func TestBasicPuts(t *testing.T) {
-	d := NewAutoBatching(ds.NewMapDatastore(), 16)
-
-	k := ds.NewKey("test")
-	v := []byte("hello world")
-
-	err := d.Put(k, v)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	out, err := d.Get(k)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !bytes.Equal(out, v) {
-		t.Fatal("wasnt the same! ITS NOT THE SAME")
-	}
+func TestAutobatch(t *testing.T) {
+	dstest.SubtestAll(t, NewAutoBatching(ds.NewMapDatastore(), 16))
 }
 
 func TestFlushing(t *testing.T) {
