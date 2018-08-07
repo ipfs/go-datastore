@@ -89,7 +89,7 @@ func (d *NullDatastore) Put(key Key, value interface{}) (err error) {
 
 // Get implements Datastore.Get
 func (d *NullDatastore) Get(key Key) (value interface{}, err error) {
-	return nil, nil
+	return nil, ErrNotFound
 }
 
 // Has implements Datastore.Has
