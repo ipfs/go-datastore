@@ -142,12 +142,16 @@ type TTLDatastore interface {
 
 // Txn is an interface for transactions that can be committed or discarded.
 type Txn interface {
-	// Txn extends the Datastore type. Txns allow users to batch queries and
-	// mutations to the Datastore into atomic groups, or transactions. Actions
-	// performed on a transaction will not take hold until a successful call to
-	// Commit has been made. Likewise, transactions can be aborted by calling
-	// Discard before a successful Commit has been made.
-	Datastore
+	// Txn has the same capabilities as Datastore. Txns allow users to batch
+	// queries and mutations to the Datastore into atomic groups, or transactions.
+	// Actions performed on a transaction will not take hold until a successful
+	// call to Commit has been made. Likewise, transactions can be aborted by
+	// calling Discard before a successful Commit has been made.
+	Put(key Key, value interface{}) error
+	Get(key Key) (value interface{}, err error)
+	Has(key Key) (exists bool, err error)
+	Delete(key Key) error
+	Query(q query.Query) (query.Results, error)
 
 	// Commit finalizes a transaction, attempting to commit it to the Datastore.
 	// May return an error if the transaction has gone stale. The presence of an
@@ -160,7 +164,7 @@ type Txn interface {
 	Discard()
 }
 
-// TxDatastore is an interface that should be implemented by datastores that
+// TxnDatastore is an interface that should be implemented by datastores that
 // support transactions.
 type TxnDatastore interface {
 	Datastore
