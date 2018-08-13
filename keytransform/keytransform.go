@@ -33,12 +33,12 @@ func (d *ktds) Children() []ds.Datastore {
 }
 
 // Put stores the given value, transforming the key first.
-func (d *ktds) Put(key ds.Key, value interface{}) (err error) {
+func (d *ktds) Put(key ds.Key, value []byte) (err error) {
 	return d.child.Put(d.ConvertKey(key), value)
 }
 
 // Get returns the value for given key, transforming the key first.
-func (d *ktds) Get(key ds.Key) (value interface{}, err error) {
+func (d *ktds) Get(key ds.Key) (value []byte, err error) {
 	return d.child.Get(d.ConvertKey(key))
 }
 
@@ -111,7 +111,7 @@ type transformBatch struct {
 	f KeyMapping
 }
 
-func (t *transformBatch) Put(key ds.Key, val interface{}) error {
+func (t *transformBatch) Put(key ds.Key, val []byte) error {
 	return t.dst.Put(t.f(key), val)
 }
 

@@ -142,7 +142,7 @@ func TestSuccessAfterTemp(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(out.([]byte)) != string(val) {
+	if string(out) != string(val) {
 		t.Fatal("got wrong value")
 	}
 }

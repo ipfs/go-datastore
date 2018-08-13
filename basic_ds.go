@@ -9,28 +9,26 @@ import (
 
 // Here are some basic datastore implementations.
 
-type keyMap map[Key]interface{}
-
 // MapDatastore uses a standard Go map for internal storage.
 type MapDatastore struct {
-	values keyMap
+	values map[Key][]byte
 }
 
 // NewMapDatastore constructs a MapDatastore
 func NewMapDatastore() (d *MapDatastore) {
 	return &MapDatastore{
-		values: keyMap{},
+		values: make(map[Key][]byte),
 	}
 }
 
 // Put implements Datastore.Put
-func (d *MapDatastore) Put(key Key, value interface{}) (err error) {
+func (d *MapDatastore) Put(key Key, value []byte) (err error) {
 	d.values[key] = value
 	return nil
 }
 
 // Get implements Datastore.Get
-func (d *MapDatastore) Get(key Key) (value interface{}, err error) {
+func (d *MapDatastore) Get(key Key) (value []byte, err error) {
 	val, found := d.values[key]
 	if !found {
 		return nil, ErrNotFound
@@ -83,12 +81,12 @@ func NewNullDatastore() *NullDatastore {
 }
 
 // Put implements Datastore.Put
-func (d *NullDatastore) Put(key Key, value interface{}) (err error) {
+func (d *NullDatastore) Put(key Key, value []byte) (err error) {
 	return nil
 }
 
 // Get implements Datastore.Get
-func (d *NullDatastore) Get(key Key) (value interface{}, err error) {
+func (d *NullDatastore) Get(key Key) (value []byte, err error) {
 	return nil, ErrNotFound
 }
 
@@ -142,14 +140,14 @@ func (d *LogDatastore) Children() []Datastore {
 }
 
 // Put implements Datastore.Put
-func (d *LogDatastore) Put(key Key, value interface{}) (err error) {
+func (d *LogDatastore) Put(key Key, value []byte) (err error) {
 	log.Printf("%s: Put %s\n", d.Name, key)
 	// log.Printf("%s: Put %s ```%s```", d.Name, key, value)
 	return d.child.Put(key, value)
 }
 
 // Get implements Datastore.Get
-func (d *LogDatastore) Get(key Key) (value interface{}, err error) {
+func (d *LogDatastore) Get(key Key) (value []byte, err error) {
 	log.Printf("%s: Get %s\n", d.Name, key)
 	return d.child.Get(key)
 }
@@ -207,7 +205,7 @@ func (d *LogDatastore) Batch() (Batch, error) {
 }
 
 // Put implements Batch.Put
-func (d *LogBatch) Put(key Key, value interface{}) (err error) {
+func (d *LogBatch) Put(key Key, value []byte) (err error) {
 	log.Printf("%s: BatchPut %s\n", d.Name, key)
 	// log.Printf("%s: Put %s ```%s```", d.Name, key, value)
 	return d.child.Put(key, value)

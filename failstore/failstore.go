@@ -27,7 +27,7 @@ func NewFailstore(c ds.Datastore, efunc func(string) error) *Failstore {
 }
 
 // Put puts a key/value into the datastore.
-func (d *Failstore) Put(k ds.Key, val interface{}) error {
+func (d *Failstore) Put(k ds.Key, val []byte) error {
 	err := d.errfunc("put")
 	if err != nil {
 		return err
@@ -37,7 +37,7 @@ func (d *Failstore) Put(k ds.Key, val interface{}) error {
 }
 
 // Get retrieves a value from the datastore.
-func (d *Failstore) Get(k ds.Key) (interface{}, error) {
+func (d *Failstore) Get(k ds.Key) ([]byte, error) {
 	err := d.errfunc("get")
 	if err != nil {
 		return nil, err
@@ -108,7 +108,7 @@ func (d *Failstore) Batch() (ds.Batch, error) {
 }
 
 // Put does a batch put.
-func (b *FailBatch) Put(k ds.Key, val interface{}) error {
+func (b *FailBatch) Put(k ds.Key, val []byte) error {
 	if err := b.dstore.errfunc("batch-put"); err != nil {
 		return err
 	}

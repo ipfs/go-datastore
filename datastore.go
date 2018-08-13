@@ -39,11 +39,11 @@ type Datastore interface {
 	// Ultimately, the lowest-level datastore will need to do some value checking
 	// or risk getting incorrect values. It may also be useful to expose a more
 	// type-safe interface to your application, and do the checking up-front.
-	Put(key Key, value interface{}) error
+	Put(key Key, value []byte) error
 
 	// Get retrieves the object `value` named by `key`.
 	// Get will return ErrNotFound if the key is not mapped to a value.
-	Get(key Key) (value interface{}, err error)
+	Get(key Key) (value []byte, err error)
 
 	// Has returns whether the `key` is mapped to a `value`.
 	// In some contexts, it may be much cheaper only to check for existence of
@@ -160,7 +160,7 @@ func GetBackedHas(ds Datastore, key Key) (bool, error) {
 }
 
 type Batch interface {
-	Put(key Key, val interface{}) error
+	Put(key Key, val []byte) error
 
 	Delete(key Key) error
 

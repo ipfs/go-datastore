@@ -53,7 +53,7 @@ func (ks *DSSuite) TestBasic(c *C) {
 	for _, k := range keys {
 		v, err := ks.ds.Get(k)
 		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v.([]byte), []byte(k.String())), Equals, true)
+		c.Check(bytes.Equal(v, []byte(k.String())), Equals, true)
 	}
 
 	r, err := ks.ds.Query(query.Query{Prefix: "/foo/bar/"})

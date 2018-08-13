@@ -31,14 +31,14 @@ func (d *MutexDatastore) Children() []ds.Datastore {
 func (d *MutexDatastore) IsThreadSafe() {}
 
 // Put implements Datastore.Put
-func (d *MutexDatastore) Put(key ds.Key, value interface{}) (err error) {
+func (d *MutexDatastore) Put(key ds.Key, value []byte) (err error) {
 	d.Lock()
 	defer d.Unlock()
 	return d.child.Put(key, value)
 }
 
 // Get implements Datastore.Get
-func (d *MutexDatastore) Get(key ds.Key) (value interface{}, err error) {
+func (d *MutexDatastore) Get(key ds.Key) (value []byte, err error) {
 	d.RLock()
 	defer d.RUnlock()
 	return d.child.Get(key)
@@ -104,7 +104,7 @@ type syncBatch struct {
 	mds   *MutexDatastore
 }
 
-func (b *syncBatch) Put(key ds.Key, val interface{}) error {
+func (b *syncBatch) Put(key ds.Key, val []byte) error {
 	b.mds.Lock()
 	defer b.mds.Unlock()
 	return b.batch.Put(key, val)

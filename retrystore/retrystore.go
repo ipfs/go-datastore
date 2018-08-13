@@ -55,8 +55,8 @@ func (d *Datastore) DiskUsage() (uint64, error) {
 }
 
 // Get retrieves a value given a key.
-func (d *Datastore) Get(k ds.Key) (interface{}, error) {
-	var val interface{}
+func (d *Datastore) Get(k ds.Key) ([]byte, error) {
+	var val []byte
 	err := d.runOp(func() error {
 		var err error
 		val, err = d.Batching.Get(k)
@@ -67,7 +67,7 @@ func (d *Datastore) Get(k ds.Key) (interface{}, error) {
 }
 
 // Put stores a key/value.
-func (d *Datastore) Put(k ds.Key, val interface{}) error {
+func (d *Datastore) Put(k ds.Key, val []byte) error {
 	return d.runOp(func() error {
 		return d.Batching.Put(k, val)
 	})

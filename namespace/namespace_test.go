@@ -47,11 +47,11 @@ func (ks *DSSuite) testBasic(c *C, prefix string) {
 	for _, k := range keys {
 		v1, err := nsds.Get(k)
 		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v1.([]byte), []byte(k.String())), Equals, true)
+		c.Check(bytes.Equal(v1, []byte(k.String())), Equals, true)
 
 		v2, err := mpds.Get(ds.NewKey(prefix).Child(k))
 		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v2.([]byte), []byte(k.String())), Equals, true)
+		c.Check(bytes.Equal(v2, []byte(k.String())), Equals, true)
 	}
 
 	run := func(d ds.Datastore, q dsq.Query) []ds.Key {
@@ -112,9 +112,7 @@ func (ks *DSSuite) TestQuery(c *C) {
 
 	for i, ent := range results {
 		c.Check(ent.Key, Equals, expect[i].Key)
-		entval, _ := ent.Value.([]byte)
-		expval, _ := expect[i].Value.([]byte)
-		c.Check(string(entval), Equals, string(expval))
+		c.Check(string(ent.Value), Equals, string(expect[i].Value))
 	}
 
 	err = qres.Close()
@@ -134,9 +132,7 @@ func (ks *DSSuite) TestQuery(c *C) {
 
 	for i, ent := range results {
 		c.Check(ent.Key, Equals, expect[i].Key)
-		entval, _ := ent.Value.([]byte)
-		expval, _ := expect[i].Value.([]byte)
-		c.Check(string(entval), Equals, string(expval))
+		c.Check(string(ent.Value), Equals, string(expect[i].Value))
 	}
 
 	if err := nsds.Datastore.(ds.CheckedDatastore).Check(); err != dstest.TestError {

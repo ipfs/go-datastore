@@ -12,7 +12,7 @@ func TestDelayed(t *testing.T) {
 	d := New(datastore.NewMapDatastore(), delay.Fixed(time.Second))
 	now := time.Now()
 	k := datastore.NewKey("test")
-	err := d.Put(k, "value")
+	err := d.Put(k, []byte("value"))
 	if err != nil {
 		t.Fatal(err)
 	}

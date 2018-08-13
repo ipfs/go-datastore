@@ -64,16 +64,10 @@ type Query struct {
 	KeysOnly bool     // return only keys.
 }
 
-// NotFetched is a special type that signals whether or not the value
-// of an Entry has been fetched or not. This is needed because
-// datastore implementations get to decide whether Query returns values
-// or only keys. nil is not a good signal, as real values may be nil.
-const NotFetched int = iota
-
 // Entry is a query result entry.
 type Entry struct {
 	Key   string // cant be ds.Key because circular imports ...!!!
-	Value interface{}
+	Value []byte // Will be nil if KeysOnly has been passed.
 }
 
 // Result is a special entry that includes an error, so that the client
