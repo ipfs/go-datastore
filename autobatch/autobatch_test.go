@@ -1,6 +1,7 @@
 package autobatch
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -11,7 +12,7 @@ func TestBasicPuts(t *testing.T) {
 	d := NewAutoBatching(ds.NewMapDatastore(), 16)
 
 	k := ds.NewKey("test")
-	v := "hello world"
+	v := []byte("hello world")
 
 	err := d.Put(k, v)
 	if err != nil {
@@ -23,7 +24,7 @@ func TestBasicPuts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if out != v {
+	if !bytes.Equal(out, v) {
 		t.Fatal("wasnt the same! ITS NOT THE SAME")
 	}
 }
@@ -36,7 +37,7 @@ func TestFlushing(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		keys = append(keys, ds.NewKey(fmt.Sprintf("test%d", i)))
 	}
-	v := "hello world"
+	v := []byte("hello world")
 
 	for _, k := range keys {
 		err := d.Put(k, v)
@@ -62,8 +63,8 @@ func TestFlushing(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if val != v {
-			t.Fatal(err)
+		if !bytes.Equal(val, v) {
+			t.Fatal("wrong value")
 		}
 	}
 }

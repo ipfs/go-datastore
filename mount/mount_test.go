@@ -41,13 +41,9 @@ func TestPut(t *testing.T) {
 		t.Fatalf("Put error: %v", err)
 	}
 
-	val, err := mapds.Get(datastore.NewKey("/thud"))
+	buf, err := mapds.Get(datastore.NewKey("/thud"))
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
-	}
-	buf, ok := val.([]byte)
-	if !ok {
-		t.Fatalf("Get value is not []byte: %T %v", val, val)
 	}
 	if g, e := string(buf), "foobar"; g != e {
 		t.Errorf("wrong value: %q != %q", g, e)
@@ -97,14 +93,9 @@ func TestGet(t *testing.T) {
 		t.Fatalf("Get error: %v", err)
 	}
 
-	val, err := m.Get(datastore.NewKey("/quux/thud"))
+	buf, err := m.Get(datastore.NewKey("/quux/thud"))
 	if err != nil {
 		t.Fatalf("Put error: %v", err)
-	}
-
-	buf, ok := val.([]byte)
-	if !ok {
-		t.Fatalf("Get value is not []byte: %T %v", val, val)
 	}
 	if g, e := string(buf), "foobar"; g != e {
 		t.Errorf("wrong value: %q != %q", g, e)
@@ -259,11 +250,11 @@ func TestQueryCross(t *testing.T) {
 		{Prefix: datastore.NewKey("/"), Datastore: mapds0},
 	})
 
-	m.Put(datastore.NewKey("/foo/lorem"), "123")
-	m.Put(datastore.NewKey("/bar/ipsum"), "234")
-	m.Put(datastore.NewKey("/bar/dolor"), "345")
-	m.Put(datastore.NewKey("/baz/sit"), "456")
-	m.Put(datastore.NewKey("/banana"), "567")
+	m.Put(datastore.NewKey("/foo/lorem"), []byte("123"))
+	m.Put(datastore.NewKey("/bar/ipsum"), []byte("234"))
+	m.Put(datastore.NewKey("/bar/dolor"), []byte("345"))
+	m.Put(datastore.NewKey("/baz/sit"), []byte("456"))
+	m.Put(datastore.NewKey("/banana"), []byte("567"))
 
 	res, err := m.Query(query.Query{Prefix: "/ba"})
 	if err != nil {
@@ -288,7 +279,7 @@ func TestQueryCross(t *testing.T) {
 			t.Errorf("unexpected key %s", e.Key)
 		}
 
-		if v != e.Value {
+		if v != string(e.Value) {
 			t.Errorf("key value didn't match expected %s: '%s' - '%s'", e.Key, v, e.Value)
 		}
 
@@ -315,8 +306,8 @@ func TestLookupPrio(t *testing.T) {
 		{Prefix: datastore.NewKey("/foo"), Datastore: mapds1},
 	})
 
-	m.Put(datastore.NewKey("/foo/bar"), "123")
-	m.Put(datastore.NewKey("/baz"), "234")
+	m.Put(datastore.NewKey("/foo/bar"), []byte("123"))
+	m.Put(datastore.NewKey("/baz"), []byte("234"))
 
 	found, err := mapds0.Has(datastore.NewKey("/baz"))
 	if err != nil {
@@ -360,7 +351,7 @@ func TestErrQueryClose(t *testing.T) {
 		{Prefix: datastore.NewKey("/foo"), Datastore: eqds},
 	})
 
-	m.Put(datastore.NewKey("/baz"), "123")
+	m.Put(datastore.NewKey("/baz"), []byte("123"))
 
 	qr, err := m.Query(query.Query{})
 	if err != nil {

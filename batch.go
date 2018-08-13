@@ -3,7 +3,7 @@ package datastore
 // basicBatch implements the transaction interface for datastores who do
 // not have any sort of underlying transactional support
 type basicBatch struct {
-	puts    map[Key]interface{}
+	puts    map[Key][]byte
 	deletes map[Key]struct{}
 
 	target Datastore
@@ -11,13 +11,13 @@ type basicBatch struct {
 
 func NewBasicBatch(ds Datastore) Batch {
 	return &basicBatch{
-		puts:    make(map[Key]interface{}),
+		puts:    make(map[Key][]byte),
 		deletes: make(map[Key]struct{}),
 		target:  ds,
 	}
 }
 
-func (bt *basicBatch) Put(key Key, val interface{}) error {
+func (bt *basicBatch) Put(key Key, val []byte) error {
 	bt.puts[key] = val
 	return nil
 }

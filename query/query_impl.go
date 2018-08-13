@@ -118,7 +118,7 @@ func NaiveQueryApply(q Query, qr Results) Results {
 	return qr
 }
 
-func ResultEntriesFrom(keys []string, vals []interface{}) []Entry {
+func ResultEntriesFrom(keys []string, vals [][]byte) []Entry {
 	re := make([]Entry, len(keys))
 	for i, k := range keys {
 		re[i] = Entry{Key: k, Value: vals[i]}

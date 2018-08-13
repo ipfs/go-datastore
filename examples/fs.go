@@ -51,19 +51,7 @@ func (d *Datastore) KeyFilename(key ds.Key) string {
 }
 
 // Put stores the given value.
-func (d *Datastore) Put(key ds.Key, value interface{}) (err error) {
-
-	// TODO: maybe use io.Readers/Writers?
-	// r, err := dsio.CastAsReader(value)
-	// if err != nil {
-	// 	return err
-	// }
-
-	val, ok := value.([]byte)
-	if !ok {
-		return ds.ErrInvalidType
-	}
-
+func (d *Datastore) Put(key ds.Key, value []byte) (err error) {
 	fn := d.KeyFilename(key)
 
 	// mkdirall above.
@@ -72,11 +60,11 @@ func (d *Datastore) Put(key ds.Key, value interface{}) (err error) {
 		return err
 	}
 
-	return ioutil.WriteFile(fn, val, 0666)
+	return ioutil.WriteFile(fn, value, 0666)
 }
 
 // Get returns the value for given key
-func (d *Datastore) Get(key ds.Key) (value interface{}, err error) {
+func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	fn := d.KeyFilename(key)
 	if !isFile(fn) {
 		return nil, ds.ErrNotFound
@@ -115,9 +103,13 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 			if strings.HasSuffix(path, ObjectKeySuffix) {
 				path = path[:len(path)-len(ObjectKeySuffix)]
 			}
+			var result query.Result
 			key := ds.NewKey(path)
-			entry := query.Entry{Key: key.String(), Value: query.NotFetched}
-			results <- query.Result{Entry: entry}
+			result.Entry.Key = key.String()
+			if !q.KeysOnly {
+				result.Entry.Value, result.Error = d.Get(key)
+			}
+			results <- result
 		}
 		return nil
 	}

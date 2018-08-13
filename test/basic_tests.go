@@ -34,13 +34,8 @@ func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {
 		t.Fatal("error getting value after put: ", err)
 	}
 
-	outb, ok := out.([]byte)
-	if !ok {
-		t.Fatalf("output type wasnt []byte, it was %T", out)
-	}
-
-	if !bytes.Equal(outb, val) {
-		t.Fatal("value received on get wasnt what we expected:", outb)
+	if !bytes.Equal(out, val) {
+		t.Fatal("value received on get wasnt what we expected:", out)
 	}
 
 	have, err = ds.Has(k)
@@ -118,12 +113,7 @@ func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
 			t.Fatalf("error on get[%d]: %s", i, err)
 		}
 
-		valb, ok := val.([]byte)
-		if !ok {
-			t.Fatalf("expected []byte as output from get, got: %T", val)
-		}
-
-		if !bytes.Equal(valb, values[i]) {
+		if !bytes.Equal(val, values[i]) {
 			t.Fatal("input value didnt match the one returned from Get")
 		}
 	}

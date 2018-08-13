@@ -56,7 +56,7 @@ func RunBatchTest(t *testing.T, ds dstore.Batching) {
 			t.Fatal(err)
 		}
 
-		if !bytes.Equal(blk.([]byte), blocks[i]) {
+		if !bytes.Equal(blk, blocks[i]) {
 			t.Fatal("blocks not correct!")
 		}
 	}

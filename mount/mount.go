@@ -82,7 +82,7 @@ func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest 
 	return dst, mountpoint, rest
 }
 
-func (d *Datastore) Put(key ds.Key, value interface{}) error {
+func (d *Datastore) Put(key ds.Key, value []byte) error {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
 		return ErrNoMount
@@ -90,7 +90,7 @@ func (d *Datastore) Put(key ds.Key, value interface{}) error {
 	return cds.Put(k, value)
 }
 
-func (d *Datastore) Get(key ds.Key) (value interface{}, err error) {
+func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
 		return nil, ds.ErrNotFound
@@ -246,7 +246,7 @@ func (mt *mountBatch) lookupBatch(key ds.Key) (ds.Batch, ds.Key, error) {
 	return t, rest, nil
 }
 
-func (mt *mountBatch) Put(key ds.Key, val interface{}) error {
+func (mt *mountBatch) Put(key ds.Key, val []byte) error {
 	t, rest, err := mt.lookupBatch(key)
 	if err != nil {
 		return err

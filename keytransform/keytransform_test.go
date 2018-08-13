@@ -56,11 +56,11 @@ func (ks *DSSuite) TestBasic(c *C) {
 	for _, k := range keys {
 		v1, err := ktds.Get(k)
 		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v1.([]byte), []byte(k.String())), Equals, true)
+		c.Check(bytes.Equal(v1, []byte(k.String())), Equals, true)
 
 		v2, err := mpds.Get(ds.NewKey("abc").Child(k))
 		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v2.([]byte), []byte(k.String())), Equals, true)
+		c.Check(bytes.Equal(v2, []byte(k.String())), Equals, true)
 	}
 
 	run := func(d ds.Datastore, q dsq.Query) []ds.Key {
