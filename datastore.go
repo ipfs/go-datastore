@@ -136,7 +136,7 @@ func DiskUsage(d Datastore) (uint64, error) {
 type TTLDatastore interface {
 	Datastore
 
-	PutWithTTL(key Key, value interface{}, ttl time.Duration) error
+	PutWithTTL(key Key, value []byte, ttl time.Duration) error
 	SetTTL(key Key, ttl time.Duration) error
 }
 
