@@ -1,6 +1,8 @@
 package query
 
 import (
+	"time"
+
 	goprocess "github.com/jbenet/goprocess"
 )
 
@@ -56,18 +58,20 @@ cost of the layer of abstraction.
 
 */
 type Query struct {
-	Prefix   string   // namespaces the query to results whose keys have Prefix
-	Filters  []Filter // filter results. apply sequentially
-	Orders   []Order  // order results. apply sequentially
-	Limit    int      // maximum number of results
-	Offset   int      // skip given number of results
-	KeysOnly bool     // return only keys.
+	Prefix            string   // namespaces the query to results whose keys have Prefix
+	Filters           []Filter // filter results. apply sequentially
+	Orders            []Order  // order results. apply sequentially
+	Limit             int      // maximum number of results
+	Offset            int      // skip given number of results
+	KeysOnly          bool     // return only keys.
+	ReturnExpirations bool     // return expirations (see TTLDatastore)
 }
 
 // Entry is a query result entry.
 type Entry struct {
-	Key   string // cant be ds.Key because circular imports ...!!!
-	Value []byte // Will be nil if KeysOnly has been passed.
+	Key        string    // cant be ds.Key because circular imports ...!!!
+	Value      []byte    // Will be nil if KeysOnly has been passed.
+	Expiration time.Time // Entry expiration timestamp if requested and supported (see TTLDatastore).
 }
 
 // Result is a special entry that includes an error, so that the client

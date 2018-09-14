@@ -138,6 +138,7 @@ type TTLDatastore interface {
 
 	PutWithTTL(key Key, value []byte, ttl time.Duration) error
 	SetTTL(key Key, ttl time.Duration) error
+	GetExpiration(key Key) (time.Time, error)
 }
 
 // Txn extends the Datastore type. Txns allow users to batch queries and
