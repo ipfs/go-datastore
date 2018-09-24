@@ -165,7 +165,7 @@ type Txn interface {
 type TxnDatastore interface {
 	Datastore
 
-	NewTransaction(readOnly bool) Txn
+	NewTransaction(readOnly bool) (Txn, error)
 }
 
 // Errors
