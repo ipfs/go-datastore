@@ -29,6 +29,14 @@ func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {
 		t.Fatal("should have key foo, has returned false")
 	}
 
+	size, err := ds.GetSize(k)
+	if err != nil {
+		t.Fatal("error getting size after put: ", err)
+	}
+	if size != len(val) {
+		t.Fatalf("incorrect size: expected %d, got %d", len(val), size)
+	}
+
 	out, err := ds.Get(k)
 	if err != nil {
 		t.Fatal("error getting value after put: ", err)
@@ -47,6 +55,14 @@ func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {
 		t.Fatal("should have key foo, has returned false")
 	}
 
+	size, err = ds.GetSize(k)
+	if err != nil {
+		t.Fatal("error getting size after get: ", err)
+	}
+	if size != len(val) {
+		t.Fatalf("incorrect size: expected %d, got %d", len(val), size)
+	}
+
 	err = ds.Delete(k)
 	if err != nil {
 		t.Fatal("error calling delete: ", err)
@@ -59,6 +75,18 @@ func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {
 
 	if have {
 		t.Fatal("should not have key foo, has returned true")
+	}
+
+	size, err = ds.GetSize(k)
+	switch err {
+	case dstore.ErrNotFound:
+	case nil:
+		t.Fatal("expected error getting size after delete")
+	default:
+		t.Fatal("wrong error getting size after delete: ", err)
+	}
+	if size != -1 {
+		t.Fatal("expected missing size to be -1")
 	}
 }
 
@@ -80,6 +108,18 @@ func SubtestNotFounds(t *testing.T, ds dstore.Datastore) {
 	}
 	if have {
 		t.Fatal("has returned true for key we don't have")
+	}
+
+	size, err := ds.GetSize(badk)
+	switch err {
+	case dstore.ErrNotFound:
+	case nil:
+		t.Fatal("expected error getting size after delete")
+	default:
+		t.Fatal("wrong error getting size after delete: ", err)
+	}
+	if size != -1 {
+		t.Fatal("expected missing size to be -1")
 	}
 }
 
