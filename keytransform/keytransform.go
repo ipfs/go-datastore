@@ -48,6 +48,12 @@ func (d *ktds) Has(key ds.Key) (exists bool, err error) {
 	return d.child.Has(d.ConvertKey(key))
 }
 
+// GetSize returns the size of the value named by the given key, transforming
+// the key first.
+func (d *ktds) GetSize(key ds.Key) (size int, err error) {
+	return d.child.GetSize(d.ConvertKey(key))
+}
+
 // Delete removes the value for given key
 func (d *ktds) Delete(key ds.Key) (err error) {
 	return d.child.Delete(d.ConvertKey(key))

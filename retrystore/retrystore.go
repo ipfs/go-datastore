@@ -83,3 +83,14 @@ func (d *Datastore) Has(k ds.Key) (bool, error) {
 	})
 	return has, err
 }
+
+// GetSize returns the size of the value in the datastore, if present.
+func (d *Datastore) GetSize(k ds.Key) (int, error) {
+	var size int
+	err := d.runOp(func() error {
+		var err error
+		size, err = d.Batching.GetSize(k)
+		return err
+	})
+	return size, err
+}

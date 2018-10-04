@@ -33,6 +33,11 @@ func (dds *delayed) Has(key ds.Key) (exists bool, err error) {
 	return dds.ds.Has(key)
 }
 
+func (dds *delayed) GetSize(key ds.Key) (size int, err error) {
+	dds.delay.Wait()
+	return dds.ds.GetSize(key)
+}
+
 func (dds *delayed) Delete(key ds.Key) (err error) {
 	dds.delay.Wait()
 	return dds.ds.Delete(key)

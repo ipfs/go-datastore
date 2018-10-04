@@ -42,6 +42,14 @@ func (d *MapDatastore) Has(key Key) (exists bool, err error) {
 	return found, nil
 }
 
+// GetSize implements Datastore.GetSize
+func (d *MapDatastore) GetSize(key Key) (size int, err error) {
+	if v, found := d.values[key]; found {
+		return len(v), nil
+	}
+	return -1, ErrNotFound
+}
+
 // Delete implements Datastore.Delete
 func (d *MapDatastore) Delete(key Key) (err error) {
 	if _, found := d.values[key]; !found {
@@ -93,6 +101,11 @@ func (d *NullDatastore) Get(key Key) (value []byte, err error) {
 // Has implements Datastore.Has
 func (d *NullDatastore) Has(key Key) (exists bool, err error) {
 	return false, nil
+}
+
+// Has implements Datastore.GetSize
+func (d *NullDatastore) GetSize(key Key) (size int, err error) {
+	return -1, ErrNotFound
 }
 
 // Delete implements Datastore.Delete
@@ -156,6 +169,12 @@ func (d *LogDatastore) Get(key Key) (value []byte, err error) {
 func (d *LogDatastore) Has(key Key) (exists bool, err error) {
 	log.Printf("%s: Has %s\n", d.Name, key)
 	return d.child.Has(key)
+}
+
+// GetSize implements Datastore.GetSize
+func (d *LogDatastore) GetSize(key Key) (size int, err error) {
+	log.Printf("%s: GetSize %s\n", d.Name, key)
+	return d.child.GetSize(key)
 }
 
 // Delete implements Datastore.Delete

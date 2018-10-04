@@ -78,6 +78,10 @@ func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
 	return ds.GetBackedHas(d, key)
 }
 
+func (d *Datastore) GetSize(key ds.Key) (size int, err error) {
+	return ds.GetBackedSize(d, key)
+}
+
 // Delete removes the value for given key
 func (d *Datastore) Delete(key ds.Key) (err error) {
 	fn := d.KeyFilename(key)

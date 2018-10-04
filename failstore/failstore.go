@@ -56,6 +56,16 @@ func (d *Failstore) Has(k ds.Key) (bool, error) {
 	return d.child.Has(k)
 }
 
+// GetSize returns the size of the value in the datastore, if present.
+func (d *Failstore) GetSize(k ds.Key) (int, error) {
+	err := d.errfunc("getsize")
+	if err != nil {
+		return -1, err
+	}
+
+	return d.child.GetSize(k)
+}
+
 // Delete removes a key/value from the datastore.
 func (d *Failstore) Delete(k ds.Key) error {
 	err := d.errfunc("delete")
