@@ -52,6 +52,11 @@ type Datastore interface {
 	// The default implementation is found in `GetBackedHas`.
 	Has(key Key) (exists bool, err error)
 
+	// GetSize returns the size of the `value` named by `key`.
+	// In some contexts, it may be much cheaper to only get the size of the
+	// value rather than retrieving the value itself.
+	GetSize(key Key) (size int, err error)
+
 	// Delete removes the value for given `key`.
 	Delete(key Key) error
 
@@ -195,6 +200,20 @@ func GetBackedHas(ds Datastore, key Key) (bool, error) {
 	default:
 		return false, err
 	}
+}
+
+// GetBackedSize provides a default Datastore.GetSize implementation.
+// It exists so Datastore.GetSize implementations can use it, like so:
+//
+// func (*d SomeDatastore) GetSize(key Key) (size int, err error) {
+//   return GetBackedSize(d, key)
+// }
+func GetBackedSize(ds Datastore, key Key) (int, error) {
+	value, err := ds.Get(key)
+	if err == nil {
+		return len(value), nil
+	}
+	return -1, err
 }
 
 type Batch interface {

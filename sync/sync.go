@@ -51,6 +51,13 @@ func (d *MutexDatastore) Has(key ds.Key) (exists bool, err error) {
 	return d.child.Has(key)
 }
 
+// GetSize implements Datastore.GetSize
+func (d *MutexDatastore) GetSize(key ds.Key) (size int, err error) {
+	d.RLock()
+	defer d.RUnlock()
+	return d.child.GetSize(key)
+}
+
 // Delete implements Datastore.Delete
 func (d *MutexDatastore) Delete(key ds.Key) (err error) {
 	d.Lock()

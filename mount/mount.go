@@ -106,6 +106,14 @@ func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
 	return cds.Has(k)
 }
 
+func (d *Datastore) GetSize(key ds.Key) (size int, err error) {
+	cds, _, k := d.lookup(key)
+	if cds == nil {
+		return -1, ds.ErrNotFound
+	}
+	return cds.GetSize(k)
+}
+
 func (d *Datastore) Delete(key ds.Key) error {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
