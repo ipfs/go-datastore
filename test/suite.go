@@ -32,8 +32,8 @@ func SubtestAll(t *testing.T, ds dstore.Datastore) {
 			f(t, ds)
 		})
 	}
-	if _, ok := ds.(dstore.Batching); ok {
-		for _, f := range BasicSubtests {
+	if ds, ok := ds.(dstore.Batching); ok {
+		for _, f := range BatchSubtests {
 			t.Run(getFunctionName(f), func(t *testing.T) {
 				f(t, ds)
 			})
