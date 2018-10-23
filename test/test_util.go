@@ -101,6 +101,54 @@ func RunBatchDeleteTest(t *testing.T, ds dstore.Batching) {
 	}
 }
 
+func RunBatchPutAndDeleteTest(t *testing.T, ds dstore.Batching) {
+	batch, err := ds.Batch()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ka := dstore.NewKey("/a")
+	kb := dstore.NewKey("/b")
+
+	if err := batch.Put(ka, []byte{1}); err != nil {
+		t.Error(err)
+	}
+	if err := batch.Put(kb, []byte{2}); err != nil {
+		t.Error(err)
+	}
+	if err := batch.Delete(ka); err != nil {
+		t.Error(err)
+	}
+	if err := batch.Delete(kb); err != nil {
+		t.Error(err)
+	}
+	if err := batch.Put(kb, []byte{3}); err != nil {
+		t.Error(err)
+	}
+
+	// TODO: assert that nothing has been flushed yet? What are the semantics here?
+
+	if err := batch.Commit(); err != nil {
+		t.Error(err)
+	}
+
+	switch _, err := ds.Get(ka); err {
+	case dstore.ErrNotFound:
+	case nil:
+		t.Errorf("expected to not find %s", ka)
+	default:
+		t.Error(err)
+	}
+
+	if v, err := ds.Get(kb); err != nil {
+		t.Error(err)
+	} else {
+		if len(v) != 1 || v[0] != 3 {
+			t.Errorf("for key %s, expected %v, got %v", kb, []byte{3}, v)
+		}
+	}
+}
+
 type testDatastore struct {
 	testErrors bool
 
