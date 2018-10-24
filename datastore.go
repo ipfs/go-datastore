@@ -75,6 +75,12 @@ type Datastore interface {
 	Query(q query.Query) (query.Results, error)
 }
 
+// Batching datastores support deferred, grouped updates to the database.
+// `Batch`es do NOT have transactional semantics: updates to the underlying
+// datastore are not guaranteed to occur in the same iota of time. Similarly,
+// batched updates will not be flushed to the underlying datastore until
+// `Commit` has been called. `Txn`s from a `TxnDatastore` have all the
+// capabilities of a `Batch`, but the reverse is NOT true.
 type Batching interface {
 	Datastore
 
