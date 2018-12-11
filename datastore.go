@@ -31,6 +31,12 @@ proper error reporting. Thus, all Datastore calls may return errors, which
 should be checked by callers.
 */
 type Datastore interface {
+	Read
+	Write
+}
+
+// Write is the write-side of the Datastore interface.
+type Write interface {
 	// Put stores the object `value` named by `key`.
 	//
 	// The generalized Datastore interface does not impose a value type,
@@ -42,6 +48,12 @@ type Datastore interface {
 	// type-safe interface to your application, and do the checking up-front.
 	Put(key Key, value []byte) error
 
+	// Delete removes the value for given `key`.
+	Delete(key Key) error
+}
+
+// Read is the read-side of the Datastore interface.
+type Read interface {
 	// Get retrieves the object `value` named by `key`.
 	// Get will return ErrNotFound if the key is not mapped to a value.
 	Get(key Key) (value []byte, err error)
@@ -56,9 +68,6 @@ type Datastore interface {
 	// In some contexts, it may be much cheaper to only get the size of the
 	// value rather than retrieving the value itself.
 	GetSize(key Key) (size int, err error)
-
-	// Delete removes the value for given `key`.
-	Delete(key Key) error
 
 	// Query searches the datastore and returns a query result. This function
 	// may return before the query actually runs. To wait for the query:
@@ -87,6 +96,8 @@ type Batching interface {
 	Batch() (Batch, error)
 }
 
+// ErrBatchUnsupported is returned if the by Batch if the Datastore doesn't
+// actually support batching.
 var ErrBatchUnsupported = errors.New("this datastore does not support batching")
 
 // ThreadSafeDatastore is an interface that all threadsafe datastore should
@@ -223,9 +234,7 @@ func GetBackedSize(ds Datastore, key Key) (int, error) {
 }
 
 type Batch interface {
-	Put(key Key, val []byte) error
-
-	Delete(key Key) error
+	Write
 
 	Commit() error
 }
