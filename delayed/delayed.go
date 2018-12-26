@@ -3,6 +3,8 @@
 package delayed
 
 import (
+	"io"
+
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 	delay "github.com/ipfs/go-ipfs-delay"
@@ -20,6 +22,7 @@ type Delayed struct {
 }
 
 var _ ds.Batching = (*Delayed)(nil)
+var _ io.Closer = (*Delayed)(nil)
 
 // Put implements the ds.Datastore interface.
 func (dds *Delayed) Put(key ds.Key, value []byte) (err error) {
@@ -66,4 +69,12 @@ func (dds *Delayed) Batch() (ds.Batch, error) {
 func (dds *Delayed) DiskUsage() (uint64, error) {
 	dds.delay.Wait()
 	return ds.DiskUsage(dds.ds)
+}
+
+// Close closes the inner datastore (if it implements the io.Closer interface).
+func (dds *Delayed) Close() error {
+	if closer, ok := dds.ds.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
 }
