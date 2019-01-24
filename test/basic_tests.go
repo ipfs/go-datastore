@@ -7,8 +7,8 @@ import (
 	"sort"
 	"testing"
 
-	dstore "github.com/ipfs/go-datastore"
-	dsq "github.com/ipfs/go-datastore/query"
+	dstore "github.com/ipfs/go-datastore/v4"
+	dsq "github.com/ipfs/go-datastore/v4/query"
 )
 
 func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {

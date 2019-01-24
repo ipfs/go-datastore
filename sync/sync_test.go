@@ -3,8 +3,8 @@ package sync
 import (
 	"testing"
 
-	ds "github.com/ipfs/go-datastore"
-	dstest "github.com/ipfs/go-datastore/test"
+	ds "github.com/ipfs/go-datastore/v4"
+	dstest "github.com/ipfs/go-datastore/v4/test"
 )
 
 func TestSync(t *testing.T) {

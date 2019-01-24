@@ -16,9 +16,11 @@ script:
 
 cache:
     directories:
-        - $GOPATH/src/gx
+        - $GOPATH/src/mod
 
 notifications:
   email: false
 
-env: GOTFLAGS="-race -cpu=5"
+env: 
+  - GOTFLAGS="-race -cpu=5"
+  - GO111MODULE=on

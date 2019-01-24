@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"testing"
 
-	dstore "github.com/ipfs/go-datastore"
-	query "github.com/ipfs/go-datastore/query"
+	dstore "github.com/ipfs/go-datastore/v4"
+	query "github.com/ipfs/go-datastore/v4/query"
 )
 
 // BasicSubtests is a list of all basic tests.

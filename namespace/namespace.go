@@ -1,9 +1,9 @@
 package namespace
 
 import (
-	ds "github.com/ipfs/go-datastore"
-	ktds "github.com/ipfs/go-datastore/keytransform"
-	dsq "github.com/ipfs/go-datastore/query"
+	ds "github.com/ipfs/go-datastore/v4"
+	ktds "github.com/ipfs/go-datastore/v4/keytransform"
+	dsq "github.com/ipfs/go-datastore/v4/query"
 )
 
 // PrefixTransform constructs a KeyTransform with a pair of functions that

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	query "github.com/ipfs/go-datastore/query"
+	query "github.com/ipfs/go-datastore/v4/query"
 )
 
 /*

@@ -3,8 +3,8 @@ package keytransform
 import (
 	"io"
 
-	ds "github.com/ipfs/go-datastore"
-	dsq "github.com/ipfs/go-datastore/query"
+	ds "github.com/ipfs/go-datastore/v4"
+	dsq "github.com/ipfs/go-datastore/v4/query"
 )
 
 type Pair struct {
