@@ -2,8 +2,6 @@ github.com/go-check/check v0.0.0-20180628173108-788fd7840127 h1:0gkP6mzaMqkmpcJY
 github.com/go-check/check v0.0.0-20180628173108-788fd7840127/go.mod h1:9ES+weclKsC9YodN5RgxqK/VD9HM9JsCSh7rNhMZE98=
 github.com/google/uuid v1.1.0 h1:Jf4mxPC/ziBnoPIdpQdPJ9OeiomAUHLvxmPRSPH9m4s=
 github.com/google/uuid v1.1.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/ipfs/go-datastore v3.2.0+incompatible h1:d9fANkqO9u1kgx6FSlZb8eZPDzD2uthVikkJAI7CUII=
-github.com/ipfs/go-datastore v3.2.0+incompatible/go.mod h1:bYmHO9fuKO1Ca7dpdDBWQl0mndy5b0HFqSJjGlNYtzs=
 github.com/ipfs/go-ipfs-delay v0.0.1 h1:FEcKCHSlz1VtTlC/crSz+2kSTtrfDfXYR1e20HzF4yU=
 github.com/ipfs/go-ipfs-delay v0.0.1/go.mod h1:8SP1YXK1M1kXuc4KJZINY3TQQ03J2rwBG9QfXmbRPrw=
 github.com/jbenet/goprocess v0.0.0-20160826012719-b497e2f366b8 h1:bspPhN+oKYFk5fcGNuQzp6IGzYQSenLEgH3s6jkXrWw=
