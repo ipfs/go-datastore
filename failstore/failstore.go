@@ -94,6 +94,11 @@ func (d *Failstore) DiskUsage() (uint64, error) {
 	return ds.DiskUsage(d.child)
 }
 
+//  Close implements the Datastore interface
+func (d *Failstore) Close() error {
+	return d.child.Close()
+}
+
 // FailBatch implements batching operations on the Failstore.
 type FailBatch struct {
 	cb     ds.Batch
