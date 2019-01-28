@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"io"
 	"sync"
 
 	ds "github.com/ipfs/go-datastore"
@@ -93,10 +92,7 @@ func (d *MutexDatastore) Batch() (ds.Batch, error) {
 func (d *MutexDatastore) Close() error {
 	d.RWMutex.Lock()
 	defer d.RWMutex.Unlock()
-	if c, ok := d.child.(io.Closer); ok {
-		return c.Close()
-	}
-	return nil
+	return d.child.Close()
 }
 
 // DiskUsage implements the PersistentDatastore interface.

@@ -1,8 +1,6 @@
 package keytransform
 
 import (
-	"io"
-
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 )
@@ -84,10 +82,7 @@ func (d *ktds) Query(q dsq.Query) (dsq.Results, error) {
 }
 
 func (d *ktds) Close() error {
-	if c, ok := d.child.(io.Closer); ok {
-		return c.Close()
-	}
-	return nil
+	return d.child.Close()
 }
 
 // DiskUsage implements the PersistentDatastore interface.

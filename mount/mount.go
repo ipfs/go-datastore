@@ -5,7 +5,6 @@ package mount
 import (
 	"errors"
 	"fmt"
-	"io"
 	"sort"
 	"strings"
 	"sync"
@@ -195,11 +194,9 @@ func (d *Datastore) IsThreadSafe() {}
 
 func (d *Datastore) Close() error {
 	for _, d := range d.mounts {
-		if c, ok := d.Datastore.(io.Closer); ok {
-			err := c.Close()
-			if err != nil {
-				return err
-			}
+		err := d.Datastore.Close()
+		if err != nil {
+			return err
 		}
 	}
 	return nil
