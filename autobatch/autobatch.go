@@ -112,3 +112,7 @@ func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
 func (d *Datastore) DiskUsage() (uint64, error) {
 	return ds.DiskUsage(d.child)
 }
+
+func (d *Datastore) Close() error {
+	return d.child.Close()
+}

@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"errors"
+	"io"
 	"time"
 
 	query "github.com/ipfs/go-datastore/query"
@@ -33,6 +34,7 @@ should be checked by callers.
 type Datastore interface {
 	Read
 	Write
+	io.Closer
 }
 
 // Write is the write-side of the Datastore interface.
