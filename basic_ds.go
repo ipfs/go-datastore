@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"io"
 	"log"
 
 	dsq "github.com/ipfs/go-datastore/query"
@@ -244,10 +243,7 @@ func (d *LogBatch) Commit() (err error) {
 
 func (d *LogDatastore) Close() error {
 	log.Printf("%s: Close\n", d.Name)
-	if cds, ok := d.child.(io.Closer); ok {
-		return cds.Close()
-	}
-	return nil
+	return d.child.Close()
 }
 
 func (d *LogDatastore) Check() error {
