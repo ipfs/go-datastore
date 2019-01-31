@@ -210,7 +210,7 @@ var ErrInvalidType = errors.New("datastore: invalid type error")
 // func (*d SomeDatastore) Has(key Key) (exists bool, err error) {
 //   return GetBackedHas(d, key)
 // }
-func GetBackedHas(ds Datastore, key Key) (bool, error) {
+func GetBackedHas(ds Read, key Key) (bool, error) {
 	_, err := ds.Get(key)
 	switch err {
 	case nil:
@@ -228,7 +228,7 @@ func GetBackedHas(ds Datastore, key Key) (bool, error) {
 // func (*d SomeDatastore) GetSize(key Key) (size int, err error) {
 //   return GetBackedSize(d, key)
 // }
-func GetBackedSize(ds Datastore, key Key) (int, error) {
+func GetBackedSize(ds Read, key Key) (int, error) {
 	value, err := ds.Get(key)
 	if err == nil {
 		return len(value), nil
