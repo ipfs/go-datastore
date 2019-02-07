@@ -159,7 +159,11 @@ func DiskUsage(d Datastore) (uint64, error) {
 // support expiring entries.
 type TTLDatastore interface {
 	Datastore
+	TTL
+}
 
+// TTL encapulates the methods that deal with entries with time-to-live.
+type TTL interface {
 	PutWithTTL(key Key, value []byte, ttl time.Duration) error
 	SetTTL(key Key, ttl time.Duration) error
 	GetExpiration(key Key) (time.Time, error)
