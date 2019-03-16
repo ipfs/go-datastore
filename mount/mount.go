@@ -190,8 +190,6 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	}), nil
 }
 
-func (d *Datastore) IsThreadSafe() {}
-
 func (d *Datastore) Close() error {
 	for _, d := range d.mounts {
 		err := d.Datastore.Close()
