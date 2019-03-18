@@ -49,6 +49,12 @@ func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
 	return nil, ds.NewKey("/"), key
 }
 
+type lookupResult struct {
+	ds    ds.Datastore
+	mount ds.Key
+	rest  ds.Key
+}
+
 // lookupAll returns all mounts that might contain keys that are descendant of <key>
 //
 // Matching: /ao/e
@@ -59,7 +65,7 @@ func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
 // /ao/e/     A /
 // /ao/e/uh/  A /
 // /aoe/      not matching
-func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest []ds.Key) {
+func (d *Datastore) lookupAll(key ds.Key) (results []*lookupResult) {
 	for _, m := range d.mounts {
 		p := m.Prefix.String()
 		if len(p) > 1 {
@@ -67,18 +73,24 @@ func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest 
 		}
 
 		if strings.HasPrefix(p, key.String()) {
-			dst = append(dst, m.Datastore)
-			mountpoint = append(mountpoint, m.Prefix)
-			rest = append(rest, ds.NewKey("/"))
+			result := &lookupResult{
+				m.Datastore,
+				m.Prefix,
+				ds.NewKey("/"),
+			}
+			results = append(results, result)
 		} else if strings.HasPrefix(key.String(), p) {
 			r := strings.TrimPrefix(key.String(), m.Prefix.String())
 
-			dst = append(dst, m.Datastore)
-			mountpoint = append(mountpoint, m.Prefix)
-			rest = append(rest, ds.NewKey(r))
+			result := &lookupResult{
+				m.Datastore,
+				m.Prefix,
+				ds.NewKey(r),
+			}
+			results = append(results, result)
 		}
 	}
-	return dst, mountpoint, rest
+	return results
 }
 
 func (d *Datastore) Put(key ds.Key, value []byte) error {
@@ -123,15 +135,25 @@ func (d *Datastore) Delete(key ds.Key) error {
 
 func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	if len(q.Filters) > 0 ||
-		len(q.Orders) > 0 ||
 		q.Limit > 0 ||
 		q.Offset > 0 {
 		// TODO this is still overly simplistic, but the only callers are
 		// `ipfs refs local` and ipfs-ds-convert.
-		return nil, errors.New("mount only supports listing all prefixed keys in random order")
+		return nil, errors.New("mount does not support filters, limit, or offset")
 	}
 	prefix := ds.NewKey(q.Prefix)
-	dses, mounts, rests := d.lookupAll(prefix)
+	lrs := d.lookupAll(prefix)
+
+	if len(q.Orders) > 0 {
+		switch q.Orders[0].(type) {
+		case query.OrderByKey:
+			sort.SliceStable(lrs, func(i, j int) bool { return strings.Compare(lrs[i].mount.String(), lrs[j].mount.String()) < 0 })
+		case query.OrderByKeyDescending:
+			sort.SliceStable(lrs, func(i, j int) bool { return strings.Compare(lrs[i].mount.String(), lrs[j].mount.String()) >= 0 })
+		default:
+			return nil, errors.New("mount only supports sorting keys in lexical order")
+		}
+	}
 
 	// current itorator state
 	var res query.Results
@@ -143,16 +165,16 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 			var r query.Result
 			var more bool
 
-			for try := true; try; try = len(dses) > i {
+			for try := true; try; try = len(lrs) > i {
 				if res == nil {
-					if len(dses) <= i {
+					if len(lrs) <= i {
 						//This should not happen normally
 						return query.Result{}, false
 					}
 
-					dst := dses[i]
-					mount = mounts[i]
-					rest := rests[i]
+					dst := lrs[i].ds
+					mount = lrs[i].mount
+					rest := lrs[i].rest
 
 					q2 := q
 					q2.Prefix = rest.String()
@@ -172,7 +194,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 					res = nil
 
 					i++
-					more = len(dses) > i
+					more = len(lrs) > i
 				} else {
 					break
 				}
@@ -182,7 +204,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 			return r, more
 		},
 		Close: func() error {
-			if len(mounts) > i && res != nil {
+			if len(lrs) > i && res != nil {
 				return res.Close()
 			}
 			return nil

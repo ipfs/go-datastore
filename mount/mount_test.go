@@ -297,6 +297,47 @@ func TestQueryCross(t *testing.T) {
 	}
 }
 
+func TestQueryCrossWithStableSort(t *testing.T) {
+	mapds0 := datastore.NewMapDatastore()
+	mapds1 := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/zoo"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/boo"), Datastore: mapds0},
+	})
+
+	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
+	m.Put(datastore.NewKey("/zoo/1"), []byte("234"))
+	m.Put(datastore.NewKey("/boo/9"), []byte("345"))
+	m.Put(datastore.NewKey("/boo/3"), []byte("456"))
+
+	res, err := m.Query(query.Query{Orders: []query.Order{query.OrderByKey{}}})
+	if err != nil {
+		t.Fatalf("Query fail: %v\n", err)
+	}
+	entries, err := res.Rest()
+	if err != nil {
+		t.Fatalf("Query Results.Rest fail: %v\n", err)
+	}
+
+	expect := []string{
+		"/boo/3",
+		"/boo/9",
+		"/zoo/0",
+		"/zoo/1",
+	}
+
+	for i, e := range entries {
+		if e.Key != expect[i] {
+			t.Errorf("expected %s, but got %s", expect[i], e.Key)
+		}
+	}
+
+	err = res.Close()
+	if err != nil {
+		t.Errorf("result.Close failed %d", err)
+	}
+}
+
 func TestLookupPrio(t *testing.T) {
 	mapds0 := datastore.NewMapDatastore()
 	mapds1 := datastore.NewMapDatastore()
