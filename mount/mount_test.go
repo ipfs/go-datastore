@@ -300,8 +300,10 @@ func TestQueryCross(t *testing.T) {
 func TestQueryCrossWithStableSort(t *testing.T) {
 	mapds0 := datastore.NewMapDatastore()
 	mapds1 := datastore.NewMapDatastore()
+	mapds2 := datastore.NewMapDatastore()
 	m := mount.New([]mount.Mount{
 		{Prefix: datastore.NewKey("/zoo"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/boo/5"), Datastore: mapds2},
 		{Prefix: datastore.NewKey("/boo"), Datastore: mapds0},
 	})
 
@@ -309,6 +311,7 @@ func TestQueryCrossWithStableSort(t *testing.T) {
 	m.Put(datastore.NewKey("/zoo/1"), []byte("234"))
 	m.Put(datastore.NewKey("/boo/9"), []byte("345"))
 	m.Put(datastore.NewKey("/boo/3"), []byte("456"))
+	m.Put(datastore.NewKey("/boo/5/hello"), []byte("789"))
 
 	res, err := m.Query(query.Query{Orders: []query.Order{query.OrderByKey{}}})
 	if err != nil {
@@ -321,14 +324,19 @@ func TestQueryCrossWithStableSort(t *testing.T) {
 
 	expect := []string{
 		"/boo/3",
+		"/boo/5/hello",
 		"/boo/9",
 		"/zoo/0",
 		"/zoo/1",
 	}
 
-	for i, e := range entries {
-		if e.Key != expect[i] {
-			t.Errorf("expected %s, but got %s", expect[i], e.Key)
+	if len(entries) != len(expect) {
+		t.Fatalf("expected %d entries, but got %d", len(expect), len(entries))
+	}
+
+	for i, e := range expect {
+		if e != entries[i].Key {
+			t.Errorf("expected key %s, but got %s", e, entries[i].Key)
 		}
 	}
 
