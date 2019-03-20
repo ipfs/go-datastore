@@ -353,14 +353,10 @@ func TestErrQueryClose(t *testing.T) {
 
 	m.Put(datastore.NewKey("/baz"), []byte("123"))
 
-	qr, err := m.Query(query.Query{})
-	if err != nil {
-		t.Fatalf("Query error: %v", err)
-	}
-
-	e, ok := qr.NextSync()
-	if ok != false || e.Error == nil {
-		t.Errorf("Query was ok or q.Error was nil")
+	_, err := m.Query(query.Query{})
+	if err == nil {
+		t.Fatal("expected query to fail")
+		return
 	}
 }
 

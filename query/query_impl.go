@@ -97,22 +97,7 @@ func NaiveOrder(qr Results, orders ...Order) Results {
 			entries = append(entries, e.Entry)
 		}
 		sort.Slice(entries, func(i int, j int) bool {
-			a, b := entries[i], entries[j]
-
-			for _, cmp := range orders {
-				switch cmp.Compare(a, b) {
-				case 0:
-				case -1:
-					return true
-				case 1:
-					return false
-				}
-			}
-
-			// This gives us a *stable* sort for free. We don't care
-			// preserving the order from the underlying datastore
-			// because it's undefined.
-			return a.Key < b.Key
+			return Less(orders, entries[i], entries[j])
 		})
 
 		for _, e := range entries {
