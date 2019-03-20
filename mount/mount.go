@@ -80,7 +80,7 @@ func (qr *queryResults) advance() bool {
 }
 
 type querySet struct {
-	order []query.Order
+	query query.Query
 	heads []*queryResults
 }
 
@@ -89,7 +89,7 @@ func (h *querySet) Len() int {
 }
 
 func (h *querySet) Less(i, j int) bool {
-	return query.Less(h.order, h.heads[i].next.Entry, h.heads[j].next.Entry)
+	return query.Less(h.query.Orders, h.heads[i].next.Entry, h.heads[j].next.Entry)
 }
 
 func (h *querySet) Swap(i, j int) {
@@ -137,12 +137,20 @@ func (h *querySet) next() (query.Result, bool) {
 	if len(h.heads) == 0 {
 		return query.Result{}, false
 	}
-	next := h.heads[0].next
-	if h.heads[0].advance() {
+	head := h.heads[0]
+	next := head.next
+	for head.advance() {
+		if head.next.Error == nil {
+			for _, f := range h.query.Filters {
+				if !f.Filter(head.next.Entry) {
+					continue
+				}
+			}
+		}
 		heap.Fix(h, 0)
-	} else {
-		heap.Remove(h, 0)
+		return next, true
 	}
+	heap.Remove(h, 0)
 	return next, true
 }
 
@@ -219,8 +227,7 @@ func (d *Datastore) Delete(key ds.Key) error {
 }
 
 func (d *Datastore) Query(q query.Query) (query.Results, error) {
-	if len(q.Filters) > 0 ||
-		q.Limit > 0 ||
+	if q.Limit > 0 ||
 		q.Offset > 0 {
 		// TODO this is still overly simplistic, but the only callers are
 		// `ipfs refs local` and ipfs-ds-convert.
@@ -230,7 +237,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	dses, mounts, rests := d.lookupAll(prefix)
 
 	queries := &querySet{
-		order: q.Orders,
+		query: q,
 		heads: make([]*queryResults, 0, len(dses)),
 	}
 
@@ -242,6 +249,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		qi := q
 		qi.Prefix = rest.String()
 		results, err := dstore.Query(qi)
+
 		if err != nil {
 			_ = queries.close()
 			return nil, err
