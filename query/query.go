@@ -251,6 +251,26 @@ func ResultsWithEntries(q Query, res []Entry) Results {
 	return b.Results()
 }
 
+// ResultsWithResults returns a Results object from a list of Result
+func ResultsWithResults(q Query, res []Result) Results {
+	b := NewResultBuilder(q)
+
+	// go consume all the entries and add them to the results.
+	b.Process.Go(func(worker goprocess.Process) {
+		for _, r := range res {
+			select {
+			case b.Output <- r:
+			case <-worker.Closing(): // client told us to close early
+				return
+			}
+		}
+		return
+	})
+
+	go b.Process.CloseAfterChildren()
+	return b.Results()
+}
+
 func ResultsReplaceQuery(r Results, q Query) Results {
 	switch r := r.(type) {
 	case *results:

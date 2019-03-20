@@ -144,72 +144,47 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	prefix := ds.NewKey(q.Prefix)
 	lrs := d.lookupAll(prefix)
 
+	results := make(chan query.Result)
+	wg := sync.WaitGroup{}
+	for _, lr := range lrs {
+		wg.Add(1)
+		go func(lr *lookupResult) {
+			defer wg.Done()
+			rs, err := lr.ds.Query(q)
+			if err != nil {
+				results <- query.Result{Error: err}
+				return
+			}
+			es, err := rs.Rest()
+			if err != nil {
+				results <- query.Result{Error: err}
+				return
+			}
+			for _, e := range es {
+				e.Key = lr.mount.Child(ds.RawKey(e.Key)).String()
+				results <- query.Result{Entry: e, Error: nil}
+			}
+		}(lr)
+	}
+	rs := make([]query.Result, 0)
+	go func() {
+		for result := range results {
+			rs = append(rs, result)
+		}
+	}()
+	wg.Wait()
+	close(results)
 	if len(q.Orders) > 0 {
 		switch q.Orders[0].(type) {
 		case query.OrderByKey:
-			sort.SliceStable(lrs, func(i, j int) bool { return strings.Compare(lrs[i].mount.String(), lrs[j].mount.String()) < 0 })
+			sort.SliceStable(rs, func(i, j int) bool { return strings.Compare(rs[i].Key, rs[j].Key) < 0 })
 		case query.OrderByKeyDescending:
-			sort.SliceStable(lrs, func(i, j int) bool { return strings.Compare(lrs[i].mount.String(), lrs[j].mount.String()) >= 0 })
+			sort.SliceStable(rs, func(i, j int) bool { return strings.Compare(rs[i].Key, rs[j].Key) >= 0 })
 		default:
 			return nil, errors.New("mount only supports sorting keys in lexical order")
 		}
 	}
-
-	// current itorator state
-	var res query.Results
-	var mount ds.Key
-	i := 0
-
-	return query.ResultsFromIterator(q, query.Iterator{
-		Next: func() (query.Result, bool) {
-			var r query.Result
-			var more bool
-
-			for try := true; try; try = len(lrs) > i {
-				if res == nil {
-					if len(lrs) <= i {
-						//This should not happen normally
-						return query.Result{}, false
-					}
-
-					dst := lrs[i].ds
-					mount = lrs[i].mount
-					rest := lrs[i].rest
-
-					q2 := q
-					q2.Prefix = rest.String()
-					r, err := dst.Query(q2)
-					if err != nil {
-						return query.Result{Error: err}, false
-					}
-					res = r
-				}
-
-				r, more = res.NextSync()
-				if !more {
-					err := res.Close()
-					if err != nil {
-						return query.Result{Error: err}, false
-					}
-					res = nil
-
-					i++
-					more = len(lrs) > i
-				} else {
-					break
-				}
-			}
-
-			r.Key = mount.Child(ds.RawKey(r.Key)).String()
-			return r, more
-		},
-		Close: func() error {
-			if len(lrs) > i && res != nil {
-				return res.Close()
-			}
-			return nil
-		},
-	}), nil
+	return query.ResultsWithResults(q, rs), nil
 }
 
 func (d *Datastore) Close() error {
