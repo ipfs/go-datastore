@@ -74,7 +74,7 @@ func NaiveOffset(qr Results, offset int) Results {
 		}
 	}()
 
-	return DerivedResults(qr, ch)
+	return ResultsWithChan(qr.Query(), ch)
 }
 
 // NaiveOrder reorders results according to given orders.

@@ -230,6 +230,10 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	prefix := ds.NewKey(q.Prefix)
 	dses, mounts, rests := d.lookupAll(prefix)
 
+	// offset needs to be applied after the results are aggregated
+	offset := q.Offset
+	q.Offset = 0
+
 	queries := &querySet{
 		query: q,
 		heads: make([]*queryResults, 0, len(dses)),
@@ -256,7 +260,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		Close: queries.close,
 	})
 
-	return query.NaiveLimit(qr, q.Limit), nil
+	return query.NaiveLimit(query.NaiveOffset(qr, offset), q.Limit), nil
 }
 
 func (d *Datastore) Close() error {

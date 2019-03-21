@@ -401,6 +401,57 @@ func TestQueryLimitCrossWithSort(t *testing.T) {
 	}
 }
 
+func TestQueryLimitAndOffsetCrossWithSort(t *testing.T) {
+	mapds1 := sync.MutexWrap(datastore.NewMapDatastore())
+	mapds2 := sync.MutexWrap(datastore.NewMapDatastore())
+	mapds3 := sync.MutexWrap(datastore.NewMapDatastore())
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/rok"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/zoo"), Datastore: mapds2},
+		{Prefix: datastore.NewKey("/noop"), Datastore: mapds3},
+	})
+
+	m.Put(datastore.NewKey("/rok/0"), []byte("ghi"))
+	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
+	m.Put(datastore.NewKey("/rok/1"), []byte("def"))
+	m.Put(datastore.NewKey("/zoo/1"), []byte("167"))
+	m.Put(datastore.NewKey("/zoo/2"), []byte("345"))
+	m.Put(datastore.NewKey("/rok/3"), []byte("abc"))
+	m.Put(datastore.NewKey("/zoo/3"), []byte("456"))
+
+	q := query.Query{Limit: 3, Offset: 2, Orders: []query.Order{query.OrderByKey{}}}
+	res, err := m.Query(q)
+	if err != nil {
+		t.Fatalf("Query fail: %v\n", err)
+	}
+
+	entries, err := res.Rest()
+	if err != nil {
+		t.Fatalf("Query Results.Rest fail: %v\n", err)
+	}
+
+	expect := []string{
+		"/rok/3",
+		"/zoo/0",
+		"/zoo/1",
+	}
+
+	if len(entries) != len(expect) {
+		t.Fatalf("expected %d entries, but got %d", len(expect), len(entries))
+	}
+
+	for i, e := range expect {
+		if e != entries[i].Key {
+			t.Errorf("expected key %s, but got %s", e, entries[i].Key)
+		}
+	}
+
+	err = res.Close()
+	if err != nil {
+		t.Errorf("result.Close failed %d", err)
+	}
+}
+
 func TestLookupPrio(t *testing.T) {
 	mapds0 := datastore.NewMapDatastore()
 	mapds1 := datastore.NewMapDatastore()
