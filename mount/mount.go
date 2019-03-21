@@ -227,12 +227,6 @@ func (d *Datastore) Delete(key ds.Key) error {
 }
 
 func (d *Datastore) Query(q query.Query) (query.Results, error) {
-	if q.Limit > 0 ||
-		q.Offset > 0 {
-		// TODO this is still overly simplistic, but the only callers are
-		// `ipfs refs local` and ipfs-ds-convert.
-		return nil, errors.New("mount only supports listing all prefixed keys in random order")
-	}
 	prefix := ds.NewKey(q.Prefix)
 	dses, mounts, rests := d.lookupAll(prefix)
 
@@ -257,10 +251,12 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		queries.addResults(mount, results)
 	}
 
-	return query.ResultsFromIterator(q, query.Iterator{
+	qr := query.ResultsFromIterator(q, query.Iterator{
 		Next:  queries.next,
 		Close: queries.close,
-	}), nil
+	})
+
+	return query.NaiveLimit(qr, q.Limit), nil
 }
 
 func (d *Datastore) Close() error {
