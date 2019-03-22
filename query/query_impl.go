@@ -1,8 +1,6 @@
 package query
 
-import (
-	"sort"
-)
+import "sort"
 
 func DerivedResults(qr Results, ch <-chan Result) Results {
 	return &results{
@@ -124,7 +122,6 @@ func NaiveQueryApply(q Query, qr Results) Results {
 		qr = NaiveOffset(qr, q.Offset)
 	}
 	if q.Limit != 0 {
-		// TODO: Offset?
 		qr = NaiveLimit(qr, q.Limit)
 	}
 	return qr

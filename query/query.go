@@ -3,7 +3,7 @@ package query
 import (
 	"time"
 
-	"github.com/jbenet/goprocess"
+	goprocess "github.com/jbenet/goprocess"
 )
 
 /*
