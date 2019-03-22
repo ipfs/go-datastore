@@ -40,6 +40,70 @@ func testResults(t *testing.T, res Results, expect []string) {
 	}
 }
 
+func TestNaiveQueryApply(t *testing.T) {
+	testNaiveQueryApply := func(t *testing.T, query Query, keys []string, expect []string) {
+		e := make([]Entry, len(keys))
+		for i, k := range keys {
+			e[i] = Entry{Key: k}
+		}
+
+		res := ResultsWithEntries(query, e)
+		res = NaiveQueryApply(query, res)
+
+		testResults(t, res, expect)
+	}
+
+	q := Query{Limit: 2}
+
+	testNaiveQueryApply(t, q, sampleKeys, []string{
+		"/ab/c",
+		"/ab/cd",
+	})
+
+	q = Query{Offset: 3, Limit: 2}
+	testNaiveQueryApply(t, q, sampleKeys, []string{
+		"/abce",
+		"/abcf",
+	})
+
+	f := &FilterKeyCompare{Op: Equal, Key: "/ab"}
+	q = Query{Filters: []Filter{f}}
+	testNaiveQueryApply(t, q, sampleKeys, []string{
+		"/ab",
+	})
+
+	q = Query{Prefix: "/ab"}
+	testNaiveQueryApply(t, q, sampleKeys, []string{
+		"/ab/c",
+		"/ab/cd",
+		"/abce",
+		"/abcf",
+		"/ab",
+	})
+
+	q = Query{Orders: []Order{OrderByKeyDescending{}}}
+	testNaiveQueryApply(t, q, sampleKeys, []string{
+		"/abcf",
+		"/abce",
+		"/ab/cd",
+		"/ab/c",
+		"/ab",
+		"/a",
+	})
+
+	q = Query{
+		Limit:  3,
+		Offset: 2,
+		Prefix: "/ab",
+		Orders: []Order{OrderByKey{}},
+	}
+	testNaiveQueryApply(t, q, sampleKeys, []string{
+		"/ab/cd",
+		"/abce",
+		"/abcf",
+	})
+}
+
 func TestLimit(t *testing.T) {
 	testKeyLimit := func(t *testing.T, limit int, keys []string, expect []string) {
 		e := make([]Entry, len(keys))

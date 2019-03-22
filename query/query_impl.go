@@ -26,7 +26,7 @@ func NaiveFilter(qr Results, filter Filter) Results {
 		}
 	}()
 
-	return DerivedResults(qr, ch)
+	return ResultsWithChan(qr.Query(), ch)
 }
 
 // NaiveLimit truncates the results to a given int limit
@@ -125,7 +125,7 @@ func NaiveQueryApply(q Query, qr Results) Results {
 	}
 	if q.Limit != 0 {
 		// TODO: Offset?
-		qr = NaiveLimit(qr, q.Offset)
+		qr = NaiveLimit(qr, q.Limit)
 	}
 	return qr
 }
