@@ -262,7 +262,15 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		Close: queries.close,
 	})
 
-	return query.NaiveLimit(query.NaiveOffset(qr, offset), q.Limit), nil
+	if offset > 0 {
+		qr = query.NaiveOffset(qr, offset)
+	}
+
+	if q.Limit > 0 {
+		qr = query.NaiveLimit(qr, q.Limit)
+	}
+
+	return qr, nil
 }
 
 func (d *Datastore) Close() error {
