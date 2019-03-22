@@ -141,14 +141,6 @@ func (h *querySet) next() (query.Result, bool) {
 	next := head.next
 
 	for head.advance() {
-		if head.next.Error == nil {
-			for _, f := range h.query.Filters {
-				if !f.Filter(head.next.Entry) {
-					continue
-				}
-			}
-			// can limit and offset be implemented here?
-		}
 		heap.Fix(h, 0)
 		return next, true
 	}
@@ -235,6 +227,8 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 	// offset needs to be applied after the results are aggregated
 	offset := q.Offset
 	q.Offset = 0
+	filters := q.Filters
+	q.Filters = []query.Filter{}
 
 	queries := &querySet{
 		query: q,
@@ -261,6 +255,12 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		Next:  queries.next,
 		Close: queries.close,
 	})
+
+	if len(filters) > 0 {
+		for _, f := range filters {
+			qr = query.NaiveFilter(qr, f)
+		}
+	}
 
 	if offset > 0 {
 		qr = query.NaiveOffset(qr, offset)
