@@ -502,17 +502,49 @@ func TestQueryFilterAcrossMountsWithSort(t *testing.T) {
 	}
 }
 
-func TestQueryLimit(t *testing.T) {
+func TestQueryLimitAndOffsetWithNoData(t *testing.T) {
 	mapds1 := sync.MutexWrap(datastore.NewMapDatastore())
+	mapds2 := sync.MutexWrap(datastore.NewMapDatastore())
 	m := mount.New([]mount.Mount{
 		{Prefix: datastore.NewKey("/rok"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/zoo"), Datastore: mapds2},
 	})
 
-	m.Put(datastore.NewKey("/rok/0"), []byte("ghi"))
-	m.Put(datastore.NewKey("/rok/1"), []byte("def"))
-	m.Put(datastore.NewKey("/rok/3"), []byte("abc"))
+	q := query.Query{Limit: 4, Offset: 3}
+	res, err := m.Query(q)
+	if err != nil {
+		t.Fatalf("Query fail: %v\n", err)
+	}
 
-	q := query.Query{Limit: 1, Orders: []query.Order{query.OrderByKeyDescending{}}}
+	entries, err := res.Rest()
+	if err != nil {
+		t.Fatalf("Query Results.Rest fail: %v\n", err)
+	}
+
+	expect := []string{}
+
+	if len(entries) != len(expect) {
+		t.Fatalf("expected %d entries, but got %d", len(expect), len(entries))
+	}
+
+	err = res.Close()
+	if err != nil {
+		t.Errorf("result.Close failed %d", err)
+	}
+}
+
+func TestQueryLimitWithNotEnoughData(t *testing.T) {
+	mapds1 := sync.MutexWrap(datastore.NewMapDatastore())
+	mapds2 := sync.MutexWrap(datastore.NewMapDatastore())
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/rok"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/zoo"), Datastore: mapds2},
+	})
+
+	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
+	m.Put(datastore.NewKey("/rok/1"), []byte("167"))
+
+	q := query.Query{Limit: 4}
 	res, err := m.Query(q)
 	if err != nil {
 		t.Fatalf("Query fail: %v\n", err)
@@ -524,17 +556,46 @@ func TestQueryLimit(t *testing.T) {
 	}
 
 	expect := []string{
-		"/rok/3",
+		"/zoo/0",
+		"/rok/1",
 	}
 
 	if len(entries) != len(expect) {
 		t.Fatalf("expected %d entries, but got %d", len(expect), len(entries))
 	}
 
-	for i, e := range expect {
-		if e != entries[i].Key {
-			t.Errorf("expected key %s, but got %s", e, entries[i].Key)
-		}
+	err = res.Close()
+	if err != nil {
+		t.Errorf("result.Close failed %d", err)
+	}
+}
+
+func TestQueryOffsetWithNotEnoughData(t *testing.T) {
+	mapds1 := sync.MutexWrap(datastore.NewMapDatastore())
+	mapds2 := sync.MutexWrap(datastore.NewMapDatastore())
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/rok"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/zoo"), Datastore: mapds2},
+	})
+
+	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
+	m.Put(datastore.NewKey("/rok/1"), []byte("167"))
+
+	q := query.Query{Offset: 4}
+	res, err := m.Query(q)
+	if err != nil {
+		t.Fatalf("Query fail: %v\n", err)
+	}
+
+	entries, err := res.Rest()
+	if err != nil {
+		t.Fatalf("Query Results.Rest fail: %v\n", err)
+	}
+
+	expect := []string{}
+
+	if len(entries) != len(expect) {
+		t.Fatalf("expected %d entries, but got %d", len(expect), len(entries))
 	}
 
 	err = res.Close()
