@@ -220,18 +220,20 @@ func (d *Datastore) Delete(key ds.Key) error {
 	return cds.Delete(k)
 }
 
-func (d *Datastore) Query(q query.Query) (query.Results, error) {
-	prefix := ds.NewKey(q.Prefix)
+func (d *Datastore) Query(master query.Query) (query.Results, error) {
+	childQuery := query.Query{
+		Prefix: master.Prefix,
+		Limit:  master.Limit,
+		Orders: master.Orders,
+		KeysOnly: master.KeysOnly,
+		ReturnExpirations: master.ReturnExpirations,
+	}
+
+	prefix := ds.NewKey(childQuery.Prefix)
 	dses, mounts, rests := d.lookupAll(prefix)
 
-	// offset needs to be applied after the results are aggregated
-	offset := q.Offset
-	q.Offset = 0
-	filters := q.Filters
-	q.Filters = []query.Filter{}
-
 	queries := &querySet{
-		query: q,
+		query: childQuery,
 		heads: make([]*queryResults, 0, len(dses)),
 	}
 
@@ -240,7 +242,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		dstore := dses[i]
 		rest := rests[i]
 
-		qi := q
+		qi := childQuery
 		qi.Prefix = rest.String()
 		results, err := dstore.Query(qi)
 
@@ -251,23 +253,23 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		queries.addResults(mount, results)
 	}
 
-	qr := query.ResultsFromIterator(q, query.Iterator{
+	qr := query.ResultsFromIterator(childQuery, query.Iterator{
 		Next:  queries.next,
 		Close: queries.close,
 	})
 
-	if len(filters) > 0 {
-		for _, f := range filters {
+	if len(master.Filters) > 0 {
+		for _, f := range master.Filters {
 			qr = query.NaiveFilter(qr, f)
 		}
 	}
 
-	if offset > 0 {
-		qr = query.NaiveOffset(qr, offset)
+	if master.Offset > 0 {
+		qr = query.NaiveOffset(qr, master.Offset)
 	}
 
-	if q.Limit > 0 {
-		qr = query.NaiveLimit(qr, q.Limit)
+	if childQuery.Limit > 0 {
+		qr = query.NaiveLimit(qr, childQuery.Limit)
 	}
 
 	return qr, nil
