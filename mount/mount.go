@@ -222,10 +222,10 @@ func (d *Datastore) Delete(key ds.Key) error {
 
 func (d *Datastore) Query(master query.Query) (query.Results, error) {
 	childQuery := query.Query{
-		Prefix: master.Prefix,
-		Limit:  master.Limit,
-		Orders: master.Orders,
-		KeysOnly: master.KeysOnly,
+		Prefix:            master.Prefix,
+		Limit:             master.Limit,
+		Orders:            master.Orders,
+		KeysOnly:          master.KeysOnly,
 		ReturnExpirations: master.ReturnExpirations,
 	}
 
