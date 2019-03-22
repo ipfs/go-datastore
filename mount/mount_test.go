@@ -239,7 +239,7 @@ func TestQuerySimple(t *testing.T) {
 	}
 }
 
-func TestQueryCross(t *testing.T) {
+func TestQueryAcrossMounts(t *testing.T) {
 	mapds0 := datastore.NewMapDatastore()
 	mapds1 := datastore.NewMapDatastore()
 	mapds2 := datastore.NewMapDatastore()
@@ -302,7 +302,7 @@ func TestQueryCross(t *testing.T) {
 	}
 }
 
-func TestQueryCrossWithSort(t *testing.T) {
+func TestQueryAcrossMountsWithSort(t *testing.T) {
 	mapds0 := datastore.NewMapDatastore()
 	mapds1 := datastore.NewMapDatastore()
 	mapds2 := datastore.NewMapDatastore()
@@ -351,7 +351,7 @@ func TestQueryCrossWithSort(t *testing.T) {
 	}
 }
 
-func TestQueryLimitCrossWithSort(t *testing.T) {
+func TestQueryLimitAcrossMountsWithSort(t *testing.T) {
 	mapds1 := sync.MutexWrap(datastore.NewMapDatastore())
 	mapds2 := sync.MutexWrap(datastore.NewMapDatastore())
 	mapds3 := sync.MutexWrap(datastore.NewMapDatastore())
@@ -401,7 +401,7 @@ func TestQueryLimitCrossWithSort(t *testing.T) {
 	}
 }
 
-func TestQueryLimitAndOffsetCrossWithSort(t *testing.T) {
+func TestQueryLimitAndOffsetAcrossMountsWithSort(t *testing.T) {
 	mapds1 := sync.MutexWrap(datastore.NewMapDatastore())
 	mapds2 := sync.MutexWrap(datastore.NewMapDatastore())
 	mapds3 := sync.MutexWrap(datastore.NewMapDatastore())
