@@ -140,11 +140,12 @@ func (h *querySet) next() (query.Result, bool) {
 	head := h.heads[0]
 	next := head.next
 
-	for head.advance() {
+	if head.advance() {
 		heap.Fix(h, 0)
-		return next, true
+	} else {
+		heap.Remove(h, 0)
 	}
-	heap.Remove(h, 0)
+
 	return next, true
 }
 
