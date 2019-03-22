@@ -139,6 +139,7 @@ func (h *querySet) next() (query.Result, bool) {
 	}
 	head := h.heads[0]
 	next := head.next
+
 	for head.advance() {
 		if head.next.Error == nil {
 			for _, f := range h.query.Filters {
@@ -146,6 +147,7 @@ func (h *querySet) next() (query.Result, bool) {
 					continue
 				}
 			}
+			// can limit and offset be implemented here?
 		}
 		heap.Fix(h, 0)
 		return next, true
