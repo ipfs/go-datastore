@@ -24,7 +24,7 @@ func NaiveFilter(qr Results, filter Filter) Results {
 		}
 	}()
 
-	return DerivedResults(qr, ch)
+	return ResultsWithChan(qr.Query(), ch)
 }
 
 // NaiveLimit truncates the results to a given int limit
@@ -48,7 +48,7 @@ func NaiveLimit(qr Results, limit int) Results {
 		}
 	}()
 
-	return DerivedResults(qr, ch)
+	return ResultsWithChan(qr.Query(), ch)
 }
 
 // NaiveOffset skips a given number of results
@@ -72,7 +72,7 @@ func NaiveOffset(qr Results, offset int) Results {
 		}
 	}()
 
-	return DerivedResults(qr, ch)
+	return ResultsWithChan(qr.Query(), ch)
 }
 
 // NaiveOrder reorders results according to given orders.
@@ -97,22 +97,7 @@ func NaiveOrder(qr Results, orders ...Order) Results {
 			entries = append(entries, e.Entry)
 		}
 		sort.Slice(entries, func(i int, j int) bool {
-			a, b := entries[i], entries[j]
-
-			for _, cmp := range orders {
-				switch cmp.Compare(a, b) {
-				case 0:
-				case -1:
-					return true
-				case 1:
-					return false
-				}
-			}
-
-			// This gives us a *stable* sort for free. We don't care
-			// preserving the order from the underlying datastore
-			// because it's undefined.
-			return a.Key < b.Key
+			return Less(orders, entries[i], entries[j])
 		})
 
 		for _, e := range entries {
@@ -137,7 +122,7 @@ func NaiveQueryApply(q Query, qr Results) Results {
 		qr = NaiveOffset(qr, q.Offset)
 	}
 	if q.Limit != 0 {
-		qr = NaiveLimit(qr, q.Offset)
+		qr = NaiveLimit(qr, q.Limit)
 	}
 	return qr
 }
