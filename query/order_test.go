@@ -5,12 +5,6 @@ import (
 	"testing"
 )
 
-type orderTestCase struct {
-	order  Order
-	keys   []string
-	expect []string
-}
-
 func testKeyOrder(t *testing.T, f Order, keys []string, expect []string) {
 	e := make([]Entry, len(keys))
 	for i, k := range keys {

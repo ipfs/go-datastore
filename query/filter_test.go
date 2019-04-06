@@ -5,12 +5,6 @@ import (
 	"testing"
 )
 
-type filterTestCase struct {
-	filter Filter
-	keys   []string
-	expect []string
-}
-
 func testKeyFilter(t *testing.T, f Filter, keys []string, expect []string) {
 	e := make([]Entry, len(keys))
 	for i, k := range keys {
