@@ -12,23 +12,18 @@ type KeyTransform interface {
 	InvertKey(ds.Key) ds.Key
 }
 
-// Datastore is a keytransform.Datastore
-type Datastore interface {
-	ds.Shim
-	KeyTransform
+// Pair is a convince struct for constructing a key transform.
+type Pair struct {
+	Convert KeyMapping
+	Invert  KeyMapping
 }
 
-// Wrap wraps a given datastore with a KeyTransform function.
-// The resulting wrapped datastore will use the transform on all Datastore
-// operations.
-func Wrap(child ds.Datastore, t KeyTransform) *ktds {
-	if t == nil {
-		panic("t (KeyTransform) is nil")
-	}
-
-	if child == nil {
-		panic("child (ds.Datastore) is nil")
-	}
-
-	return &ktds{child: child, KeyTransform: t}
+func (t *Pair) ConvertKey(k ds.Key) ds.Key {
+	return t.Convert(k)
 }
+
+func (t *Pair) InvertKey(k ds.Key) ds.Key {
+	return t.Invert(k)
+}
+
+var _ KeyTransform = (*Pair)(nil)

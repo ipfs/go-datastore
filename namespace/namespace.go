@@ -36,24 +36,24 @@ func PrefixTransform(prefix ds.Key) ktds.KeyTransform {
 }
 
 // Wrap wraps a given datastore with a key-prefix.
-func Wrap(child ds.Datastore, prefix ds.Key) *datastore {
+func Wrap(child ds.Datastore, prefix ds.Key) *Datastore {
 	if child == nil {
 		panic("child (ds.Datastore) is nil")
 	}
 
 	d := ktds.Wrap(child, PrefixTransform(prefix))
-	return &datastore{Datastore: d, raw: child, prefix: prefix}
+	return &Datastore{Datastore: d, raw: child, prefix: prefix}
 }
 
-type datastore struct {
+type Datastore struct {
+	*ktds.Datastore
 	prefix ds.Key
 	raw    ds.Datastore
-	ktds.Datastore
 }
 
 // Query implements Query, inverting keys on the way back out.
 // This function assumes that child datastore.Query returns ordered results
-func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
+func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
 	q.Prefix = d.prefix.Child(ds.NewKey(q.Prefix)).String()
 	qr, err := d.raw.Query(q)
 	if err != nil {
@@ -83,17 +83,4 @@ func (d *datastore) Query(q dsq.Query) (dsq.Results, error) {
 			return qr.Close()
 		},
 	}), nil
-}
-
-// DiskUsage implements the PersistentDatastore interface.
-func (d *datastore) DiskUsage() (uint64, error) {
-	return ds.DiskUsage(d.raw)
-}
-
-func (d *datastore) Batch() (ds.Batch, error) {
-	if bds, ok := d.Datastore.(ds.Batching); ok {
-		return bds.Batch()
-	}
-
-	return nil, ds.ErrBatchUnsupported
 }
