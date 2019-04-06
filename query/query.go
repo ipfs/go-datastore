@@ -75,7 +75,8 @@ type Entry struct {
 }
 
 // Result is a special entry that includes an error, so that the client
-// may be warned about internal errors.
+// may be warned about internal errors. If Error is non-nil, Entry must be
+// empty.
 type Result struct {
 	Entry
 
