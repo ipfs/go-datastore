@@ -2,7 +2,6 @@ package datastore_test
 
 import (
 	"bytes"
-	"math/rand"
 	"path"
 	"strings"
 	"testing"
@@ -13,16 +12,6 @@ import (
 
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
-
-func randomString() string {
-	chars := "abcdefghijklmnopqrstuvwxyz1234567890"
-	var buf bytes.Buffer
-	l := rand.Intn(50)
-	for j := 0; j < l; j++ {
-		buf.WriteByte(chars[rand.Intn(len(chars))])
-	}
-	return buf.String()
-}
 
 type KeySuite struct{}
 
