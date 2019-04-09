@@ -61,14 +61,16 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 
 // Query implements Query, inverting keys on the way back out.
 func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
-	qr, err := d.child.Query(q)
+	nq, cq := d.prepareQuery(q)
+
+	cqr, err := d.child.Query(cq)
 	if err != nil {
 		return nil, err
 	}
 
-	return dsq.ResultsFromIterator(q, dsq.Iterator{
+	qr := dsq.ResultsFromIterator(q, dsq.Iterator{
 		Next: func() (dsq.Result, bool) {
-			r, ok := qr.NextSync()
+			r, ok := cqr.NextSync()
 			if !ok {
 				return r, false
 			}
@@ -78,9 +80,101 @@ func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
 			return r, true
 		},
 		Close: func() error {
-			return qr.Close()
+			return cqr.Close()
 		},
-	}), nil
+	})
+	return dsq.NaiveQueryApply(nq, qr), nil
+}
+
+// Split the query into a child query and a naive query. That way, we can make
+// the child datastore do as much work as possible.
+func (d *Datastore) prepareQuery(q dsq.Query) (naive, child dsq.Query) {
+
+	// First, put everything in the child query. Then, start taking things
+	// out.
+	child = q
+
+	// Always let the child handle the key prefix.
+	child.Prefix = d.ConvertKey(ds.NewKey(child.Prefix)).String()
+
+	// Check if the key transform is order-preserving so we can use the
+	// child datastore's built-in ordering.
+	orderPreserving := false
+	switch d.KeyTransform.(type) {
+	case PrefixTransform, *PrefixTransform:
+		orderPreserving = true
+	}
+
+	// Try to let the child handle ordering.
+orders:
+	for i, o := range child.Orders {
+		switch o.(type) {
+		case dsq.OrderByValue, *dsq.OrderByValue,
+			dsq.OrderByValueDescending, *dsq.OrderByValueDescending:
+			// Key doesn't matter.
+			continue
+		case dsq.OrderByKey, *dsq.OrderByKey,
+			dsq.OrderByKeyDescending, *dsq.OrderByKeyDescending:
+			if orderPreserving {
+				child.Orders = child.Orders[:i+1]
+				break orders
+			}
+		}
+
+		// Can't handle this order under transform, punt it to a naive
+		// ordering.
+		naive.Orders = q.Orders
+		child.Orders = nil
+		naive.Offset = q.Offset
+		child.Offset = 0
+		naive.Limit = q.Limit
+		child.Limit = 0
+		break
+	}
+
+	// Try to let the child handle the filters.
+
+	// don't modify the original filters.
+	child.Filters = append([]dsq.Filter(nil), child.Filters...)
+
+	for i, f := range child.Filters {
+		switch f := f.(type) {
+		case dsq.FilterValueCompare, *dsq.FilterValueCompare:
+			continue
+		case dsq.FilterKeyCompare:
+			child.Filters[i] = dsq.FilterKeyCompare{
+				Op:  f.Op,
+				Key: d.ConvertKey(ds.NewKey(f.Key)).String(),
+			}
+			continue
+		case *dsq.FilterKeyCompare:
+			child.Filters[i] = &dsq.FilterKeyCompare{
+				Op:  f.Op,
+				Key: d.ConvertKey(ds.NewKey(f.Key)).String(),
+			}
+			continue
+		case dsq.FilterKeyPrefix:
+			child.Filters[i] = dsq.FilterKeyPrefix{
+				Prefix: d.ConvertKey(ds.NewKey(f.Prefix)).String(),
+			}
+			continue
+		case *dsq.FilterKeyPrefix:
+			child.Filters[i] = &dsq.FilterKeyPrefix{
+				Prefix: d.ConvertKey(ds.NewKey(f.Prefix)).String(),
+			}
+			continue
+		}
+
+		// Not a known filter, defer to the naive implementation.
+		naive.Filters = q.Filters
+		child.Filters = nil
+		naive.Offset = q.Offset
+		child.Offset = 0
+		naive.Limit = q.Limit
+		child.Limit = 0
+		break
+	}
+	return
 }
 
 func (d *Datastore) Close() error {
