@@ -30,18 +30,48 @@ func TestFlushing(t *testing.T) {
 		}
 	}
 
+	// Get works normally.
+	for _, k := range keys {
+		val, err := d.Get(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !bytes.Equal(val, v) {
+			t.Fatal("wrong value")
+		}
+	}
+
+	// Not flushed
 	_, err := child.Get(keys[0])
 	if err != ds.ErrNotFound {
 		t.Fatal("shouldnt have found value")
 	}
 
+	// Delete works.
+	err = d.Delete(keys[14])
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = d.Get(keys[14])
+	if err != ds.ErrNotFound {
+		t.Fatal(err)
+	}
+
+	// Still not flushed
+	_, err = child.Get(keys[0])
+	if err != ds.ErrNotFound {
+		t.Fatal("shouldnt have found value")
+	}
+
+	// Final put flushes.
 	err = d.Put(ds.NewKey("test16"), v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// should be flushed now, try to get keys from child datastore
-	for _, k := range keys {
+	for _, k := range keys[:14] {
 		val, err := child.Get(k)
 		if err != nil {
 			t.Fatal(err)
@@ -50,5 +80,26 @@ func TestFlushing(t *testing.T) {
 		if !bytes.Equal(val, v) {
 			t.Fatal("wrong value")
 		}
+	}
+
+	// Never flushed the deleted key.
+	_, err = child.Get(keys[14])
+	if err != ds.ErrNotFound {
+		t.Fatal("shouldnt have found value")
+	}
+
+	// Delete doesn't flush
+	err = d.Delete(keys[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	val, err := child.Get(keys[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(val, v) {
+		t.Fatal("wrong value")
 	}
 }
