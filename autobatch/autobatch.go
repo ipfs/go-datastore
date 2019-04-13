@@ -36,6 +36,9 @@ func NewAutoBatching(d ds.Batching, size int) *Datastore {
 // Delete deletes a key/value
 func (d *Datastore) Delete(k ds.Key) error {
 	d.buffer[k] = op{delete: true}
+	if len(d.buffer) > d.maxBufferEntries {
+		return d.Flush()
+	}
 	return nil
 }
 
