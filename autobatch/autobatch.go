@@ -128,5 +128,13 @@ func (d *Datastore) DiskUsage() (uint64, error) {
 }
 
 func (d *Datastore) Close() error {
-	return d.child.Close()
+	err1 := d.Flush()
+	err2 := d.child.Close()
+	if err1 != nil {
+		return err1
+	}
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
