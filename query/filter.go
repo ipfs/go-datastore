@@ -1,8 +1,8 @@
 package query
 
 import (
+	"bytes"
 	"fmt"
-	"reflect"
 	"strings"
 )
 
@@ -33,21 +33,16 @@ var (
 //
 // [*] other than == and !=, which use reflect.DeepEqual.
 type FilterValueCompare struct {
-	Op          Op
-	Value       interface{}
-	TypedFilter Filter
+	Op    Op
+	Value []byte
 }
 
 func (f FilterValueCompare) Filter(e Entry) bool {
-	if f.TypedFilter != nil {
-		return f.TypedFilter.Filter(e)
-	}
-
 	switch f.Op {
 	case Equal:
-		return reflect.DeepEqual(f.Value, e.Value)
+		return bytes.Equal(f.Value, e.Value)
 	case NotEqual:
-		return !reflect.DeepEqual(f.Value, e.Value)
+		return !bytes.Equal(f.Value, e.Value)
 	default:
 		panic(fmt.Errorf("cannot apply op '%s' to interface{}.", f.Op))
 	}
