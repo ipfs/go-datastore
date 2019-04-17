@@ -258,8 +258,6 @@ func ResultsWithEntries(q Query, res []Entry) Results {
 	})
 }
 
-}
-
 func ResultsReplaceQuery(r Results, q Query) Results {
 	switch r := r.(type) {
 	case *results:
