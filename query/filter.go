@@ -38,13 +38,22 @@ type FilterValueCompare struct {
 }
 
 func (f FilterValueCompare) Filter(e Entry) bool {
+	cmp := bytes.Compare(e.Value, f.Value)
 	switch f.Op {
 	case Equal:
-		return bytes.Equal(f.Value, e.Value)
+		return cmp == 0
 	case NotEqual:
-		return !bytes.Equal(f.Value, e.Value)
+		return cmp != 0
+	case LessThan:
+		return cmp < 0
+	case LessThanOrEqual:
+		return cmp <= 0
+	case GreaterThan:
+		return cmp > 0
+	case GreaterThanOrEqual:
+		return cmp >= 0
 	default:
-		panic(fmt.Errorf("cannot apply op '%s' to interface{}.", f.Op))
+		panic(fmt.Errorf("unknown operation: %s", f.Op))
 	}
 }
 
