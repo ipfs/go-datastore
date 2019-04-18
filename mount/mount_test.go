@@ -685,3 +685,17 @@ func TestMaintenanceFunctions(t *testing.T) {
 		t.Errorf("Unexpected Scrub() error: %s", err)
 	}
 }
+
+func TestSuite(t *testing.T) {
+	mapds0 := datastore.NewMapDatastore()
+	mapds1 := datastore.NewMapDatastore()
+	mapds2 := datastore.NewMapDatastore()
+	mapds3 := datastore.NewMapDatastore()
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/foo"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/bar"), Datastore: mapds2},
+		{Prefix: datastore.NewKey("/baz"), Datastore: mapds3},
+		{Prefix: datastore.NewKey("/"), Datastore: mapds0},
+	})
+	dstest.SubtestAll(t, m)
+}

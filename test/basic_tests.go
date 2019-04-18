@@ -176,6 +176,54 @@ func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
 	})
 }
 
+func SubtestFilter(t *testing.T, ds dstore.Datastore) {
+	test := func(filters ...dsq.Filter) {
+		var types []string
+		for _, o := range filters {
+			types = append(types, fmt.Sprintf("%T", o))
+		}
+		name := strings.Join(types, ">")
+		t.Run(name, func(t *testing.T) {
+			subtestQuery(t, ds, dsq.Query{
+				Filters: filters,
+			}, func(t *testing.T, input, output []dsq.Entry) {
+				var exp []dsq.Entry
+			input:
+				for _, e := range input {
+					for _, f := range filters {
+						if !f.Filter(e) {
+							continue input
+						}
+					}
+					exp = append(exp, e)
+				}
+
+				if len(exp) != len(output) {
+					t.Fatalf("got wrong number of keys back: expected %d, got %d", len(exp), len(output))
+				}
+
+				dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, exp)
+				dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, output)
+
+				for i, e := range output {
+					if exp[i].Key != e.Key {
+						t.Fatalf("in key output, got %s but expected %s", e.Key, exp[i].Key)
+					}
+				}
+			})
+		})
+	}
+	test(dsq.FilterKeyCompare{
+		Op:  dsq.Equal,
+		Key: "/0key0",
+	})
+
+	test(dsq.FilterKeyCompare{
+		Op:  dsq.LessThan,
+		Key: "/2",
+	})
+}
+
 func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, check func(t *testing.T, input, output []dsq.Entry)) {
 	var input []dsq.Entry
 	count := 100

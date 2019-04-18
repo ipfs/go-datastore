@@ -20,22 +20,24 @@ type DSSuite struct{}
 
 var _ = Suite(&DSSuite{})
 
+func testDatastore() {
+}
+
+var pair = &kt.Pair{
+	Convert: func(k ds.Key) ds.Key {
+		return ds.NewKey("/abc").Child(k)
+	},
+	Invert: func(k ds.Key) ds.Key {
+		// remove abc prefix
+		l := k.List()
+		if l[0] != "abc" {
+			panic("key does not have prefix. convert failed?")
+		}
+		return ds.KeyWithNamespaces(l[1:])
+	},
+}
+
 func (ks *DSSuite) TestBasic(c *C) {
-
-	pair := &kt.Pair{
-		Convert: func(k ds.Key) ds.Key {
-			return ds.NewKey("/abc").Child(k)
-		},
-		Invert: func(k ds.Key) ds.Key {
-			// remove abc prefix
-			l := k.List()
-			if l[0] != "abc" {
-				panic("key does not have prefix. convert failed?")
-			}
-			return ds.KeyWithNamespaces(l[1:])
-		},
-	}
-
 	mpds := dstest.NewTestDatastore(true)
 	ktds := kt.Wrap(mpds, pair)
 
@@ -109,4 +111,10 @@ func strsToKeys(strs []string) []ds.Key {
 		keys[i] = ds.NewKey(s)
 	}
 	return keys
+}
+
+func TestSuite(t *testing.T) {
+	mpds := dstest.NewTestDatastore(true)
+	ktds := kt.Wrap(mpds, pair)
+	dstest.SubtestAll(t, ktds)
 }

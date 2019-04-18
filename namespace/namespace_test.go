@@ -155,3 +155,9 @@ func strsToKeys(strs []string) []ds.Key {
 	}
 	return keys
 }
+
+func TestSuite(t *testing.T) {
+	mpds := dstest.NewTestDatastore(true)
+	nsds := ns.Wrap(mpds, ds.NewKey("/foo"))
+	dstest.SubtestAll(t, nsds)
+}
