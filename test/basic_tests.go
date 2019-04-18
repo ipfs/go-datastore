@@ -176,6 +176,14 @@ func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
 	})
 }
 
+// need a custom test filter to test the "fallback" filter case for unknown
+// filters.
+type testFilter struct{}
+
+func (testFilter) Filter(e dsq.Entry) bool {
+	return len(e.Key)%2 == 0
+}
+
 func SubtestFilter(t *testing.T, ds dstore.Datastore) {
 	test := func(filters ...dsq.Filter) {
 		var types []string
@@ -222,6 +230,32 @@ func SubtestFilter(t *testing.T, ds dstore.Datastore) {
 		Op:  dsq.LessThan,
 		Key: "/2",
 	})
+
+	test(&dsq.FilterKeyCompare{
+		Op:  dsq.Equal,
+		Key: "/0key0",
+	})
+
+	test(dsq.FilterKeyPrefix{
+		Prefix: "/0key0",
+	})
+
+	test(&dsq.FilterKeyPrefix{
+		Prefix: "/0key0",
+	})
+
+	test(dsq.FilterValueCompare{
+		Op:    dsq.LessThan,
+		Value: randValue(),
+	})
+
+	test(new(testFilter))
+}
+
+func randValue() []byte {
+	value := make([]byte, 64)
+	rand.Read(value)
+	return value
 }
 
 func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, check func(t *testing.T, input, output []dsq.Entry)) {
@@ -230,8 +264,7 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, check func(t *
 	for i := 0; i < count; i++ {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		key := dstore.NewKey(s).String()
-		value := make([]byte, 64)
-		rand.Read(value)
+		value := randValue()
 		input = append(input, dsq.Entry{
 			Key:   key,
 			Value: value,

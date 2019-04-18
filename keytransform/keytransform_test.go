@@ -113,8 +113,14 @@ func strsToKeys(strs []string) []ds.Key {
 	return keys
 }
 
-func TestSuite(t *testing.T) {
+func TestSuiteDefaultPair(t *testing.T) {
 	mpds := dstest.NewTestDatastore(true)
 	ktds := kt.Wrap(mpds, pair)
+	dstest.SubtestAll(t, ktds)
+}
+
+func TestSuitePrefixTransform(t *testing.T) {
+	mpds := dstest.NewTestDatastore(true)
+	ktds := kt.Wrap(mpds, kt.PrefixTransform{Prefix: ds.NewKey("/foo")})
 	dstest.SubtestAll(t, ktds)
 }
