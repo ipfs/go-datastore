@@ -13,6 +13,8 @@ import (
 var BasicSubtests = []func(t *testing.T, ds dstore.Datastore){
 	SubtestBasicPutGet,
 	SubtestNotFounds,
+	SubtestOrder,
+	SubtestFilter,
 	SubtestManyKeysAndQuery,
 }
 

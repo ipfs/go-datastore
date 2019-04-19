@@ -135,15 +135,15 @@ func (ks *DSSuite) TestQuery(c *C) {
 		c.Check(string(ent.Value), Equals, string(expect[i].Value))
 	}
 
-	if err := nsds.Datastore.(ds.CheckedDatastore).Check(); err != dstest.TestError {
+	if err := nsds.Check(); err != dstest.TestError {
 		c.Errorf("Unexpected Check() error: %s", err)
 	}
 
-	if err := nsds.Datastore.(ds.GCDatastore).CollectGarbage(); err != dstest.TestError {
+	if err := nsds.CollectGarbage(); err != dstest.TestError {
 		c.Errorf("Unexpected CollectGarbage() error: %s", err)
 	}
 
-	if err := nsds.Datastore.(ds.ScrubbedDatastore).Scrub(); err != dstest.TestError {
+	if err := nsds.Scrub(); err != dstest.TestError {
 		c.Errorf("Unexpected Scrub() error: %s", err)
 	}
 }
@@ -154,4 +154,10 @@ func strsToKeys(strs []string) []ds.Key {
 		keys[i] = ds.NewKey(s)
 	}
 	return keys
+}
+
+func TestSuite(t *testing.T) {
+	mpds := dstest.NewTestDatastore(true)
+	nsds := ns.Wrap(mpds, ds.NewKey("/foo"))
+	dstest.SubtestAll(t, nsds)
 }

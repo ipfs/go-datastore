@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
-	"sort"
+	"strings"
 	"testing"
 
 	dstore "github.com/ipfs/go-datastore"
@@ -123,79 +123,192 @@ func SubtestNotFounds(t *testing.T, ds dstore.Datastore) {
 	}
 }
 
+func SubtestOrder(t *testing.T, ds dstore.Datastore) {
+	test := func(orders ...dsq.Order) {
+		var types []string
+		for _, o := range orders {
+			types = append(types, fmt.Sprintf("%T", o))
+		}
+		name := strings.Join(types, ">")
+		t.Run(name, func(t *testing.T) {
+			subtestQuery(t, ds, dsq.Query{
+				Orders: orders,
+			}, func(t *testing.T, input, output []dsq.Entry) {
+				if len(input) != len(output) {
+					t.Fatal("got wrong number of keys back")
+				}
+
+				dsq.Sort(orders, input)
+
+				for i, e := range output {
+					if input[i].Key != e.Key {
+						t.Fatalf("in key output, got %s but expected %s", e.Key, input[i].Key)
+					}
+				}
+			})
+		})
+	}
+	test(dsq.OrderByKey{})
+	test(new(dsq.OrderByKey))
+	test(dsq.OrderByKeyDescending{})
+	test(new(dsq.OrderByKeyDescending))
+	test(dsq.OrderByValue{})
+	test(dsq.OrderByValue{}, dsq.OrderByKey{})
+	test(dsq.OrderByFunction(func(a, b dsq.Entry) int {
+		return bytes.Compare(a.Value, b.Value)
+	}))
+}
+
 func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
-	var keys []dstore.Key
-	var keystrs []string
-	var values [][]byte
+	subtestQuery(t, ds, dsq.Query{KeysOnly: true}, func(t *testing.T, input, output []dsq.Entry) {
+		if len(input) != len(output) {
+			t.Fatal("got wrong number of keys back")
+		}
+
+		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, input)
+		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, output)
+
+		for i, e := range output {
+			if input[i].Key != e.Key {
+				t.Fatalf("in key output, got %s but expected %s", e.Key, input[i].Key)
+			}
+		}
+	})
+}
+
+// need a custom test filter to test the "fallback" filter case for unknown
+// filters.
+type testFilter struct{}
+
+func (testFilter) Filter(e dsq.Entry) bool {
+	return len(e.Key)%2 == 0
+}
+
+func SubtestFilter(t *testing.T, ds dstore.Datastore) {
+	test := func(filters ...dsq.Filter) {
+		var types []string
+		for _, o := range filters {
+			types = append(types, fmt.Sprintf("%T", o))
+		}
+		name := strings.Join(types, ">")
+		t.Run(name, func(t *testing.T) {
+			subtestQuery(t, ds, dsq.Query{
+				Filters: filters,
+			}, func(t *testing.T, input, output []dsq.Entry) {
+				var exp []dsq.Entry
+			input:
+				for _, e := range input {
+					for _, f := range filters {
+						if !f.Filter(e) {
+							continue input
+						}
+					}
+					exp = append(exp, e)
+				}
+
+				if len(exp) != len(output) {
+					t.Fatalf("got wrong number of keys back: expected %d, got %d", len(exp), len(output))
+				}
+
+				dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, exp)
+				dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, output)
+
+				for i, e := range output {
+					if exp[i].Key != e.Key {
+						t.Fatalf("in key output, got %s but expected %s", e.Key, exp[i].Key)
+					}
+				}
+			})
+		})
+	}
+	test(dsq.FilterKeyCompare{
+		Op:  dsq.Equal,
+		Key: "/0key0",
+	})
+
+	test(dsq.FilterKeyCompare{
+		Op:  dsq.LessThan,
+		Key: "/2",
+	})
+
+	test(&dsq.FilterKeyCompare{
+		Op:  dsq.Equal,
+		Key: "/0key0",
+	})
+
+	test(dsq.FilterKeyPrefix{
+		Prefix: "/0key0",
+	})
+
+	test(&dsq.FilterKeyPrefix{
+		Prefix: "/0key0",
+	})
+
+	test(dsq.FilterValueCompare{
+		Op:    dsq.LessThan,
+		Value: randValue(),
+	})
+
+	test(new(testFilter))
+}
+
+func randValue() []byte {
+	value := make([]byte, 64)
+	rand.Read(value)
+	return value
+}
+
+func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, check func(t *testing.T, input, output []dsq.Entry)) {
+	var input []dsq.Entry
 	count := 100
 	for i := 0; i < count; i++ {
 		s := fmt.Sprintf("%dkey%d", i, i)
-		dsk := dstore.NewKey(s)
-		keystrs = append(keystrs, dsk.String())
-		keys = append(keys, dsk)
-		buf := make([]byte, 64)
-		rand.Read(buf)
-		values = append(values, buf)
+		key := dstore.NewKey(s).String()
+		value := randValue()
+		input = append(input, dsq.Entry{
+			Key:   key,
+			Value: value,
+		})
 	}
 
 	t.Logf("putting %d values", count)
-	for i, k := range keys {
-		err := ds.Put(k, values[i])
+	for i, e := range input {
+		err := ds.Put(dstore.RawKey(e.Key), e.Value)
 		if err != nil {
 			t.Fatalf("error on put[%d]: %s", i, err)
 		}
 	}
 
 	t.Log("getting values back")
-	for i, k := range keys {
-		val, err := ds.Get(k)
+	for i, e := range input {
+		val, err := ds.Get(dstore.RawKey(e.Key))
 		if err != nil {
 			t.Fatalf("error on get[%d]: %s", i, err)
 		}
 
-		if !bytes.Equal(val, values[i]) {
+		if !bytes.Equal(val, e.Value) {
 			t.Fatal("input value didnt match the one returned from Get")
 		}
 	}
 
 	t.Log("querying values")
-	q := dsq.Query{KeysOnly: true}
 	resp, err := ds.Query(q)
 	if err != nil {
 		t.Fatal("calling query: ", err)
 	}
 
 	t.Log("aggregating query results")
-	var outkeys []string
-	for {
-		res, ok := resp.NextSync()
-		if res.Error != nil {
-			t.Fatal("query result error: ", res.Error)
-		}
-		if !ok {
-			break
-		}
-
-		outkeys = append(outkeys, res.Key)
+	output, err := resp.Rest()
+	if err != nil {
+		t.Fatal("query result error: ", err)
 	}
 
 	t.Log("verifying query output")
-	sort.Strings(keystrs)
-	sort.Strings(outkeys)
-
-	if len(keystrs) != len(outkeys) {
-		t.Fatal("got wrong number of keys back")
-	}
-
-	for i, s := range keystrs {
-		if outkeys[i] != s {
-			t.Fatalf("in key output, got %s but expected %s", outkeys[i], s)
-		}
-	}
+	check(t, input, output)
 
 	t.Log("deleting all keys")
-	for _, k := range keys {
-		if err := ds.Delete(k); err != nil {
+	for _, e := range input {
+		if err := ds.Delete(dstore.RawKey(e.Key)); err != nil {
 			t.Fatal(err)
 		}
 	}
