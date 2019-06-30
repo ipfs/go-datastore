@@ -110,7 +110,7 @@ type CheckedDatastore interface {
 	Check() error
 }
 
-// CheckedDatastore is an interface that should be implemented by datastores
+// ScrubbedDatastore is an interface that should be implemented by datastores
 // which want to provide a mechanism to check data integrity and/or
 // error correction.
 type ScrubbedDatastore interface {
