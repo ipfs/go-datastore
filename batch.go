@@ -35,11 +35,6 @@ func (bt *basicBatch) Commit() error {
 	for k, op := range bt.ops {
 		if op.delete {
 			err = bt.target.Delete(k)
-			// We could try to do something smarter but I really
-			// don't care. Delete should be idempotent anyways.
-			if err == ErrNotFound {
-				err = nil
-			}
 		} else {
 			err = bt.target.Put(k, op.value)
 		}

@@ -216,7 +216,7 @@ func (d *Datastore) GetSize(key ds.Key) (size int, err error) {
 func (d *Datastore) Delete(key ds.Key) error {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
-		return ds.ErrNotFound
+		return nil
 	}
 	return cds.Delete(k)
 }

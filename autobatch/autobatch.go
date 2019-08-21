@@ -75,10 +75,6 @@ func (d *Datastore) Flush() error {
 		var err error
 		if o.delete {
 			err = b.Delete(k)
-			if err == ds.ErrNotFound {
-				// Ignore these, let delete be idempotent.
-				err = nil
-			}
 		} else {
 			err = b.Put(k, o.value)
 		}

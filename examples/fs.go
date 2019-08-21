@@ -86,10 +86,14 @@ func (d *Datastore) GetSize(key ds.Key) (size int, err error) {
 func (d *Datastore) Delete(key ds.Key) (err error) {
 	fn := d.KeyFilename(key)
 	if !isFile(fn) {
-		return ds.ErrNotFound
+		return nil
 	}
 
-	return os.Remove(fn)
+	err = os.Remove(fn)
+	if os.IsNotExist(err) {
+		err = nil // idempotent
+	}
+	return err
 }
 
 // Query implements Datastore.Query
