@@ -50,7 +50,8 @@ type Write interface {
 	// type-safe interface to your application, and do the checking up-front.
 	Put(key Key, value []byte) error
 
-	// Delete removes the value for given `key`.
+	// Delete removes the value for given `key`. If the key is not in the
+	// datastore, this method returns no error.
 	Delete(key Key) error
 }
 
@@ -191,8 +192,8 @@ type TxnDatastore interface {
 
 // Errors
 
-// ErrNotFound is returned by Get, Has, and Delete when a datastore does not
-// map the given key to a value.
+// ErrNotFound is returned by Get and GetSize when a datastore does not map the
+// given key to a value.
 var ErrNotFound = errors.New("datastore: key not found")
 
 // ErrInvalidType is returned by Put when a given value is incopatible with

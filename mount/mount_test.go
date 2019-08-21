@@ -171,8 +171,8 @@ func TestDeleteNotFound(t *testing.T) {
 	})
 
 	err := m.Delete(datastore.NewKey("/quux/thud"))
-	if g, e := err, datastore.ErrNotFound; g != e {
-		t.Fatalf("expected ErrNotFound, got: %v\n", g)
+	if err != nil {
+		t.Fatalf("expected nil, got: %v\n", err)
 	}
 }
 
