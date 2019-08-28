@@ -115,6 +115,7 @@ func (q Query) String() string {
 // Entry is a query result entry.
 type Entry struct {
 	Key        string    // cant be ds.Key because circular imports ...!!!
+	Size       int       // Might be zero if the datastore doesn't support listing the size with KeysOnly
 	Value      []byte    // Will be nil if KeysOnly has been passed.
 	Expiration time.Time // Entry expiration timestamp if requested and supported (see TTLDatastore).
 }

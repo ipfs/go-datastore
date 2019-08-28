@@ -315,6 +315,7 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		value := randValue()
 		input = append(input, dsq.Entry{
 			Key:   key,
+			Size:  len(value),
 			Value: value,
 		})
 	}
