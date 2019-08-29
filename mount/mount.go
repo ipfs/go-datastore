@@ -5,13 +5,13 @@ package mount
 import (
 	"container/heap"
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 	"sync"
 
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
+	xerrors "golang.org/x/xerrors"
 )
 
 var (
@@ -370,7 +370,7 @@ func (d *Datastore) Check() error {
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.CheckedDatastore); ok {
 			if err := c.Check(); err != nil {
-				return fmt.Errorf("checking datastore at %s: %s", m.Prefix.String(), err.Error())
+				return xerrors.Errorf("checking datastore at %s: %w", m.Prefix.String(), err)
 			}
 		}
 	}
@@ -381,7 +381,7 @@ func (d *Datastore) Scrub() error {
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.ScrubbedDatastore); ok {
 			if err := c.Scrub(); err != nil {
-				return fmt.Errorf("scrubbing datastore at %s: %s", m.Prefix.String(), err.Error())
+				return xerrors.Errorf("scrubbing datastore at %s: %w", m.Prefix.String(), err)
 			}
 		}
 	}
@@ -392,7 +392,7 @@ func (d *Datastore) CollectGarbage() error {
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.GCDatastore); ok {
 			if err := c.CollectGarbage(); err != nil {
-				return fmt.Errorf("gc on datastore at %s: %s", m.Prefix.String(), err.Error())
+				return xerrors.Errorf("gc on datastore at %s: %w", m.Prefix.String(), err)
 			}
 		}
 	}
