@@ -133,18 +133,6 @@ func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 		t.Run(name, func(t *testing.T) {
 			subtestQuery(t, ds, dsq.Query{
 				Orders: orders,
-			}, func(t *testing.T, input, output []dsq.Entry) {
-				if len(input) != len(output) {
-					t.Fatal("got wrong number of keys back")
-				}
-
-				dsq.Sort(orders, input)
-
-				for i, e := range output {
-					if input[i].Key != e.Key {
-						t.Fatalf("in key output, got %s but expected %s", e.Key, input[i].Key)
-					}
-				}
 			})
 		})
 	}
@@ -160,20 +148,7 @@ func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 }
 
 func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
-	subtestQuery(t, ds, dsq.Query{KeysOnly: true}, func(t *testing.T, input, output []dsq.Entry) {
-		if len(input) != len(output) {
-			t.Fatal("got wrong number of keys back")
-		}
-
-		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, input)
-		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, output)
-
-		for i, e := range output {
-			if input[i].Key != e.Key {
-				t.Fatalf("in key output, got %s but expected %s", e.Key, input[i].Key)
-			}
-		}
-	})
+	subtestQuery(t, ds, dsq.Query{KeysOnly: true})
 }
 
 // need a custom test filter to test the "fallback" filter case for unknown
@@ -194,30 +169,6 @@ func SubtestFilter(t *testing.T, ds dstore.Datastore) {
 		t.Run(name, func(t *testing.T) {
 			subtestQuery(t, ds, dsq.Query{
 				Filters: filters,
-			}, func(t *testing.T, input, output []dsq.Entry) {
-				var exp []dsq.Entry
-			input:
-				for _, e := range input {
-					for _, f := range filters {
-						if !f.Filter(e) {
-							continue input
-						}
-					}
-					exp = append(exp, e)
-				}
-
-				if len(exp) != len(output) {
-					t.Fatalf("got wrong number of keys back: expected %d, got %d", len(exp), len(output))
-				}
-
-				dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, exp)
-				dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, output)
-
-				for i, e := range output {
-					if exp[i].Key != e.Key {
-						t.Fatalf("in key output, got %s but expected %s", e.Key, exp[i].Key)
-					}
-				}
 			})
 		})
 	}
@@ -258,7 +209,7 @@ func randValue() []byte {
 	return value
 }
 
-func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, check func(t *testing.T, input, output []dsq.Entry)) {
+func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query) {
 	var input []dsq.Entry
 	count := 100
 	for i := 0; i < count; i++ {
@@ -298,13 +249,33 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, check func(t *
 	}
 
 	t.Log("aggregating query results")
-	output, err := resp.Rest()
+	actual, err := resp.Rest()
 	if err != nil {
 		t.Fatal("query result error: ", err)
 	}
 
 	t.Log("verifying query output")
-	check(t, input, output)
+	expected, err := dsq.NaiveQueryApply(q, dsq.ResultsWithEntries(q, input)).Rest()
+	if err != nil {
+		t.Fatal("naive query error: ", err)
+	}
+	if len(actual) != len(expected) {
+		t.Fatalf("expected %d results, got %d", len(expected), len(actual))
+	}
+	if len(q.Orders) == 0 {
+		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, actual)
+		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, expected)
+	}
+	for i := range actual {
+		if actual[i].Key != expected[i].Key {
+			t.Errorf("for result %d, expected key %q, got %q", i, expected[i].Key, actual[i].Key)
+			continue
+		}
+		if !q.KeysOnly && !bytes.Equal(actual[i].Value, expected[i].Value) {
+			t.Errorf("value mismatch for result %d (key=%q)", i, expected[i].Key)
+		}
+
+	}
 
 	t.Log("deleting all keys")
 	for _, e := range input {
