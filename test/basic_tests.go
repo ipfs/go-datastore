@@ -134,7 +134,7 @@ func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 		t.Run(name, func(t *testing.T) {
 			subtestQuery(t, ds, dsq.Query{
 				Orders: orders,
-			})
+			}, 100)
 		})
 	}
 	test(dsq.OrderByKey{})
@@ -149,7 +149,7 @@ func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 }
 
 func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
-	subtestQuery(t, ds, dsq.Query{KeysOnly: true})
+	subtestQuery(t, ds, dsq.Query{KeysOnly: true}, 100)
 }
 
 // need a custom test filter to test the "fallback" filter case for unknown
@@ -170,7 +170,7 @@ func SubtestFilter(t *testing.T, ds dstore.Datastore) {
 		t.Run(name, func(t *testing.T) {
 			subtestQuery(t, ds, dsq.Query{
 				Filters: filters,
-			})
+			}, 100)
 		})
 	}
 	test(dsq.FilterKeyCompare{
@@ -210,9 +210,8 @@ func randValue() []byte {
 	return value
 }
 
-func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query) {
+func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 	var input []dsq.Entry
-	count := 100
 	for i := 0; i < count; i++ {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		key := dstore.NewKey(s).String()
