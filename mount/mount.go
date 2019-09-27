@@ -224,7 +224,6 @@ func (d *Datastore) Delete(key ds.Key) error {
 func (d *Datastore) Query(master query.Query) (query.Results, error) {
 	childQuery := query.Query{
 		Prefix:            master.Prefix,
-		Limit:             master.Limit,
 		Orders:            master.Orders,
 		KeysOnly:          master.KeysOnly,
 		ReturnExpirations: master.ReturnExpirations,
@@ -254,7 +253,7 @@ func (d *Datastore) Query(master query.Query) (query.Results, error) {
 		queries.addResults(mount, results)
 	}
 
-	qr := query.ResultsFromIterator(childQuery, query.Iterator{
+	qr := query.ResultsFromIterator(master, query.Iterator{
 		Next:  queries.next,
 		Close: queries.close,
 	})
@@ -269,8 +268,8 @@ func (d *Datastore) Query(master query.Query) (query.Results, error) {
 		qr = query.NaiveOffset(qr, master.Offset)
 	}
 
-	if childQuery.Limit > 0 {
-		qr = query.NaiveLimit(qr, childQuery.Limit)
+	if master.Limit > 0 {
+		qr = query.NaiveLimit(qr, master.Limit)
 	}
 
 	return qr, nil
