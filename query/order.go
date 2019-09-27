@@ -18,12 +18,20 @@ func (o OrderByFunction) Compare(a, b Entry) int {
 	return o(a, b)
 }
 
+func (OrderByFunction) String() string {
+	return "FN"
+}
+
 // OrderByValue is used to signal to datastores they should apply internal
 // orderings.
 type OrderByValue struct{}
 
 func (o OrderByValue) Compare(a, b Entry) int {
 	return bytes.Compare(a.Value, b.Value)
+}
+
+func (OrderByValue) String() string {
+	return "VALUE"
 }
 
 // OrderByValueDescending is used to signal to datastores they
@@ -34,6 +42,10 @@ func (o OrderByValueDescending) Compare(a, b Entry) int {
 	return -bytes.Compare(a.Value, b.Value)
 }
 
+func (OrderByValueDescending) String() string {
+	return "desc(VALUE)"
+}
+
 // OrderByKey
 type OrderByKey struct{}
 
@@ -41,11 +53,19 @@ func (o OrderByKey) Compare(a, b Entry) int {
 	return strings.Compare(a.Key, b.Key)
 }
 
+func (OrderByKey) String() string {
+	return "KEY"
+}
+
 // OrderByKeyDescending
 type OrderByKeyDescending struct{}
 
 func (o OrderByKeyDescending) Compare(a, b Entry) int {
 	return -strings.Compare(a.Key, b.Key)
+}
+
+func (OrderByKeyDescending) String() string {
+	return "desc(KEY)"
 }
 
 // Less returns true if a comes before b with the requested orderings.

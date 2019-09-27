@@ -1,6 +1,7 @@
 package query
 
 import (
+	"fmt"
 	"time"
 
 	goprocess "github.com/jbenet/goprocess"
@@ -65,6 +66,48 @@ type Query struct {
 	Offset            int      // skip given number of results
 	KeysOnly          bool     // return only keys.
 	ReturnExpirations bool     // return expirations (see TTLDatastore)
+}
+
+func (q Query) String() string {
+	s := "SELECT keys"
+	if !q.KeysOnly {
+		s += ",vals"
+	}
+	if q.ReturnExpirations {
+		s += ",exps"
+	}
+
+	s += " "
+
+	if q.Prefix != "" {
+		s += fmt.Sprintf("FROM %q ", q.Prefix)
+	}
+
+	if len(q.Filters) > 0 {
+		s += fmt.Sprintf("FILTER [%s", q.Filters[0])
+		for _, f := range q.Filters[1:] {
+			s += fmt.Sprintf(", %s", f)
+		}
+		s += "] "
+	}
+
+	if len(q.Orders) > 0 {
+		s += fmt.Sprintf("ORDER [%s", q.Orders[0])
+		for _, f := range q.Orders[1:] {
+			s += fmt.Sprintf(", %s", f)
+		}
+		s += "] "
+	}
+
+	if q.Offset > 0 {
+		s += fmt.Sprintf("OFFSET %d ", q.Offset)
+	}
+
+	if q.Limit > 0 {
+		s += fmt.Sprintf("LIMIT %d ", q.Limit)
+	}
+	// Will always end with a space, strip it.
+	return s[:len(s)-1]
 }
 
 // Entry is a query result entry.
