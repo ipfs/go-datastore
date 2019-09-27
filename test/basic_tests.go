@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -246,6 +247,10 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query) {
 	resp, err := ds.Query(q)
 	if err != nil {
 		t.Fatal("calling query: ", err)
+	}
+
+	if rq := resp.Query(); !reflect.DeepEqual(rq, q) {
+		t.Errorf("returned query\n  %s\nexpected query\n  %s", &rq, q)
 	}
 
 	t.Log("aggregating query results")
