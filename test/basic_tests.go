@@ -184,6 +184,79 @@ func (testFilter) Filter(e dsq.Entry) bool {
 	return len(e.Key)%2 == 0
 }
 
+func SubtestCombinations(t *testing.T, ds dstore.Datastore) {
+	offsets := []int{
+		0,
+		10,
+		95,
+		100,
+	}
+	limits := []int{
+		0,
+		1,
+		10,
+		100,
+	}
+	filters := [][]dsq.Filter{
+		{dsq.FilterKeyCompare{
+			Op:  dsq.Equal,
+			Key: "/0key0",
+		}},
+		{dsq.FilterKeyCompare{
+			Op:  dsq.LessThan,
+			Key: "/2",
+		}},
+	}
+	orders := [][]dsq.Order{
+		{dsq.OrderByKey{}},
+		{dsq.OrderByKeyDescending{}},
+		{dsq.OrderByValue{}, dsq.OrderByKey{}},
+		{dsq.OrderByFunction(func(a, b dsq.Entry) int { return bytes.Compare(a.Value, b.Value) })},
+	}
+	lengths := []int{
+		0,
+		1,
+		100,
+	}
+	perms(
+		func(perm []int) {
+			q := dsq.Query{
+				Offset:  offsets[perm[0]],
+				Limit:   limits[perm[1]],
+				Filters: filters[perm[2]],
+				Orders:  orders[perm[3]],
+			}
+			length := lengths[perm[4]]
+
+			t.Run(strings.ReplaceAll(fmt.Sprintf("%d/{%s}", length, q), " ", "·"), func(t *testing.T) {
+				subtestQuery(t, ds, q, length)
+			})
+		},
+		len(offsets),
+		len(limits),
+		len(filters),
+		len(orders),
+		len(lengths),
+	)
+}
+
+func perms(cb func([]int), ops ...int) {
+	current := make([]int, len(ops))
+outer:
+	for {
+		for i := range current {
+			if current[i] < (ops[i] - 1) {
+				current[i]++
+				cb(current)
+				continue outer
+			}
+			current[i] = 0
+		}
+		// out of permutations
+		return
+	}
+}
+
 func SubtestFilter(t *testing.T, ds dstore.Datastore) {
 	test := func(filters ...dsq.Filter) {
 		var types []string
