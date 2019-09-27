@@ -124,6 +124,30 @@ func SubtestNotFounds(t *testing.T, ds dstore.Datastore) {
 	}
 }
 
+func SubtestLimit(t *testing.T, ds dstore.Datastore) {
+	test := func(offset, limit int) {
+		t.Run(fmt.Sprintf("Slice/%d/%d", offset, limit), func(t *testing.T) {
+			subtestQuery(t, ds, dsq.Query{
+				Orders:   []dsq.Order{dsq.OrderByKey{}},
+				Offset:   offset,
+				Limit:    limit,
+				KeysOnly: true,
+			}, 100)
+		})
+	}
+	test(0, 10)
+	test(0, 0)
+	test(10, 0)
+	test(10, 10)
+	test(10, 20)
+	test(50, 20)
+	test(99, 20)
+	test(200, 20)
+	test(200, 0)
+	test(99, 0)
+	test(95, 0)
+}
+
 func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 	test := func(orders ...dsq.Order) {
 		var types []string
