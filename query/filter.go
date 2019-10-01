@@ -57,6 +57,10 @@ func (f FilterValueCompare) Filter(e Entry) bool {
 	}
 }
 
+func (f FilterValueCompare) String() string {
+	return fmt.Sprintf("VALUE %s %q", f.Op, string(f.Value))
+}
+
 type FilterKeyCompare struct {
 	Op  Op
 	Key string
@@ -81,10 +85,18 @@ func (f FilterKeyCompare) Filter(e Entry) bool {
 	}
 }
 
+func (f FilterKeyCompare) String() string {
+	return fmt.Sprintf("KEY %s %q", f.Op, f.Key)
+}
+
 type FilterKeyPrefix struct {
 	Prefix string
 }
 
 func (f FilterKeyPrefix) Filter(e Entry) bool {
 	return strings.HasPrefix(e.Key, f.Prefix)
+}
+
+func (f FilterKeyPrefix) String() string {
+	return fmt.Sprintf("PREFIX(%q)", f.Prefix)
 }

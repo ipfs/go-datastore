@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -123,6 +124,30 @@ func SubtestNotFounds(t *testing.T, ds dstore.Datastore) {
 	}
 }
 
+func SubtestLimit(t *testing.T, ds dstore.Datastore) {
+	test := func(offset, limit int) {
+		t.Run(fmt.Sprintf("Slice/%d/%d", offset, limit), func(t *testing.T) {
+			subtestQuery(t, ds, dsq.Query{
+				Orders:   []dsq.Order{dsq.OrderByKey{}},
+				Offset:   offset,
+				Limit:    limit,
+				KeysOnly: true,
+			}, 100)
+		})
+	}
+	test(0, 10)
+	test(0, 0)
+	test(10, 0)
+	test(10, 10)
+	test(10, 20)
+	test(50, 20)
+	test(99, 20)
+	test(200, 20)
+	test(200, 0)
+	test(99, 0)
+	test(95, 0)
+}
+
 func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 	test := func(orders ...dsq.Order) {
 		var types []string
@@ -133,19 +158,7 @@ func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 		t.Run(name, func(t *testing.T) {
 			subtestQuery(t, ds, dsq.Query{
 				Orders: orders,
-			}, func(t *testing.T, input, output []dsq.Entry) {
-				if len(input) != len(output) {
-					t.Fatal("got wrong number of keys back")
-				}
-
-				dsq.Sort(orders, input)
-
-				for i, e := range output {
-					if input[i].Key != e.Key {
-						t.Fatalf("in key output, got %s but expected %s", e.Key, input[i].Key)
-					}
-				}
-			})
+			}, 100)
 		})
 	}
 	test(dsq.OrderByKey{})
@@ -160,20 +173,7 @@ func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 }
 
 func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
-	subtestQuery(t, ds, dsq.Query{KeysOnly: true}, func(t *testing.T, input, output []dsq.Entry) {
-		if len(input) != len(output) {
-			t.Fatal("got wrong number of keys back")
-		}
-
-		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, input)
-		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, output)
-
-		for i, e := range output {
-			if input[i].Key != e.Key {
-				t.Fatalf("in key output, got %s but expected %s", e.Key, input[i].Key)
-			}
-		}
-	})
+	subtestQuery(t, ds, dsq.Query{KeysOnly: true}, 100)
 }
 
 // need a custom test filter to test the "fallback" filter case for unknown
@@ -182,6 +182,79 @@ type testFilter struct{}
 
 func (testFilter) Filter(e dsq.Entry) bool {
 	return len(e.Key)%2 == 0
+}
+
+func SubtestCombinations(t *testing.T, ds dstore.Datastore) {
+	offsets := []int{
+		0,
+		10,
+		95,
+		100,
+	}
+	limits := []int{
+		0,
+		1,
+		10,
+		100,
+	}
+	filters := [][]dsq.Filter{
+		{dsq.FilterKeyCompare{
+			Op:  dsq.Equal,
+			Key: "/0key0",
+		}},
+		{dsq.FilterKeyCompare{
+			Op:  dsq.LessThan,
+			Key: "/2",
+		}},
+	}
+	orders := [][]dsq.Order{
+		{dsq.OrderByKey{}},
+		{dsq.OrderByKeyDescending{}},
+		{dsq.OrderByValue{}, dsq.OrderByKey{}},
+		{dsq.OrderByFunction(func(a, b dsq.Entry) int { return bytes.Compare(a.Value, b.Value) })},
+	}
+	lengths := []int{
+		0,
+		1,
+		100,
+	}
+	perms(
+		func(perm []int) {
+			q := dsq.Query{
+				Offset:  offsets[perm[0]],
+				Limit:   limits[perm[1]],
+				Filters: filters[perm[2]],
+				Orders:  orders[perm[3]],
+			}
+			length := lengths[perm[4]]
+
+			t.Run(strings.ReplaceAll(fmt.Sprintf("%d/{%s}", length, q), " ", "·"), func(t *testing.T) {
+				subtestQuery(t, ds, q, length)
+			})
+		},
+		len(offsets),
+		len(limits),
+		len(filters),
+		len(orders),
+		len(lengths),
+	)
+}
+
+func perms(cb func([]int), ops ...int) {
+	current := make([]int, len(ops))
+outer:
+	for {
+		for i := range current {
+			if current[i] < (ops[i] - 1) {
+				current[i]++
+				cb(current)
+				continue outer
+			}
+			current[i] = 0
+		}
+		// out of permutations
+		return
+	}
 }
 
 func SubtestFilter(t *testing.T, ds dstore.Datastore) {
@@ -194,31 +267,7 @@ func SubtestFilter(t *testing.T, ds dstore.Datastore) {
 		t.Run(name, func(t *testing.T) {
 			subtestQuery(t, ds, dsq.Query{
 				Filters: filters,
-			}, func(t *testing.T, input, output []dsq.Entry) {
-				var exp []dsq.Entry
-			input:
-				for _, e := range input {
-					for _, f := range filters {
-						if !f.Filter(e) {
-							continue input
-						}
-					}
-					exp = append(exp, e)
-				}
-
-				if len(exp) != len(output) {
-					t.Fatalf("got wrong number of keys back: expected %d, got %d", len(exp), len(output))
-				}
-
-				dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, exp)
-				dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, output)
-
-				for i, e := range output {
-					if exp[i].Key != e.Key {
-						t.Fatalf("in key output, got %s but expected %s", e.Key, exp[i].Key)
-					}
-				}
-			})
+			}, 100)
 		})
 	}
 	test(dsq.FilterKeyCompare{
@@ -258,9 +307,8 @@ func randValue() []byte {
 	return value
 }
 
-func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, check func(t *testing.T, input, output []dsq.Entry)) {
+func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 	var input []dsq.Entry
-	count := 100
 	for i := 0; i < count; i++ {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		key := dstore.NewKey(s).String()
@@ -297,14 +345,38 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, check func(t *
 		t.Fatal("calling query: ", err)
 	}
 
+	if rq := resp.Query(); !reflect.DeepEqual(rq, q) {
+		t.Errorf("returned query\n  %s\nexpected query\n  %s", &rq, q)
+	}
+
 	t.Log("aggregating query results")
-	output, err := resp.Rest()
+	actual, err := resp.Rest()
 	if err != nil {
 		t.Fatal("query result error: ", err)
 	}
 
 	t.Log("verifying query output")
-	check(t, input, output)
+	expected, err := dsq.NaiveQueryApply(q, dsq.ResultsWithEntries(q, input)).Rest()
+	if err != nil {
+		t.Fatal("naive query error: ", err)
+	}
+	if len(actual) != len(expected) {
+		t.Fatalf("expected %d results, got %d", len(expected), len(actual))
+	}
+	if len(q.Orders) == 0 {
+		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, actual)
+		dsq.Sort([]dsq.Order{dsq.OrderByKey{}}, expected)
+	}
+	for i := range actual {
+		if actual[i].Key != expected[i].Key {
+			t.Errorf("for result %d, expected key %q, got %q", i, expected[i].Key, actual[i].Key)
+			continue
+		}
+		if !q.KeysOnly && !bytes.Equal(actual[i].Value, expected[i].Value) {
+			t.Errorf("value mismatch for result %d (key=%q)", i, expected[i].Key)
+		}
+
+	}
 
 	t.Log("deleting all keys")
 	for _, e := range input {
