@@ -248,3 +248,65 @@ func getKeysViaChan(rs Results) []string {
 	}
 	return ret
 }
+
+func TestStringer(t *testing.T) {
+	q := Query{}
+
+	expected := `SELECT keys,vals`
+	actual := q.String()
+	if actual != expected {
+		t.Fatalf("expected\n\t%s\ngot\n\t%s", expected, actual)
+	}
+
+	q.Offset = 10
+	q.Limit = 10
+	expected = `SELECT keys,vals OFFSET 10 LIMIT 10`
+	actual = q.String()
+	if actual != expected {
+		t.Fatalf("expected\n\t%s\ngot\n\t%s", expected, actual)
+	}
+
+	q.Orders = []Order{OrderByValue{}, OrderByKey{}}
+	expected = `SELECT keys,vals ORDER [VALUE, KEY] OFFSET 10 LIMIT 10`
+	actual = q.String()
+	if actual != expected {
+		t.Fatalf("expected\n\t%s\ngot\n\t%s", expected, actual)
+	}
+
+	q.Filters = []Filter{
+		FilterKeyCompare{Op: GreaterThan, Key: "/foo/bar"},
+		FilterKeyCompare{Op: LessThan, Key: "/foo/bar"},
+	}
+	expected = `SELECT keys,vals FILTER [KEY > "/foo/bar", KEY < "/foo/bar"] ORDER [VALUE, KEY] OFFSET 10 LIMIT 10`
+	actual = q.String()
+	if actual != expected {
+		t.Fatalf("expected\n\t%s\ngot\n\t%s", expected, actual)
+	}
+
+	q.Prefix = "/foo"
+	expected = `SELECT keys,vals FROM "/foo" FILTER [KEY > "/foo/bar", KEY < "/foo/bar"] ORDER [VALUE, KEY] OFFSET 10 LIMIT 10`
+	actual = q.String()
+	if actual != expected {
+		t.Fatalf("expected\n\t%s\ngot\n\t%s", expected, actual)
+	}
+
+	q.ReturnExpirations = true
+	expected = `SELECT keys,vals,exps FROM "/foo" FILTER [KEY > "/foo/bar", KEY < "/foo/bar"] ORDER [VALUE, KEY] OFFSET 10 LIMIT 10`
+	actual = q.String()
+	if actual != expected {
+		t.Fatalf("expected\n\t%s\ngot\n\t%s", expected, actual)
+	}
+
+	q.KeysOnly = true
+	expected = `SELECT keys,exps FROM "/foo" FILTER [KEY > "/foo/bar", KEY < "/foo/bar"] ORDER [VALUE, KEY] OFFSET 10 LIMIT 10`
+	actual = q.String()
+	if actual != expected {
+		t.Fatalf("expected\n\t%s\ngot\n\t%s", expected, actual)
+	}
+	q.ReturnExpirations = false
+	expected = `SELECT keys FROM "/foo" FILTER [KEY > "/foo/bar", KEY < "/foo/bar"] ORDER [VALUE, KEY] OFFSET 10 LIMIT 10`
+	actual = q.String()
+	if actual != expected {
+		t.Fatalf("expected\n\t%s\ngot\n\t%s", expected, actual)
+	}
+}
