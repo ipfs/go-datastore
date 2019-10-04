@@ -66,6 +66,9 @@ type Query struct {
 	Offset            int      // skip given number of results
 	KeysOnly          bool     // return only keys.
 	ReturnExpirations bool     // return expirations (see TTLDatastore)
+	ReturnsSize       bool     // always return sizes. If not set, datastore impl can return
+	//                         // it anyway if it doesn't involve a performance cost. If KeysOnly
+	//                         // is not set, Size should always be set.
 }
 
 // String returns a string represenation of the Query for debugging/validation
@@ -115,9 +118,10 @@ func (q Query) String() string {
 // Entry is a query result entry.
 type Entry struct {
 	Key        string    // cant be ds.Key because circular imports ...!!!
-	Size       int       // Might be zero if the datastore doesn't support listing the size with KeysOnly
 	Value      []byte    // Will be nil if KeysOnly has been passed.
 	Expiration time.Time // Entry expiration timestamp if requested and supported (see TTLDatastore).
+	Size       int       // Might be -1 if the datastore doesn't support listing the size with KeysOnly
+	//                   // or if ReturnsSizes is not set
 }
 
 // Result is a special entry that includes an error, so that the client
