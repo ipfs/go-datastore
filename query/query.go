@@ -68,6 +68,8 @@ type Query struct {
 	ReturnExpirations bool     // return expirations (see TTLDatastore)
 }
 
+// String returns a string represenation of the Query for debugging/validation
+// purposes. Do not use it for SQL queries.
 func (q Query) String() string {
 	s := "SELECT keys"
 	if !q.KeysOnly {
