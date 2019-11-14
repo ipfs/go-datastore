@@ -96,13 +96,16 @@ func (ks *DSSuite) TestDiskUsage(c *C) {
 		"foo/bar/baz/barb",
 	})
 
+	totalBytes := 0
 	for _, k := range keys {
-		err := ks.ds.Put(k, []byte(k.String()))
+		value := []byte(k.String())
+		totalBytes += len(value)
+		err := ks.ds.Put(k, value)
 		c.Check(err, Equals, nil)
 	}
 
 	if ps, ok := ks.ds.(ds.PersistentDatastore); ok {
-		if s, err := ps.DiskUsage(); s <= 100 || err != nil {
+		if s, err := ps.DiskUsage(); s != uint64(totalBytes) || err != nil {
 			c.Error("unexpected size is: ", s)
 		}
 	} else {

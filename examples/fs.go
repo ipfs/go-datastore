@@ -103,8 +103,9 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		// remove ds path prefix
-		if strings.HasPrefix(path, d.path) {
-			path = path[len(d.path):]
+		relPath, err := filepath.Rel(d.path, path)
+		if err == nil {
+			path = filepath.ToSlash(relPath)
 		}
 
 		if !info.IsDir() {
@@ -167,7 +168,7 @@ func (d *Datastore) DiskUsage() (uint64, error) {
 			log.Println(err)
 			return err
 		}
-		if f != nil {
+		if f != nil && f.Mode().IsRegular() {
 			du += uint64(f.Size())
 		}
 		return nil
