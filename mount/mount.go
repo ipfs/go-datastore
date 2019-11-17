@@ -189,6 +189,24 @@ func (d *Datastore) Put(key ds.Key, value []byte) error {
 	return cds.Put(k, value)
 }
 
+// Sync implements Datastore.Sync
+func (d *Datastore) Sync(prefix ds.Key) error {
+	// Sync all mount points below the prefix
+	// Sync the mount point right at (or above) the prefix
+	dstores, mountPts, rest := d.lookupAll(prefix)
+	for i, suffix := range rest {
+		if err := dstores[i].Sync(suffix); err != nil {
+			return err
+		}
+
+		if mountPts[i].Equal(prefix) || suffix.String() != "/" {
+			return nil
+		}
+	}
+
+	return nil
+}
+
 func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	cds, _, k := d.lookup(key)
 	if cds == nil {

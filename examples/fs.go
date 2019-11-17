@@ -63,6 +63,12 @@ func (d *Datastore) Put(key ds.Key, value []byte) (err error) {
 	return ioutil.WriteFile(fn, value, 0666)
 }
 
+// Sync would ensure that any previous Puts under the prefix are written to disk.
+// However, they already are.
+func (d *Datastore) Sync(prefix ds.Key) error {
+	return nil
+}
+
 // Get returns the value for given key
 func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	fn := d.KeyFilename(key)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	datastore "github.com/ipfs/go-datastore"
+	autobatch "github.com/ipfs/go-datastore/autobatch"
 	mount "github.com/ipfs/go-datastore/mount"
 	query "github.com/ipfs/go-datastore/query"
 	sync "github.com/ipfs/go-datastore/sync"
@@ -639,6 +640,70 @@ func TestLookupPrio(t *testing.T) {
 	if g, e := found, true; g != e {
 		t.Fatalf("wrong value: %v != %v", g, e)
 	}
+}
+
+func TestNestedMountSync(t *testing.T) {
+	internalDSRoot := datastore.NewMapDatastore()
+	internalDSFoo := datastore.NewMapDatastore()
+	internalDSFooBar := datastore.NewMapDatastore()
+
+	m := mount.New([]mount.Mount{
+		{Prefix: datastore.NewKey("/foo"), Datastore: autobatch.NewAutoBatching(internalDSFoo, 10)},
+		{Prefix: datastore.NewKey("/foo/bar"), Datastore: autobatch.NewAutoBatching(internalDSFooBar, 10)},
+		{Prefix: datastore.NewKey("/"), Datastore: autobatch.NewAutoBatching(internalDSRoot, 10)},
+	})
+
+	// Testing scenarios
+	// 1) Make sure child(ren) sync
+	// 2) Make sure parent syncs
+	// 3) Make sure parent only syncs the relevant subtree (instead of fully syncing)
+
+	addToDS := func(str string) {
+		t.Helper()
+		if err := m.Put(datastore.NewKey(str), []byte(str)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	checkVal := func(d datastore.Datastore, str string, expectFound bool) {
+		t.Helper()
+		res, err := d.Has(datastore.NewKey(str))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res != expectFound {
+			if expectFound {
+				t.Fatal("datastore is missing key")
+			}
+			t.Fatal("datastore has key it should not have")
+		}
+	}
+
+	// Add /foo/bar/0, Add /foo/bar/0/1, Add /foo/baz, Add /beep/bop, Sync /foo: all added except last - checks 1 and 2
+	addToDS("/foo/bar/0")
+	addToDS("/foo/bar/1")
+	addToDS("/foo/baz")
+	addToDS("/beep/bop")
+
+	if err := m.Sync(datastore.NewKey("/foo")); err != nil {
+		t.Fatal(err)
+	}
+
+	checkVal(internalDSFooBar, "/0", true)
+	checkVal(internalDSFooBar, "/1", true)
+	checkVal(internalDSFoo, "/baz", true)
+	checkVal(internalDSRoot, "/beep/bop", false)
+
+	// Add /fwop Add /bloop Sync /fwop, both added - checks 3
+	addToDS("/fwop")
+	addToDS("/bloop")
+
+	if err := m.Sync(datastore.NewKey("/fwop")); err != nil {
+		t.Fatal(err)
+	}
+
+	checkVal(internalDSRoot, "/fwop", true)
+	checkVal(internalDSRoot, "/bloop", false)
 }
 
 type errQueryDS struct {

@@ -30,6 +30,12 @@ func (dds *Delayed) Put(key ds.Key, value []byte) (err error) {
 	return dds.ds.Put(key, value)
 }
 
+// Sync implements Datastore.Sync
+func (dds *Delayed) Sync(prefix ds.Key) error {
+	dds.delay.Wait()
+	return dds.ds.Sync(prefix)
+}
+
 // Get implements the ds.Datastore interface.
 func (dds *Delayed) Get(key ds.Key) (value []byte, err error) {
 	dds.delay.Wait()

@@ -36,6 +36,16 @@ func (d *Failstore) Put(k ds.Key, val []byte) error {
 	return d.child.Put(k, val)
 }
 
+// Sync implements Datastore.Sync
+func (d *Failstore) Sync(prefix ds.Key) error {
+	err := d.errfunc("sync")
+	if err != nil {
+		return err
+	}
+
+	return d.child.Sync(prefix)
+}
+
 // Get retrieves a value from the datastore.
 func (d *Failstore) Get(k ds.Key) ([]byte, error) {
 	err := d.errfunc("get")
