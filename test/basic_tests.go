@@ -301,6 +301,10 @@ func SubtestFilter(t *testing.T, ds dstore.Datastore) {
 	test(new(testFilter))
 }
 
+func SubtestReturnSizes(t *testing.T, ds dstore.Datastore) {
+	subtestQuery(t, ds, dsq.Query{ReturnsSizes: true}, 100)
+}
+
 func randValue() []byte {
 	value := make([]byte, 64)
 	rand.Read(value)
@@ -376,7 +380,9 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		if !q.KeysOnly && !bytes.Equal(actual[i].Value, expected[i].Value) {
 			t.Errorf("value mismatch for result %d (key=%q)", i, expected[i].Key)
 		}
-
+		if q.ReturnsSizes && actual[i].Size <= 0 {
+			t.Errorf("for result %d, expected size > 0 with ReturnsSizes", i)
+		}
 	}
 
 	t.Log("deleting all keys")
