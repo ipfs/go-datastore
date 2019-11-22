@@ -66,7 +66,7 @@ type Query struct {
 	Offset            int      // skip given number of results
 	KeysOnly          bool     // return only keys.
 	ReturnExpirations bool     // return expirations (see TTLDatastore)
-	ReturnsSize       bool     // always return sizes. If not set, datastore impl can return
+	ReturnsSizes      bool     // always return sizes. If not set, datastore impl can return
 	//                         // it anyway if it doesn't involve a performance cost. If KeysOnly
 	//                         // is not set, Size should always be set.
 }
