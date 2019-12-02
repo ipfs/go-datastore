@@ -227,6 +227,7 @@ func (d *Datastore) Query(master query.Query) (query.Results, error) {
 		Orders:            master.Orders,
 		KeysOnly:          master.KeysOnly,
 		ReturnExpirations: master.ReturnExpirations,
+		ReturnsSizes:      master.ReturnsSizes,
 	}
 
 	prefix := ds.NewKey(childQuery.Prefix)

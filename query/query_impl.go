@@ -136,7 +136,7 @@ func NaiveQueryApply(q Query, qr Results) Results {
 func ResultEntriesFrom(keys []string, vals [][]byte) []Entry {
 	re := make([]Entry, len(keys))
 	for i, k := range keys {
-		re[i] = Entry{Key: k, Value: vals[i]}
+		re[i] = Entry{Key: k, Size: len(vals[i]), Value: vals[i]}
 	}
 	return re
 }

@@ -101,9 +101,9 @@ func (ks *DSSuite) TestQuery(c *C) {
 	c.Check(err, Equals, nil)
 
 	expect := []dsq.Entry{
-		{Key: "/bar", Value: []byte("/foo/bar")},
-		{Key: "/bar/baz", Value: []byte("/foo/bar/baz")},
-		{Key: "/baz/abc", Value: []byte("/foo/baz/abc")},
+		{Key: "/bar", Size: len([]byte("/foo/bar")), Value: []byte("/foo/bar")},
+		{Key: "/bar/baz", Size: len([]byte("/foo/bar/baz")), Value: []byte("/foo/bar/baz")},
+		{Key: "/baz/abc", Size: len([]byte("/foo/baz/abc")), Value: []byte("/foo/baz/abc")},
 	}
 
 	results, err := qres.Rest()
@@ -122,8 +122,8 @@ func (ks *DSSuite) TestQuery(c *C) {
 	c.Check(err, Equals, nil)
 
 	expect = []dsq.Entry{
-		{Key: "/bar", Value: []byte("/foo/bar")},
-		{Key: "/bar/baz", Value: []byte("/foo/bar/baz")},
+		{Key: "/bar", Size: len([]byte("/foo/bar")), Value: []byte("/foo/bar")},
+		{Key: "/bar/baz", Size: len([]byte("/foo/bar/baz")), Value: []byte("/foo/bar/baz")},
 	}
 
 	results, err = qres.Rest()

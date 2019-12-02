@@ -8,7 +8,7 @@ import (
 	dsq "github.com/ipfs/go-datastore/query"
 )
 
-// Datastore implements a go-datatsore.
+// Datastore implements a go-datastore.
 type Datastore struct {
 	child ds.Batching
 
