@@ -16,6 +16,8 @@ var sampleKeys = []string{
 }
 
 func testResults(t *testing.T, res Results, expect []string) {
+	t.Helper()
+
 	actualE, err := res.Rest()
 	if err != nil {
 		t.Fatal(err)
@@ -37,6 +39,7 @@ func testResults(t *testing.T, res Results, expect []string) {
 
 func TestNaiveQueryApply(t *testing.T) {
 	testNaiveQueryApply := func(t *testing.T, query Query, keys []string, expect []string) {
+		t.Helper()
 		e := make([]Entry, len(keys))
 		for i, k := range keys {
 			e[i] = Entry{Key: k}
@@ -71,9 +74,6 @@ func TestNaiveQueryApply(t *testing.T) {
 	testNaiveQueryApply(t, q, sampleKeys, []string{
 		"/ab/c",
 		"/ab/cd",
-		"/abce",
-		"/abcf",
-		"/ab",
 	})
 
 	q = Query{Orders: []Order{OrderByKeyDescending{}}}
@@ -88,14 +88,12 @@ func TestNaiveQueryApply(t *testing.T) {
 
 	q = Query{
 		Limit:  3,
-		Offset: 2,
+		Offset: 1,
 		Prefix: "/ab",
 		Orders: []Order{OrderByKey{}},
 	}
 	testNaiveQueryApply(t, q, sampleKeys, []string{
 		"/ab/cd",
-		"/abce",
-		"/abcf",
 	})
 }
 

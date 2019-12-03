@@ -39,7 +39,7 @@ var _ ds.Datastore = (*Datastore)(nil)
 
 func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
 	for _, m := range d.mounts {
-		if m.Prefix.Equal(key) || m.Prefix.IsAncestorOf(key) {
+		if m.Prefix.IsAncestorOf(key) {
 			s := strings.TrimPrefix(key.String(), m.Prefix.String())
 			k := ds.NewKey(s)
 			return m.Datastore, m.Prefix, k
@@ -159,21 +159,21 @@ func (h *querySet) next() (query.Result, bool) {
 // /aoe/      not matching
 func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest []ds.Key) {
 	for _, m := range d.mounts {
-		p := m.Prefix.String()
-		if len(p) > 1 {
-			p = p + "/"
-		}
-
-		if strings.HasPrefix(p, key.String()) {
+		if m.Prefix.IsDescendantOf(key) {
 			dst = append(dst, m.Datastore)
 			mountpoint = append(mountpoint, m.Prefix)
 			rest = append(rest, ds.NewKey("/"))
-		} else if strings.HasPrefix(key.String(), p) {
+		} else if m.Prefix.Equal(key) || m.Prefix.IsAncestorOf(key) {
 			r := strings.TrimPrefix(key.String(), m.Prefix.String())
 
 			dst = append(dst, m.Datastore)
 			mountpoint = append(mountpoint, m.Prefix)
 			rest = append(rest, ds.NewKey(r))
+
+			// We've found an ancestor (or equal) key. We might have
+			// more general datastores, but they won't contain keys
+			// with this prefix so there's no point in searching them.
+			break
 		}
 	}
 	return dst, mountpoint, rest
@@ -191,14 +191,10 @@ func (d *Datastore) Put(key ds.Key, value []byte) error {
 func (d *Datastore) Sync(prefix ds.Key) error {
 	// Sync all mount points below the prefix
 	// Sync the mount point right at (or above) the prefix
-	dstores, mountPts, rest := d.lookupAll(prefix)
+	dstores, _, rest := d.lookupAll(prefix)
 	for i, suffix := range rest {
 		if err := dstores[i].Sync(suffix); err != nil {
 			return err
-		}
-
-		if mountPts[i].Equal(prefix) || suffix.String() != "/" {
-			return nil
 		}
 	}
 

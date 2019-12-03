@@ -122,7 +122,6 @@ func (ks *DSSuite) TestQuery(c *C) {
 	c.Check(err, Equals, nil)
 
 	expect = []dsq.Entry{
-		{Key: "/bar", Size: len([]byte("/foo/bar")), Value: []byte("/foo/bar")},
 		{Key: "/bar/baz", Size: len([]byte("/foo/bar/baz")), Value: []byte("/foo/bar/baz")},
 	}
 
