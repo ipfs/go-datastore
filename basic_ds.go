@@ -28,6 +28,11 @@ func (d *MapDatastore) Put(key Key, value []byte) (err error) {
 	return nil
 }
 
+// Sync implements Datastore.Sync
+func (d *MapDatastore) Sync(prefix Key) error {
+	return nil
+}
+
 // Get implements Datastore.Get
 func (d *MapDatastore) Get(key Key) (value []byte, err error) {
 	val, found := d.values[key]
@@ -92,6 +97,11 @@ func NewNullDatastore() *NullDatastore {
 
 // Put implements Datastore.Put
 func (d *NullDatastore) Put(key Key, value []byte) (err error) {
+	return nil
+}
+
+// Sync implements Datastore.Sync
+func (d *NullDatastore) Sync(prefix Key) error {
 	return nil
 }
 

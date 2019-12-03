@@ -63,6 +63,12 @@ func (d *Datastore) Put(key ds.Key, value []byte) (err error) {
 	return ioutil.WriteFile(fn, value, 0666)
 }
 
+// Sync would ensure that any previous Puts under the prefix are written to disk.
+// However, they already are.
+func (d *Datastore) Sync(prefix ds.Key) error {
+	return nil
+}
+
 // Get returns the value for given key
 func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	fn := d.KeyFilename(key)
@@ -103,8 +109,9 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		// remove ds path prefix
-		if strings.HasPrefix(path, d.path) {
-			path = path[len(d.path):]
+		relPath, err := filepath.Rel(d.path, path)
+		if err == nil {
+			path = filepath.ToSlash(relPath)
 		}
 
 		if !info.IsDir() {
@@ -167,7 +174,7 @@ func (d *Datastore) DiskUsage() (uint64, error) {
 			log.Println(err)
 			return err
 		}
-		if f != nil {
+		if f != nil && f.Mode().IsRegular() {
 			du += uint64(f.Size())
 		}
 		return nil

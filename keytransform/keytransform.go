@@ -37,6 +37,11 @@ func (d *Datastore) Put(key ds.Key, value []byte) (err error) {
 	return d.child.Put(d.ConvertKey(key), value)
 }
 
+// Sync implements Datastore.Sync
+func (d *Datastore) Sync(prefix ds.Key) error {
+	return d.child.Sync(d.ConvertKey(prefix))
+}
+
 // Get returns the value for given key, transforming the key first.
 func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	return d.child.Get(d.ConvertKey(key))

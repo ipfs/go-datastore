@@ -176,6 +176,36 @@ func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
 	subtestQuery(t, ds, dsq.Query{KeysOnly: true}, 100)
 }
 
+func SubtestBasicSync(t *testing.T, ds dstore.Datastore) {
+	if err := ds.Sync(dstore.NewKey("foo")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ds.Put(dstore.NewKey("/foo"), []byte("foo")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ds.Sync(dstore.NewKey("/foo")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ds.Put(dstore.NewKey("/foo/bar"), []byte("bar")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ds.Sync(dstore.NewKey("/foo")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ds.Sync(dstore.NewKey("/foo/bar")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ds.Sync(dstore.NewKey("")); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // need a custom test filter to test the "fallback" filter case for unknown
 // filters.
 type testFilter struct{}

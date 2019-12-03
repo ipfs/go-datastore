@@ -33,6 +33,13 @@ func (d *MutexDatastore) Put(key ds.Key, value []byte) (err error) {
 	return d.child.Put(key, value)
 }
 
+// Sync implements Datastore.Sync
+func (d *MutexDatastore) Sync(prefix ds.Key) error {
+	d.Lock()
+	defer d.Unlock()
+	return d.child.Sync(prefix)
+}
+
 // Get implements Datastore.Get
 func (d *MutexDatastore) Get(key ds.Key) (value []byte, err error) {
 	d.RLock()

@@ -34,6 +34,13 @@ should be checked by callers.
 type Datastore interface {
 	Read
 	Write
+	// Sync guarantees that any Put or Delete calls under prefix that returned
+	// before Sync(prefix) was called will be observed after Sync(prefix)
+	// returns, even if the program crashes. If Put/Delete operations already
+	// satisfy these requirements then Sync may be a no-op.
+	//
+	// If the prefix fails to Sync this method returns an error.
+	Sync(prefix Key) error
 	io.Closer
 }
 

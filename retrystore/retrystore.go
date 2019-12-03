@@ -73,6 +73,13 @@ func (d *Datastore) Put(k ds.Key, val []byte) error {
 	})
 }
 
+// Sync implements Datastore.Sync
+func (d *Datastore) Sync(prefix ds.Key) error {
+	return d.runOp(func() error {
+		return d.Batching.Sync(prefix)
+	})
+}
+
 // Has checks if a key is stored.
 func (d *Datastore) Has(k ds.Key) (bool, error) {
 	var has bool
