@@ -29,7 +29,7 @@ func (ks *KeySuite) SubtestKey(s string, c *C) {
 	kname := lnparts[len(lnparts)-1]
 
 	kchild := path.Clean(fixed + "/cchildd")
-	kparent := "/" + strings.Join(append(namespaces[:len(namespaces)-1]), "/")
+	kparent := "/" + strings.Join(namespaces[:len(namespaces)-1], "/")
 	kpath := path.Clean(kparent + "/" + ktype)
 	kinstance := fixed + ":" + "inst"
 

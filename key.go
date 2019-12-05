@@ -125,7 +125,7 @@ func (k Key) List() []string {
 //   NewKey("/Actor:JohnCleese/MontyPython/Comedy")
 func (k Key) Reverse() Key {
 	l := k.List()
-	r := make([]string, len(l), len(l))
+	r := make([]string, len(l))
 	for i, e := range l {
 		r[len(l)-i-1] = e
 	}

@@ -15,11 +15,6 @@ var sampleKeys = []string{
 	"/ab",
 }
 
-type testCase struct {
-	keys   []string
-	expect []string
-}
-
 func testResults(t *testing.T, res Results, expect []string) {
 	actualE, err := res.Rest()
 	if err != nil {

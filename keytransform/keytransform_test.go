@@ -20,9 +20,6 @@ type DSSuite struct{}
 
 var _ = Suite(&DSSuite{})
 
-func testDatastore() {
-}
-
 var pair = &kt.Pair{
 	Convert: func(k ds.Key) ds.Key {
 		return ds.NewKey("/abc").Child(k)
