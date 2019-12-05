@@ -17,3 +17,8 @@ func TestNullDatastore(t *testing.T) {
 	// The only test that passes. Nothing should be found.
 	dstest.SubtestNotFounds(t, ds)
 }
+
+func TestLogDatastore(t *testing.T) {
+	ds := dstore.NewLogDatastore(dstore.NewMapDatastore(), "")
+	dstest.SubtestAll(t, ds)
+}

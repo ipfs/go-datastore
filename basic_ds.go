@@ -171,6 +171,12 @@ func (d *LogDatastore) Put(key Key, value []byte) (err error) {
 	return d.child.Put(key, value)
 }
 
+// Sync implements Datastore.Sync
+func (d *LogDatastore) Sync(prefix Key) error {
+	log.Printf("%s: Sync %s\n", d.Name, prefix)
+	return d.child.Sync(prefix)
+}
+
 // Get implements Datastore.Get
 func (d *LogDatastore) Get(key Key) (value []byte, err error) {
 	log.Printf("%s: Get %s\n", d.Name, key)
