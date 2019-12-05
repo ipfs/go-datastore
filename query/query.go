@@ -289,7 +289,7 @@ func ResultsWithProcess(q Query, proc func(goprocess.Process, chan<- Result)) Re
 		proc(worker, b.Output)
 	})
 
-	go b.Process.CloseAfterChildren()
+	go b.Process.CloseAfterChildren() //nolint
 	return b.Results()
 }
 
@@ -427,10 +427,9 @@ func (r *resultsIter) useLegacyResults() {
 				return
 			}
 		}
-		return
 	})
 
-	go b.Process.CloseAfterChildren()
+	go b.Process.CloseAfterChildren() //nolint
 
 	r.legacyResults = b.Results().(*results)
 }

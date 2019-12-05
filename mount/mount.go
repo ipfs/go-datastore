@@ -26,9 +26,7 @@ type Mount struct {
 func New(mounts []Mount) *Datastore {
 	// make a copy so we're sure it doesn't mutate
 	m := make([]Mount, len(mounts))
-	for i, v := range mounts {
-		m[i] = v
-	}
+	copy(m, mounts)
 	sort.Slice(m, func(i, j int) bool { return m[i].Prefix.String() > m[j].Prefix.String() })
 	return &Datastore{mounts: m}
 }

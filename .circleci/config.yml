@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  ci-go: ipfs/ci-go@0.1
+  ci-go: ipfs/ci-go@0.2.0
 
 workflows:
   version: 2

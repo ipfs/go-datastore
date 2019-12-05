@@ -14,7 +14,9 @@ func Example() {
 	k := ds.NewKey("/beep")
 	v := "boop"
 
-	ns.Put(k, []byte(v))
+	if err := ns.Put(k, []byte(v)); err != nil {
+		panic(err)
+	}
 	fmt.Printf("ns.Put %s %s\n", k, v)
 
 	v2, _ := ns.Get(k)

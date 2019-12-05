@@ -252,11 +252,21 @@ func TestQueryAcrossMounts(t *testing.T) {
 		{Prefix: datastore.NewKey("/"), Datastore: mapds0},
 	})
 
-	m.Put(datastore.NewKey("/foo/lorem"), []byte("123"))
-	m.Put(datastore.NewKey("/bar/ipsum"), []byte("234"))
-	m.Put(datastore.NewKey("/bar/dolor"), []byte("345"))
-	m.Put(datastore.NewKey("/baz/sit"), []byte("456"))
-	m.Put(datastore.NewKey("/banana"), []byte("567"))
+	if err := m.Put(datastore.NewKey("/foo/lorem"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/bar/ipsum"), []byte("234")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/bar/dolor"), []byte("345")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/baz/sit"), []byte("456")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/banana"), []byte("567")); err != nil {
+		t.Fatal(err)
+	}
 
 	res, err := m.Query(query.Query{Prefix: "/ba"})
 	if err != nil {
@@ -313,11 +323,21 @@ func TestQueryAcrossMountsWithSort(t *testing.T) {
 		{Prefix: datastore.NewKey("/boo"), Datastore: mapds0},
 	})
 
-	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
-	m.Put(datastore.NewKey("/zoo/1"), []byte("234"))
-	m.Put(datastore.NewKey("/boo/9"), []byte("345"))
-	m.Put(datastore.NewKey("/boo/3"), []byte("456"))
-	m.Put(datastore.NewKey("/boo/5/hello"), []byte("789"))
+	if err := m.Put(datastore.NewKey("/zoo/0"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/1"), []byte("234")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/boo/9"), []byte("345")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/boo/3"), []byte("456")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/boo/5/hello"), []byte("789")); err != nil {
+		t.Fatal(err)
+	}
 
 	res, err := m.Query(query.Query{Orders: []query.Order{query.OrderByKey{}}})
 	if err != nil {
@@ -362,13 +382,27 @@ func TestQueryLimitAcrossMountsWithSort(t *testing.T) {
 		{Prefix: datastore.NewKey("/noop"), Datastore: mapds3},
 	})
 
-	m.Put(datastore.NewKey("/rok/0"), []byte("ghi"))
-	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
-	m.Put(datastore.NewKey("/rok/1"), []byte("def"))
-	m.Put(datastore.NewKey("/zoo/1"), []byte("167"))
-	m.Put(datastore.NewKey("/zoo/2"), []byte("345"))
-	m.Put(datastore.NewKey("/rok/3"), []byte("abc"))
-	m.Put(datastore.NewKey("/zoo/3"), []byte("456"))
+	if err := m.Put(datastore.NewKey("/rok/0"), []byte("ghi")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/0"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/rok/1"), []byte("def")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/1"), []byte("167")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/2"), []byte("345")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/rok/3"), []byte("abc")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/3"), []byte("456")); err != nil {
+		t.Fatal(err)
+	}
 
 	q := query.Query{Limit: 2, Orders: []query.Order{query.OrderByKeyDescending{}}}
 	res, err := m.Query(q)
@@ -412,13 +446,27 @@ func TestQueryLimitAndOffsetAcrossMountsWithSort(t *testing.T) {
 		{Prefix: datastore.NewKey("/noop"), Datastore: mapds3},
 	})
 
-	m.Put(datastore.NewKey("/rok/0"), []byte("ghi"))
-	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
-	m.Put(datastore.NewKey("/rok/1"), []byte("def"))
-	m.Put(datastore.NewKey("/zoo/1"), []byte("167"))
-	m.Put(datastore.NewKey("/zoo/2"), []byte("345"))
-	m.Put(datastore.NewKey("/rok/3"), []byte("abc"))
-	m.Put(datastore.NewKey("/zoo/3"), []byte("456"))
+	if err := m.Put(datastore.NewKey("/rok/0"), []byte("ghi")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/0"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/rok/1"), []byte("def")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/1"), []byte("167")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/2"), []byte("345")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/rok/3"), []byte("abc")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/3"), []byte("456")); err != nil {
+		t.Fatal(err)
+	}
 
 	q := query.Query{Limit: 3, Offset: 2, Orders: []query.Order{query.OrderByKey{}}}
 	res, err := m.Query(q)
@@ -463,13 +511,27 @@ func TestQueryFilterAcrossMountsWithSort(t *testing.T) {
 		{Prefix: datastore.NewKey("/noop"), Datastore: mapds3},
 	})
 
-	m.Put(datastore.NewKey("/rok/0"), []byte("ghi"))
-	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
-	m.Put(datastore.NewKey("/rok/1"), []byte("def"))
-	m.Put(datastore.NewKey("/zoo/1"), []byte("167"))
-	m.Put(datastore.NewKey("/zoo/2"), []byte("345"))
-	m.Put(datastore.NewKey("/rok/3"), []byte("abc"))
-	m.Put(datastore.NewKey("/zoo/3"), []byte("456"))
+	if err := m.Put(datastore.NewKey("/rok/0"), []byte("ghi")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/0"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/rok/1"), []byte("def")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/1"), []byte("167")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/2"), []byte("345")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/rok/3"), []byte("abc")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/zoo/3"), []byte("456")); err != nil {
+		t.Fatal(err)
+	}
 
 	f := &query.FilterKeyCompare{Op: query.Equal, Key: "/rok/3"}
 	q := query.Query{Filters: []query.Filter{f}}
@@ -542,8 +604,12 @@ func TestQueryLimitWithNotEnoughData(t *testing.T) {
 		{Prefix: datastore.NewKey("/zoo"), Datastore: mapds2},
 	})
 
-	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
-	m.Put(datastore.NewKey("/rok/1"), []byte("167"))
+	if err := m.Put(datastore.NewKey("/zoo/0"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/rok/1"), []byte("167")); err != nil {
+		t.Fatal(err)
+	}
 
 	q := query.Query{Limit: 4}
 	res, err := m.Query(q)
@@ -579,8 +645,12 @@ func TestQueryOffsetWithNotEnoughData(t *testing.T) {
 		{Prefix: datastore.NewKey("/zoo"), Datastore: mapds2},
 	})
 
-	m.Put(datastore.NewKey("/zoo/0"), []byte("123"))
-	m.Put(datastore.NewKey("/rok/1"), []byte("167"))
+	if err := m.Put(datastore.NewKey("/zoo/0"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/rok/1"), []byte("167")); err != nil {
+		t.Fatal(err)
+	}
 
 	q := query.Query{Offset: 4}
 	res, err := m.Query(q)
@@ -614,8 +684,12 @@ func TestLookupPrio(t *testing.T) {
 		{Prefix: datastore.NewKey("/foo"), Datastore: mapds1},
 	})
 
-	m.Put(datastore.NewKey("/foo/bar"), []byte("123"))
-	m.Put(datastore.NewKey("/baz"), []byte("234"))
+	if err := m.Put(datastore.NewKey("/foo/bar"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Put(datastore.NewKey("/baz"), []byte("234")); err != nil {
+		t.Fatal(err)
+	}
 
 	found, err := mapds0.Has(datastore.NewKey("/baz"))
 	if err != nil {
@@ -723,7 +797,9 @@ func TestErrQueryClose(t *testing.T) {
 		{Prefix: datastore.NewKey("/foo"), Datastore: eqds},
 	})
 
-	m.Put(datastore.NewKey("/baz"), []byte("123"))
+	if err := m.Put(datastore.NewKey("/baz"), []byte("123")); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err := m.Query(query.Query{})
 	if err == nil {
