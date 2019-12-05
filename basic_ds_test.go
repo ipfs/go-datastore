@@ -1,6 +1,8 @@
 package datastore_test
 
 import (
+	"io/ioutil"
+	"log"
 	"testing"
 
 	dstore "github.com/ipfs/go-datastore"
@@ -19,6 +21,8 @@ func TestNullDatastore(t *testing.T) {
 }
 
 func TestLogDatastore(t *testing.T) {
+	defer log.SetOutput(log.Writer())
+	log.SetOutput(ioutil.Discard)
 	ds := dstore.NewLogDatastore(dstore.NewMapDatastore(), "")
 	dstest.SubtestAll(t, ds)
 }
