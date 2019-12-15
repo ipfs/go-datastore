@@ -71,7 +71,7 @@ type Query struct {
 	//                         // is not set, Size should always be set.
 }
 
-// String returns a string represenation of the Query for debugging/validation
+// String returns a string representation of the Query for debugging/validation
 // purposes. Do not use it for SQL queries.
 func (q Query) String() string {
 	s := "SELECT keys"
@@ -157,7 +157,7 @@ type Result struct {
 type Results interface {
 	Query() Query             // the query these Results correspond to
 	Next() <-chan Result      // returns a channel to wait for the next result
-	NextSync() (Result, bool) // blocks and waits to return the next result, second paramter returns false when results are exhausted
+	NextSync() (Result, bool) // blocks and waits to return the next result, second parameter returns false when results are exhausted
 	Rest() ([]Entry, error)   // waits till processing finishes, returns all entries at once.
 	Close() error             // client may call Close to signal early exit
 
