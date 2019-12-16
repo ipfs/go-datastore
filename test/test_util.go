@@ -36,7 +36,7 @@ func RunBatchTest(t *testing.T, ds dstore.Batching) {
 		}
 	}
 
-	// Ensure they are not in the datastore before comitting
+	// Ensure they are not in the datastore before committing
 	for _, k := range keys {
 		_, err := ds.Get(k)
 		if err == nil {

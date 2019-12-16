@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	. "github.com/go-check/check"
+	. "gopkg.in/check.v1"
 
 	ds "github.com/ipfs/go-datastore"
 	kt "github.com/ipfs/go-datastore/keytransform"
