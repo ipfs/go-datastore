@@ -22,41 +22,32 @@ the use of queries. The datastore Query model gleans a common set of
 operations performed when querying. To avoid pasting here years of
 database research, let’s summarize the operations datastore supports.
 
-Query Operations:
+Query Operations, applied in-order:
 
-  * namespace - scope the query, usually by object type
+  * prefix - scope the query to a given path prefix
   * filters - select a subset of values by applying constraints
-  * orders - sort the results by applying sort conditions
-  * limit - impose a numeric limit on the number of results
+  * orders - sort the results by applying sort conditions, hierarchically.
   * offset - skip a number of results (for efficient pagination)
+  * limit - impose a numeric limit on the number of results
 
-datastore combines these operations into a simple Query class that allows
+Datastore combines these operations into a simple Query class that allows
 applications to define their constraints in a simple, generic, way without
 introducing datastore specific calls, languages, etc.
 
-Of course, different datastores provide relational query support across a
-wide spectrum, from full support in traditional databases to none at all in
-most key-value stores. Datastore aims to provide a common, simple interface
-for the sake of application evolution over time and keeping large code bases
-free of tool-specific code. It would be ridiculous to claim to support high-
-performance queries on architectures that obviously do not. Instead, datastore
-provides the interface, ideally translating queries to their native form
-(e.g. into SQL for MySQL).
+However, take heed: not all datastores support efficiently performing these
+operations. Pick a datastore based on your needs. If you need efficient look-ups,
+go for a simple key/value store. If you need efficient queries, consider an SQL
+backed datastore.
 
-However, on the wrong datastore, queries can potentially incur the high cost
-of performing the aforemantioned query operations on the data set directly in
-Go. It is the client’s responsibility to select the right tool for the job:
-pick a data storage solution that fits the application’s needs now, and wrap
-it with a datastore implementation. As the needs change, swap out datastore
-implementations to support your new use cases. Some applications, particularly
-in early development stages, can afford to incurr the cost of queries on non-
-relational databases (e.g. using a FSDatastore and not worry about a database
-at all). When it comes time to switch the tool for performance, updating the
-application code can be as simple as swapping the datastore in one place, not
-all over the application code base. This gain in engineering time, both at
-initial development and during later iterations, can significantly offset the
-cost of the layer of abstraction.
+Notes:
 
+  * Prefix: When a query filters by prefix, it selects keys that are strict
+    children of the prefix. For example, a prefix "/foo" would select "/foo/bar"
+    but not "/foobar" or "/foo",
+  * Orders: Orders are applied hierarchically. Results are sorted by the first
+    ordering, then entries equal under the first ordering are sorted with the
+    second ordering, etc.
+  * Limits & Offset: Limits and offsets are applied after everything else.
 */
 type Query struct {
 	Prefix            string   // namespaces the query to results whose keys have Prefix
