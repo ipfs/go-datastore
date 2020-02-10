@@ -6,6 +6,7 @@ import (
 )
 
 func testKeyFilter(t *testing.T, f Filter, keys []string, expect []string) {
+	t.Helper()
 	e := make([]Entry, len(keys))
 	for i, k := range keys {
 		e[i] = Entry{Key: k}
@@ -37,6 +38,8 @@ func TestFilterKeyCompare(t *testing.T) {
 	testKeyFilter(t, FilterKeyCompare{GreaterThan, "/ab"}, sampleKeys, []string{
 		"/ab/c",
 		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
 		"/abce",
 		"/abcf",
 	})
@@ -51,6 +54,8 @@ func TestFilterKeyPrefix(t *testing.T) {
 	testKeyFilter(t, FilterKeyPrefix{"/a"}, sampleKeys, []string{
 		"/ab/c",
 		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
 		"/a",
 		"/abce",
 		"/abcf",
@@ -59,5 +64,7 @@ func TestFilterKeyPrefix(t *testing.T) {
 	testKeyFilter(t, FilterKeyPrefix{"/ab/"}, sampleKeys, []string{
 		"/ab/c",
 		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
 	})
 }

@@ -9,6 +9,8 @@ import (
 var sampleKeys = []string{
 	"/ab/c",
 	"/ab/cd",
+	"/ab/ef",
+	"/ab/fg",
 	"/a",
 	"/abce",
 	"/abcf",
@@ -60,8 +62,8 @@ func TestNaiveQueryApply(t *testing.T) {
 
 	q = Query{Offset: 3, Limit: 2}
 	testNaiveQueryApply(t, q, sampleKeys, []string{
-		"/abce",
-		"/abcf",
+		"/ab/fg",
+		"/a",
 	})
 
 	f := &FilterKeyCompare{Op: Equal, Key: "/ab"}
@@ -74,12 +76,16 @@ func TestNaiveQueryApply(t *testing.T) {
 	testNaiveQueryApply(t, q, sampleKeys, []string{
 		"/ab/c",
 		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
 	})
 
 	q = Query{Orders: []Order{OrderByKeyDescending{}}}
 	testNaiveQueryApply(t, q, sampleKeys, []string{
 		"/abcf",
 		"/abce",
+		"/ab/fg",
+		"/ab/ef",
 		"/ab/cd",
 		"/ab/c",
 		"/ab",
@@ -87,18 +93,20 @@ func TestNaiveQueryApply(t *testing.T) {
 	})
 
 	q = Query{
-		Limit:  3,
+		Limit:  2,
 		Offset: 1,
 		Prefix: "/ab",
 		Orders: []Order{OrderByKey{}},
 	}
 	testNaiveQueryApply(t, q, sampleKeys, []string{
 		"/ab/cd",
+		"/ab/ef",
 	})
 }
 
 func TestLimit(t *testing.T) {
 	testKeyLimit := func(t *testing.T, limit int, keys []string, expect []string) {
+		t.Helper()
 		e := make([]Entry, len(keys))
 		for i, k := range keys {
 			e[i] = Entry{Key: k}
@@ -112,6 +120,8 @@ func TestLimit(t *testing.T) {
 	testKeyLimit(t, 0, sampleKeys, []string{ // none
 		"/ab/c",
 		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
 		"/a",
 		"/abce",
 		"/abcf",
@@ -121,6 +131,8 @@ func TestLimit(t *testing.T) {
 	testKeyLimit(t, 10, sampleKeys, []string{ // large
 		"/ab/c",
 		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
 		"/a",
 		"/abce",
 		"/abcf",
@@ -136,6 +148,7 @@ func TestLimit(t *testing.T) {
 func TestOffset(t *testing.T) {
 
 	testOffset := func(t *testing.T, offset int, keys []string, expect []string) {
+		t.Helper()
 		e := make([]Entry, len(keys))
 		for i, k := range keys {
 			e[i] = Entry{Key: k}
@@ -149,6 +162,8 @@ func TestOffset(t *testing.T) {
 	testOffset(t, 0, sampleKeys, []string{ // none
 		"/ab/c",
 		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
 		"/a",
 		"/abce",
 		"/abcf",
@@ -159,6 +174,8 @@ func TestOffset(t *testing.T) {
 	})
 
 	testOffset(t, 2, sampleKeys, []string{
+		"/ab/ef",
+		"/ab/fg",
 		"/a",
 		"/abce",
 		"/abcf",
