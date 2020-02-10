@@ -18,11 +18,18 @@ var (
 	ErrNoMount = errors.New("no datastore mounted for this key")
 )
 
+// Mount defines a datastore mount. It mounts the given datastore at the given
+// prefix.
 type Mount struct {
 	Prefix    ds.Key
 	Datastore ds.Datastore
 }
 
+// New creates a new mount datstore from the given mounts. See the documentation
+// on Datastore for details.
+//
+// The order of the mounts does not matter, they will be applied most specific
+// to least specific.
 func New(mounts []Mount) *Datastore {
 	// make a copy so we're sure it doesn't mutate
 	m := make([]Mount, len(mounts))
@@ -31,12 +38,36 @@ func New(mounts []Mount) *Datastore {
 	return &Datastore{mounts: m}
 }
 
+// Datastore is a mount datastore. In this datastore, keys live under the most
+// specific mounted sub-datastore. That is, given sub-datastores mounted under:
+//
+// * /
+// * /foo
+// * /foo/bar
+//
+// Keys would be written as follows:
+//
+// * /foo, /foobar, /baz would all live under /.
+// * /foo/baz, /foo/bar, etc. would live under /foo.
+// * /foo/bar/baz would live under /foo/bar.
+//
+// Additionally, even if the datastore mounted at / contains the key /foo/thing,
+// the datastore mounted at /foo would mask this value in get, deletes, and
+// query results.
+//
+// Finally, if no root (/) mount is provided, operations on keys living outside
+// all of the provided mounts will behave as follows:
+//
+// * Get - Returns datastore.ErrNotFound.
+// * Query - Returns no results.
+// * Put - Returns ErrNoMount.
 type Datastore struct {
 	mounts []Mount
 }
 
 var _ ds.Datastore = (*Datastore)(nil)
 
+// lookup looks up the datastore in which the given key lives.
 func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
 	for _, m := range d.mounts {
 		if m.Prefix.IsAncestorOf(key) {
@@ -147,16 +178,32 @@ func (h *querySet) next() (query.Result, bool) {
 	return next, true
 }
 
-// lookupAll returns all mounts that might contain keys that are descendant of <key>
+// lookupAll returns all mounts that might contain keys that are strict
+// descendants of <key>. It will not return mounts that match key exactly.
 //
-// Matching: /ao/e
+// Specifically, this function will return three slices:
 //
-// /          B /ao/e
-// /a/        not matching
-// /ao/       B /e
-// /ao/e/     A /
-// /ao/e/uh/  A /
-// /aoe/      not matching
+// * The matching datastores.
+// * The prefixes where each matching datastore has been mounted.
+// * The prefix within these datastores at which descendants of the passed key
+//   live. If the mounted datastore is fully contained within the given key,
+//   this will be /.
+//
+// By example, given the datastores:
+//
+// * /         - root
+// * /foo      -
+// * /bar
+// * /foo/bar
+//
+// This function function will behave as follows:
+//
+// * key       -> ([mountpoints], [rests])                  # comment
+// * /         -> ([/, /foo, /bar, /foo/bar], [/, /, /, /]) # all datastores
+// * /foo      -> ([/foo, /foo/bar], [/, /])                # all datastores under /foo
+// * /foo/bar  -> ([/foo/bar], [/])                         # /foo/bar
+// * /bar/foo  -> ([/bar], [/foo])                          # the datastore mounted at /bar, rest is /foo
+// * /ba       -> ([/], [/])                                # the root; only full components are matched.
 func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest []ds.Key) {
 	for _, m := range d.mounts {
 		if m.Prefix.IsDescendantOf(key) {
@@ -179,6 +226,10 @@ func (d *Datastore) lookupAll(key ds.Key) (dst []ds.Datastore, mountpoint, rest 
 	return dst, mountpoint, rest
 }
 
+// Put puts the given value into the datastore at the given key.
+//
+// Returns ErrNoMount if there no datastores are mounted at the appropriate
+// prefix for the given key.
 func (d *Datastore) Put(key ds.Key, value []byte) error {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
@@ -201,6 +252,7 @@ func (d *Datastore) Sync(prefix ds.Key) error {
 	return nil
 }
 
+// Get returns the value associated with the key from the appropriate datastore.
 func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
@@ -209,6 +261,8 @@ func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	return cds.Get(k)
 }
 
+// Has returns the true if there exists a value associated with key in the
+// appropriate datastore.
 func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
@@ -217,6 +271,8 @@ func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
 	return cds.Has(k)
 }
 
+// Get returns the size of the value associated with the key in the appropriate
+// datastore.
 func (d *Datastore) GetSize(key ds.Key) (size int, err error) {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
@@ -225,6 +281,10 @@ func (d *Datastore) GetSize(key ds.Key) (size int, err error) {
 	return cds.GetSize(k)
 }
 
+// Delete deletes the value associated with the key in the appropriate
+// datastore.
+//
+// Delete returns no error if there is no value associated with the given key.
 func (d *Datastore) Delete(key ds.Key) error {
 	cds, _, k := d.lookup(key)
 	if cds == nil {
@@ -233,6 +293,11 @@ func (d *Datastore) Delete(key ds.Key) error {
 	return cds.Delete(k)
 }
 
+// Query queries the appropriate mounted datastores, merging the results
+// according to the given orders.
+//
+// If a query prefix is specified, Query will avoid querying datastores mounted
+// outside that prefix.
 func (d *Datastore) Query(master query.Query) (query.Results, error) {
 	childQuery := query.Query{
 		Prefix:            master.Prefix,
@@ -288,6 +353,7 @@ func (d *Datastore) Query(master query.Query) (query.Results, error) {
 	return qr, nil
 }
 
+// Close closes all mounted datastores.
 func (d *Datastore) Close() error {
 	for _, d := range d.mounts {
 		err := d.Datastore.Close()
@@ -319,6 +385,7 @@ type mountBatch struct {
 	d *Datastore
 }
 
+// Batch returns a batch that operates over all mounted datastores.
 func (d *Datastore) Batch() (ds.Batch, error) {
 	return &mountBatch{
 		mounts: make(map[string]ds.Batch),
