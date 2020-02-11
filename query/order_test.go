@@ -6,6 +6,8 @@ import (
 )
 
 func testKeyOrder(t *testing.T, f Order, keys []string, expect []string) {
+	t.Helper()
+
 	e := make([]Entry, len(keys))
 	for i, k := range keys {
 		e[i] = Entry{Key: k}
@@ -39,12 +41,16 @@ func TestOrderByKey(t *testing.T) {
 		"/ab",
 		"/ab/c",
 		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
 		"/abce",
 		"/abcf",
 	})
 	testKeyOrder(t, OrderByKeyDescending{}, sampleKeys, []string{
 		"/abcf",
 		"/abce",
+		"/ab/fg",
+		"/ab/ef",
 		"/ab/cd",
 		"/ab/c",
 		"/ab",

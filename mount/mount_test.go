@@ -268,49 +268,57 @@ func TestQueryAcrossMounts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := m.Query(query.Query{Prefix: "/ba"})
-	if err != nil {
-		t.Fatalf("Query fail: %v\n", err)
-	}
-	entries, err := res.Rest()
-	if err != nil {
-		err = res.Close()
+	expect := func(prefix string, values map[string]string) {
+		t.Helper()
+		res, err := m.Query(query.Query{Prefix: prefix})
 		if err != nil {
-			t.Errorf("result.Close failed %d", err)
+			t.Fatalf("Query fail: %v\n", err)
 		}
-		t.Fatalf("Query Results.Rest fail: %v\n", err)
-	}
-	seen := 0
+		entries, err := res.Rest()
+		if err != nil {
+			err = res.Close()
+			if err != nil {
+				t.Errorf("result.Close failed %d", err)
+			}
+			t.Fatalf("Query Results.Rest fail: %v\n", err)
+		}
+		if len(entries) != len(values) {
+			t.Errorf("expected %d results, got %d", len(values), len(entries))
+		}
+		for _, e := range entries {
+			v, ok := values[e.Key]
+			if !ok {
+				t.Errorf("unexpected key %s", e.Key)
+				continue
+			}
 
-	expect := map[string]string{
-		"/foo/lorem": "y u here",
+			if v != string(e.Value) {
+				t.Errorf("key value didn't match expected %s: '%s' - '%s'", e.Key, v, e.Value)
+			}
+
+			values[e.Key] = "seen"
+		}
+	}
+
+	expect("/ba", nil)
+	expect("/bar", map[string]string{
+		"/bar/ipsum": "234",
+		"/bar/dolor": "345",
+	})
+	expect("/baz/", map[string]string{
+		"/baz/sit": "456",
+	})
+	expect("/foo", map[string]string{
+		"/foo/lorem": "123",
+	})
+	expect("/", map[string]string{
+		"/foo/lorem": "123",
 		"/bar/ipsum": "234",
 		"/bar/dolor": "345",
 		"/baz/sit":   "456",
 		"/banana":    "567",
-	}
-	for _, e := range entries {
-		v := expect[e.Key]
-		if v == "" {
-			t.Errorf("unexpected key %s", e.Key)
-		}
-
-		if v != string(e.Value) {
-			t.Errorf("key value didn't match expected %s: '%s' - '%s'", e.Key, v, e.Value)
-		}
-
-		expect[e.Key] = "seen"
-		seen++
-	}
-
-	if seen != 4 {
-		t.Errorf("expected to see 3 values, saw %d", seen)
-	}
-
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	})
+	expect("/banana", nil)
 }
 
 func TestQueryAcrossMountsWithSort(t *testing.T) {
