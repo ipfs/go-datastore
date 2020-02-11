@@ -405,6 +405,17 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		})
 	}
 
+	for i := 0; i < count; i++ {
+		s := fmt.Sprintf("/capital/%dKEY%d", i, i)
+		key := dstore.NewKey(s).String()
+		value := randValue()
+		input = append(input, dsq.Entry{
+			Key:   key,
+			Size:  len(value),
+			Value: value,
+		})
+	}
+
 	t.Logf("putting %d values", count)
 	for i, e := range input {
 		err := ds.Put(dstore.RawKey(e.Key), e.Value)
