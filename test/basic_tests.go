@@ -177,27 +177,27 @@ func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
 }
 
 func SubtestBasicSync(t *testing.T, ds dstore.Datastore) {
-	if err := ds.Sync(dstore.NewKey("foo")); err != nil {
+	if err := ds.Sync(dstore.NewKey("prefix")); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := ds.Put(dstore.NewKey("/foo"), []byte("foo")); err != nil {
+	if err := ds.Put(dstore.NewKey("/prefix"), []byte("foo")); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := ds.Sync(dstore.NewKey("/foo")); err != nil {
+	if err := ds.Sync(dstore.NewKey("/prefix")); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := ds.Put(dstore.NewKey("/foo/bar"), []byte("bar")); err != nil {
+	if err := ds.Put(dstore.NewKey("/prefix/sub"), []byte("bar")); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := ds.Sync(dstore.NewKey("/foo")); err != nil {
+	if err := ds.Sync(dstore.NewKey("/prefix")); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := ds.Sync(dstore.NewKey("/foo/bar")); err != nil {
+	if err := ds.Sync(dstore.NewKey("/prefix/sub")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -237,6 +237,11 @@ func SubtestCombinations(t *testing.T, ds dstore.Datastore) {
 			Key: "/2",
 		}},
 	}
+	prefixes := []string{
+		"",
+		"/prefix",
+		"/0", // keys exist under this prefix but they shouldn't match.
+	}
 	orders := [][]dsq.Order{
 		{dsq.OrderByKey{}},
 		{dsq.OrderByKeyDescending{}},
@@ -255,8 +260,9 @@ func SubtestCombinations(t *testing.T, ds dstore.Datastore) {
 				Limit:   limits[perm[1]],
 				Filters: filters[perm[2]],
 				Orders:  orders[perm[3]],
+				Prefix:  prefixes[perm[4]],
 			}
-			length := lengths[perm[4]]
+			length := lengths[perm[5]]
 
 			t.Run(strings.ReplaceAll(fmt.Sprintf("%d/{%s}", length, q), " ", "·"), func(t *testing.T) {
 				subtestQuery(t, ds, q, length)
@@ -266,6 +272,7 @@ func SubtestCombinations(t *testing.T, ds dstore.Datastore) {
 		len(limits),
 		len(filters),
 		len(orders),
+		len(prefixes),
 		len(lengths),
 	)
 }
@@ -335,6 +342,28 @@ func SubtestReturnSizes(t *testing.T, ds dstore.Datastore) {
 	subtestQuery(t, ds, dsq.Query{ReturnsSizes: true}, 100)
 }
 
+func SubtestPrefix(t *testing.T, ds dstore.Datastore) {
+	test := func(prefix string) {
+		t.Run(prefix, func(t *testing.T) {
+			subtestQuery(t, ds, dsq.Query{
+				Prefix: prefix,
+			}, 100)
+		})
+	}
+	test("")
+	test("/")
+	test("/./")
+	test("/.././/")
+	test("/prefix/../")
+
+	test("/prefix")
+	test("/prefix/")
+	test("/prefix/sub/")
+
+	test("/0/")
+	test("/bad/")
+}
+
 func randValue() []byte {
 	value := make([]byte, 64)
 	rand.Read(value)
@@ -345,6 +374,28 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 	var input []dsq.Entry
 	for i := 0; i < count; i++ {
 		s := fmt.Sprintf("%dkey%d", i, i)
+		key := dstore.NewKey(s).String()
+		value := randValue()
+		input = append(input, dsq.Entry{
+			Key:   key,
+			Size:  len(value),
+			Value: value,
+		})
+	}
+
+	for i := 0; i < count; i++ {
+		s := fmt.Sprintf("/prefix/%dkey%d", i, i)
+		key := dstore.NewKey(s).String()
+		value := randValue()
+		input = append(input, dsq.Entry{
+			Key:   key,
+			Size:  len(value),
+			Value: value,
+		})
+	}
+
+	for i := 0; i < count; i++ {
+		s := fmt.Sprintf("/prefix/sub/%dkey%d", i, i)
 		key := dstore.NewKey(s).String()
 		value := randValue()
 		input = append(input, dsq.Entry{

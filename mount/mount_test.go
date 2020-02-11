@@ -841,9 +841,9 @@ func TestSuite(t *testing.T) {
 	mapds2 := datastore.NewMapDatastore()
 	mapds3 := datastore.NewMapDatastore()
 	m := mount.New([]mount.Mount{
-		{Prefix: datastore.NewKey("/foo"), Datastore: mapds1},
-		{Prefix: datastore.NewKey("/bar"), Datastore: mapds2},
-		{Prefix: datastore.NewKey("/baz"), Datastore: mapds3},
+		{Prefix: datastore.NewKey("/prefix"), Datastore: mapds1},
+		{Prefix: datastore.NewKey("/prefix/sub"), Datastore: mapds2},
+		{Prefix: datastore.NewKey("/0"), Datastore: mapds3},
 		{Prefix: datastore.NewKey("/"), Datastore: mapds0},
 	})
 	dstest.SubtestAll(t, m)
