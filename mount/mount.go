@@ -5,13 +5,15 @@ package mount
 import (
 	"container/heap"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
 
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
-	xerrors "golang.org/x/xerrors"
+
+	"go.uber.org/multierr"
 )
 
 var (
@@ -240,16 +242,22 @@ func (d *Datastore) Put(key ds.Key, value []byte) error {
 
 // Sync implements Datastore.Sync
 func (d *Datastore) Sync(prefix ds.Key) error {
+	var merr error
+
 	// Sync all mount points below the prefix
 	// Sync the mount point right at (or above) the prefix
-	dstores, _, rest := d.lookupAll(prefix)
+	dstores, prefixes, rest := d.lookupAll(prefix)
 	for i, suffix := range rest {
 		if err := dstores[i].Sync(suffix); err != nil {
-			return err
+			merr = multierr.Append(merr, fmt.Errorf(
+				"syncing datastore at %s: %w",
+				prefixes[i].String(),
+				err,
+			))
 		}
 	}
 
-	return nil
+	return merr
 }
 
 // Get returns the value associated with the key from the appropriate datastore.
@@ -355,27 +363,39 @@ func (d *Datastore) Query(master query.Query) (query.Results, error) {
 
 // Close closes all mounted datastores.
 func (d *Datastore) Close() error {
+	var merr error
 	for _, d := range d.mounts {
 		err := d.Datastore.Close()
 		if err != nil {
-			return err
+			merr = multierr.Append(merr, fmt.Errorf(
+				"closing datastore at %s: %w",
+				d.Prefix.String(),
+				err,
+			))
 		}
 	}
-	return nil
+	return merr
 }
 
 // DiskUsage returns the sum of DiskUsages for the mounted datastores.
 // Non PersistentDatastores will not be accounted.
 func (d *Datastore) DiskUsage() (uint64, error) {
-	var duTotal uint64 = 0
+	var (
+		merr    error
+		duTotal uint64 = 0
+	)
 	for _, d := range d.mounts {
 		du, err := ds.DiskUsage(d.Datastore)
 		duTotal += du
 		if err != nil {
-			return duTotal, err
+			merr = multierr.Append(merr, fmt.Errorf(
+				"getting disk usage at %s: %w",
+				d.Prefix.String(),
+				err,
+			))
 		}
 	}
-	return duTotal, nil
+	return duTotal, merr
 }
 
 type mountBatch struct {
@@ -436,44 +456,62 @@ func (mt *mountBatch) Commit() error {
 	mt.lk.Lock()
 	defer mt.lk.Unlock()
 
-	for _, t := range mt.mounts {
-		err := t.Commit()
-		if err != nil {
-			return err
+	var merr error
+	for p, t := range mt.mounts {
+		if err := t.Commit(); err != nil {
+			merr = multierr.Append(merr, fmt.Errorf(
+				"committing batch to datastore at %s: %w",
+				p, err,
+			))
 		}
 	}
-	return nil
+	return merr
 }
 
 func (d *Datastore) Check() error {
+	var merr error
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.CheckedDatastore); ok {
 			if err := c.Check(); err != nil {
-				return xerrors.Errorf("checking datastore at %s: %w", m.Prefix.String(), err)
+				merr = multierr.Append(merr, fmt.Errorf(
+					"checking datastore at %s: %w",
+					m.Prefix.String(),
+					err,
+				))
 			}
 		}
 	}
-	return nil
+	return merr
 }
 
 func (d *Datastore) Scrub() error {
+	var merr error
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.ScrubbedDatastore); ok {
 			if err := c.Scrub(); err != nil {
-				return xerrors.Errorf("scrubbing datastore at %s: %w", m.Prefix.String(), err)
+				merr = multierr.Append(merr, fmt.Errorf(
+					"scrubbing datastore at %s: %w",
+					m.Prefix.String(),
+					err,
+				))
 			}
 		}
 	}
-	return nil
+	return merr
 }
 
 func (d *Datastore) CollectGarbage() error {
+	var merr error
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.GCDatastore); ok {
 			if err := c.CollectGarbage(); err != nil {
-				return xerrors.Errorf("gc on datastore at %s: %w", m.Prefix.String(), err)
+				merr = multierr.Append(merr, fmt.Errorf(
+					"gc on datastore at %s: %w",
+					m.Prefix.String(),
+					err,
+				))
 			}
 		}
 	}
-	return nil
+	return merr
 }
