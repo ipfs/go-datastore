@@ -129,12 +129,10 @@ func NaiveQueryApply(q Query, qr Results) Results {
 			}
 			prefix = path.Clean(prefix)
 		}
-		// If the prefix isn't "/", end it in a "/" so we only find keys
-		// _under_ the prefix.
+		// If the prefix is empty, ignore it.
 		if prefix != "/" {
-			prefix += "/"
+			qr = NaiveFilter(qr, FilterKeyPrefix{prefix + "/"})
 		}
-		qr = NaiveFilter(qr, FilterKeyPrefix{prefix})
 	}
 	for _, f := range q.Filters {
 		qr = NaiveFilter(qr, f)
