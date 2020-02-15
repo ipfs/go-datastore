@@ -12,6 +12,17 @@ import (
 	dsq "github.com/ipfs/go-datastore/query"
 )
 
+// ElemCount sets with how many elements the datastore suit
+// tests are usually run with. Best to set to round numbers like
+// 20, 30, 40... and at least to 20.
+var ElemCount = 100
+
+func TestElemCount(t *testing.T) {
+	if ElemCount < 20 {
+		t.Fatal("ElemCount should be set to 20 at least")
+	}
+}
+
 func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {
 	k := dstore.NewKey("foo")
 	val := []byte("Hello Datastore!")
@@ -132,20 +143,20 @@ func SubtestLimit(t *testing.T, ds dstore.Datastore) {
 				Offset:   offset,
 				Limit:    limit,
 				KeysOnly: true,
-			}, 100)
+			}, ElemCount)
 		})
 	}
-	test(0, 10)
+	test(0, ElemCount/10)
 	test(0, 0)
-	test(10, 0)
-	test(10, 10)
-	test(10, 20)
-	test(50, 20)
-	test(99, 20)
-	test(200, 20)
-	test(200, 0)
-	test(99, 0)
-	test(95, 0)
+	test(ElemCount/10, 0)
+	test(ElemCount/10, ElemCount/10)
+	test(ElemCount/10, ElemCount/5)
+	test(ElemCount/2, ElemCount/5)
+	test(ElemCount-1, ElemCount/5)
+	test(ElemCount*2, ElemCount/5)
+	test(ElemCount*2, 0)
+	test(ElemCount-1, 0)
+	test(ElemCount-5, 0)
 }
 
 func SubtestOrder(t *testing.T, ds dstore.Datastore) {
@@ -158,7 +169,7 @@ func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 		t.Run(name, func(t *testing.T) {
 			subtestQuery(t, ds, dsq.Query{
 				Orders: orders,
-			}, 100)
+			}, ElemCount)
 		})
 	}
 	test(dsq.OrderByKey{})
@@ -173,7 +184,7 @@ func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 }
 
 func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
-	subtestQuery(t, ds, dsq.Query{KeysOnly: true}, 100)
+	subtestQuery(t, ds, dsq.Query{KeysOnly: true}, ElemCount)
 }
 
 func SubtestBasicSync(t *testing.T, ds dstore.Datastore) {
@@ -217,15 +228,15 @@ func (testFilter) Filter(e dsq.Entry) bool {
 func SubtestCombinations(t *testing.T, ds dstore.Datastore) {
 	offsets := []int{
 		0,
-		10,
-		95,
-		100,
+		ElemCount / 10,
+		ElemCount - 5,
+		ElemCount,
 	}
 	limits := []int{
 		0,
 		1,
-		10,
-		100,
+		ElemCount / 10,
+		ElemCount,
 	}
 	filters := [][]dsq.Filter{
 		{dsq.FilterKeyCompare{
@@ -251,7 +262,7 @@ func SubtestCombinations(t *testing.T, ds dstore.Datastore) {
 	lengths := []int{
 		0,
 		1,
-		100,
+		ElemCount / 10,
 	}
 	perms(
 		func(perm []int) {
@@ -347,7 +358,7 @@ func SubtestPrefix(t *testing.T, ds dstore.Datastore) {
 		t.Run(prefix, func(t *testing.T) {
 			subtestQuery(t, ds, dsq.Query{
 				Prefix: prefix,
-			}, 100)
+			}, ElemCount)
 		})
 	}
 	test("")
