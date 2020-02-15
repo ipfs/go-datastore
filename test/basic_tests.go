@@ -427,7 +427,7 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		})
 	}
 
-	t.Logf("putting %d values", count)
+	t.Logf("putting %d values", len(input))
 	for i, e := range input {
 		err := ds.Put(dstore.RawKey(e.Key), e.Value)
 		if err != nil {
