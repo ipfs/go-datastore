@@ -262,7 +262,7 @@ func SubtestCombinations(t *testing.T, ds dstore.Datastore) {
 	lengths := []int{
 		0,
 		1,
-		ElemCount / 10,
+		ElemCount,
 	}
 	perms(
 		func(perm []int) {
