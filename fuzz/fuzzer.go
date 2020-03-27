@@ -3,23 +3,31 @@ package fuzzer
 import (
 	"context"
 	"io"
+	"io/ioutil"
+	"os"
+	"sync"
 	"sync/atomic"
 
 	ds "github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-ds-badger"
+	badger "github.com/ipfs/go-ds-badger"
 )
 
+type donefunc func() error
+
 // DsOpener is the concrete datastore. that Fuzz will fuzz against.
-var DsOpener func() ds.TxnDatastore
+var DsOpener func() (ds.TxnDatastore, donefunc)
 var dsInst ds.TxnDatastore
+var df donefunc
 
 // Threads is a measure of concurrency.
 var Threads int
+var wg sync.WaitGroup
 
 func init() {
-	DsOpener = func() ds.TxnDatastore {
-		d, _ := badger.NewDatastore("tmp", &badger.DefaultOptions)
-		return d
+	DsOpener = func() (ds.TxnDatastore, donefunc) {
+		dir, _ := ioutil.TempDir("", "fuzz*")
+		d, _ := badger.NewDatastore(dir, &badger.DefaultOptions)
+		return d, func() error { return os.RemoveAll(dir) }
 	}
 	Threads = 1
 
@@ -31,17 +39,23 @@ func setup() ([]chan byte, context.CancelFunc) {
 	// TODO: dynamic thread starting.
 	ctx, cncl := context.WithCancel(context.Background())
 
-	if dsInst != nil {
-		dsInst.Close()
-	}
-	dsInst = DsOpener()
+	cleanup()
+	dsInst, df = DsOpener()
 
+	wg.Add(Threads)
 	drivers := make([]chan byte, Threads)
 	for i := 0; i < Threads; i++ {
 		drivers[i] = make(chan byte, 15)
 		go threadDriver(ctx, drivers[i])
 	}
 	return drivers, cncl
+}
+
+func cleanup() {
+	if dsInst != nil {
+		dsInst.Close()
+		df()
+	}
 }
 
 // Fuzz is a go-fuzzer compatible input point for replaying
@@ -54,7 +68,8 @@ func Fuzz(data []byte) int {
 		close(drivers[i])
 	}
 	cncl()
-	dsInst.Close()
+	wg.Wait()
+	cleanup()
 	return 0
 }
 
@@ -79,7 +94,8 @@ func FuzzStream(data io.Reader) int {
 		close(drivers[i])
 	}
 	cncl()
-	dsInst.Close()
+	wg.Wait()
+	cleanup()
 	return 0
 }
 
@@ -111,6 +127,7 @@ type state struct {
 }
 
 func threadDriver(ctx context.Context, cmnds chan byte) error {
+	defer wg.Done()
 	s := state{}
 	s.reader = dsInst
 	s.writer = dsInst
