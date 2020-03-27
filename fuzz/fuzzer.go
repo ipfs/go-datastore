@@ -25,6 +25,8 @@ var ctr int32
 
 func RandSeed(seed int32) {
 	ctr = seed
+	// also reset the key cache.
+	cachedKeys = 1
 }
 
 // Threads is a measure of concurrency.
