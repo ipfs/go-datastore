@@ -2,6 +2,7 @@ package fuzzer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"sync/atomic"
 
 	ds "github.com/ipfs/go-datastore"
+	dsq "github.com/ipfs/go-datastore/query"
 	badger "github.com/ipfs/go-ds-badger"
 )
 
@@ -18,6 +20,12 @@ type Donefunc func() error
 var DsOpener func() (ds.TxnDatastore, Donefunc)
 var dsInst ds.TxnDatastore
 var df Donefunc
+
+var ctr int32
+
+func RandSeed(seed int32) {
+	ctr = seed
+}
 
 // Threads is a measure of concurrency.
 var Threads int
@@ -171,7 +179,16 @@ func nextState(s *state, c byte) error {
 		reset(s)
 		return nil
 	} else if s.op == opQuery {
-		// TODO
+		r, _ := s.reader.Query(dsq.Query{})
+		defer r.Close()
+		reset(s)
+
+		for e := range r.Next() {
+			if e.Error != nil {
+				return nil
+			}
+		}
+		return nil
 	} else if s.op == opPut {
 		if !s.keyReady {
 			return makeKey(s, c)
@@ -241,7 +258,7 @@ func makeKey(s *state, c byte) error {
 		s.key = keyCache[(c>>1)%byte(keys)]
 		s.keyReady = true
 	} else {
-		s.key = ds.RandomKey()
+		s.key = ds.NewKey(fmt.Sprintf("key-%d", atomic.AddInt32(&ctr, 1)))
 		// half the time we'll make it a child of an existing key
 		if c&2 == 2 {
 			s.key = keyCache[(c>>1)%byte(keys)].Child(s.key)

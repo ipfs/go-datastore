@@ -64,37 +64,67 @@ func main() {
 		return
 	}
 
+	fmt.Printf("running db 1\n")
 	base := *dbFile
 	*dbFile = base + "1"
+	fuzzer.RandSeed(0)
 	openDB(*db1)
 	ret := fuzzer.Fuzz(dat)
 
 	db1, _ := fuzzer.DsOpener()
 
+	fmt.Printf("running db 2\n")
 	*dbFile = base + "2"
+	fuzzer.RandSeed(0)
 	openDB(*db2)
 	ret = fuzzer.Fuzz(dat)
 
 	db2, _ := fuzzer.DsOpener()
-
+	fmt.Printf("done\n")
 	// compare.
 	r1, err := db1.Query(dsq.Query{})
 	if err != nil {
 		panic(err)
 	}
 
+	fmt.Printf("checking equality\n")
 	for r := range r1.Next() {
 		if r.Error != nil {
 			// handle.
 			break
+		}
+		if r.Entry.Key == "/" {
+			continue
 		}
 
 		if exist, _ := db2.Has(ds.NewKey(r.Entry.Key)); !exist {
 			fmt.Fprintf(os.Stderr, "db2 failed to get key %s held by db1\n", r.Entry.Key)
 		}
 	}
+
+	r2, err := db2.Query(dsq.Query{})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("checking equality\n")
+	for r := range r2.Next() {
+		if r.Error != nil {
+			// handle.
+			break
+		}
+		if r.Entry.Key == "/" {
+			continue
+		}
+
+		if exist, _ := db1.Has(ds.NewKey(r.Entry.Key)); !exist {
+			fmt.Fprintf(os.Stderr, "db1 failed to get key %s held by db2\n", r.Entry.Key)
+		}
+	}
+
 	db1.Close()
 	db2.Close()
+	fmt.Printf("done\n")
 
 	os.Exit(ret)
 }
