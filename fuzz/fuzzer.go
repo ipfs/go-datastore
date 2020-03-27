@@ -12,19 +12,19 @@ import (
 	badger "github.com/ipfs/go-ds-badger"
 )
 
-type donefunc func() error
+type Donefunc func() error
 
 // DsOpener is the concrete datastore. that Fuzz will fuzz against.
-var DsOpener func() (ds.TxnDatastore, donefunc)
+var DsOpener func() (ds.TxnDatastore, Donefunc)
 var dsInst ds.TxnDatastore
-var df donefunc
+var df Donefunc
 
 // Threads is a measure of concurrency.
 var Threads int
 var wg sync.WaitGroup
 
 func init() {
-	DsOpener = func() (ds.TxnDatastore, donefunc) {
+	DsOpener = func() (ds.TxnDatastore, Donefunc) {
 		dir, _ := ioutil.TempDir("", "fuzz*")
 		d, _ := badger.NewDatastore(dir, &badger.DefaultOptions)
 		return d, func() error { return os.RemoveAll(dir) }

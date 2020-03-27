@@ -7,8 +7,8 @@ import (
 	"os"
 
 	ds "github.com/ipfs/go-datastore"
-	badger "github.com/ipfs/go-ds-badger"
 	fuzzer "github.com/ipfs/go-datastore/fuzz"
+	badger "github.com/ipfs/go-ds-badger"
 
 	"github.com/spf13/pflag"
 )
@@ -23,12 +23,13 @@ func main() {
 
 	fuzzer.Threads = *threads
 	if *db == "badger" {
-		fuzzer.DsOpener = func() ds.TxnDatastore {
+		fuzzer.DsOpener = func() (ds.TxnDatastore, fuzzer.Donefunc) {
 			d, err := badger.NewDatastore(*dbFile, &badger.DefaultOptions)
 			if err != nil {
 				panic("could not create db instance")
 			}
-			return d
+			donefunc := func() error { return nil }
+			return d, donefunc
 		}
 	} else {
 		// TODO
