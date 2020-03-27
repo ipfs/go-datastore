@@ -262,7 +262,9 @@ func makeKey(s *state, c byte) error {
 
 func makeValue(s *state, c byte) error {
 	s.val = make([]byte, c)
-	s.val[0] = 1
+	if c != 0 {
+		s.val[0] = 1
+	}
 	s.valReady = true
 	return nil
 }
