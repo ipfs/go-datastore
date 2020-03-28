@@ -6,9 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	ds "github.com/ipfs/go-datastore"
 	fuzzer "github.com/ipfs/go-datastore/fuzz"
-	badger "github.com/ipfs/go-ds-badger"
 
 	"github.com/spf13/pflag"
 )
@@ -22,19 +20,7 @@ func main() {
 	pflag.Parse()
 
 	fuzzer.Threads = *threads
-	if *db == "badger" {
-		fuzzer.DsOpener = func() (ds.TxnDatastore, fuzzer.Donefunc) {
-			d, err := badger.NewDatastore(*dbFile, &badger.DefaultOptions)
-			if err != nil {
-				panic("could not create db instance")
-			}
-			donefunc := func() error { return nil }
-			return d, donefunc
-		}
-	} else {
-		// TODO
-		panic("unknown database")
-	}
+	fuzzer.SetOpener(*db, *dbFile, false)
 
 	if *input != "" {
 		dat, err := ioutil.ReadFile(*input)
@@ -46,6 +32,7 @@ func main() {
 		os.Exit(ret)
 	} else {
 		ret := fuzzer.FuzzStream(bufio.NewReader(os.Stdin))
+		fuzzer.Cleanup()
 		os.Exit(ret)
 	}
 }

@@ -8,8 +8,6 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	fuzzer "github.com/ipfs/go-datastore/fuzz"
 	dsq "github.com/ipfs/go-datastore/query"
-	badger "github.com/ipfs/go-ds-badger"
-	leveldb "github.com/ipfs/go-ds-leveldb"
 
 	"github.com/spf13/pflag"
 )
@@ -19,31 +17,6 @@ var db1 *string = pflag.StringP("db1", "d", "badger", "database to fuzz")
 var db2 *string = pflag.StringP("db2", "e", "level", "database to fuzz")
 var dbFile *string = pflag.StringP("file", "f", "tmp", "where the db instaces should live on disk")
 var threads *int = pflag.IntP("threads", "t", 1, "concurrent threads")
-
-func openDB(db string) {
-	if db == "badger" {
-		fuzzer.DsOpener = func() (ds.TxnDatastore, fuzzer.Donefunc) {
-			d, err := badger.NewDatastore(*dbFile, &badger.DefaultOptions)
-			if err != nil {
-				panic("could not create db instance")
-			}
-			donefunc := func() error { return nil }
-			return d, donefunc
-		}
-	} else if db == "level" {
-		fuzzer.DsOpener = func() (ds.TxnDatastore, fuzzer.Donefunc) {
-			d, err := leveldb.NewDatastore(*dbFile, &leveldb.Options{})
-			if err != nil {
-				panic("could not create db instance")
-			}
-			donefunc := func() error { return nil }
-			return d, donefunc
-		}
-	} else {
-		// TODO
-		panic("unknown database")
-	}
-}
 
 func main() {
 	pflag.Parse()
@@ -68,7 +41,7 @@ func main() {
 	base := *dbFile
 	*dbFile = base + "1"
 	fuzzer.RandSeed(0)
-	openDB(*db1)
+	fuzzer.SetOpener(*db1, *dbFile, false)
 	ret := fuzzer.Fuzz(dat)
 
 	db1, _ := fuzzer.DsOpener()
@@ -76,7 +49,7 @@ func main() {
 	fmt.Printf("running db 2\n")
 	*dbFile = base + "2"
 	fuzzer.RandSeed(0)
-	openDB(*db2)
+	fuzzer.SetOpener(*db2, *dbFile, false)
 	ret = fuzzer.Fuzz(dat)
 
 	db2, _ := fuzzer.DsOpener()

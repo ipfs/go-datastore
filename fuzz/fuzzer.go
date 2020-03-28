@@ -12,6 +12,7 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 	badger "github.com/ipfs/go-ds-badger"
+	leveldb "github.com/ipfs/go-ds-leveldb"
 )
 
 type Donefunc func() error
@@ -34,22 +35,24 @@ var Threads int
 var wg sync.WaitGroup
 
 func init() {
-	DsOpener = func() (ds.TxnDatastore, Donefunc) {
-		dir, _ := ioutil.TempDir("", "fuzz*")
-		d, _ := badger.NewDatastore(dir, &badger.DefaultOptions)
-		return d, func() error { return os.RemoveAll(dir) }
-	}
+	dir, _ := ioutil.TempDir("", "fuzz*")
+	SetOpener("badger", dir, true)
 	Threads = 1
 
 	keyCache[0] = ds.NewKey("/")
 	cachedKeys = 1
 }
 
+// GetInst gets the current DB handle.
+func GetInst() ds.TxnDatastore {
+	return dsInst
+}
+
 func setup() ([]chan byte, context.CancelFunc) {
 	// TODO: dynamic thread starting.
 	ctx, cncl := context.WithCancel(context.Background())
 
-	cleanup()
+	Cleanup()
 	dsInst, df = DsOpener()
 
 	wg.Add(Threads)
@@ -61,7 +64,7 @@ func setup() ([]chan byte, context.CancelFunc) {
 	return drivers, cncl
 }
 
-func cleanup() {
+func Cleanup() {
 	if dsInst != nil {
 		dsInst.Close()
 		df()
@@ -79,7 +82,7 @@ func Fuzz(data []byte) int {
 	}
 	cncl()
 	wg.Wait()
-	cleanup()
+	Cleanup()
 	return 0
 }
 
@@ -105,7 +108,6 @@ func FuzzStream(data io.Reader) int {
 	}
 	cncl()
 	wg.Wait()
-	cleanup()
 	return 0
 }
 
@@ -122,6 +124,7 @@ const (
 	opNewTX
 	opCommitTX
 	opDiscardTX
+	opSync
 	opMax
 )
 
@@ -236,6 +239,13 @@ func nextState(s *state, c byte) error {
 		}
 		reset(s)
 		return nil
+	} else if s.op == opSync {
+		if !s.keyReady {
+			return makeKey(s, c)
+		}
+		dsInst.Sync(s.key)
+		reset(s)
+		return nil
 	}
 	return nil
 }
@@ -286,4 +296,31 @@ func makeValue(s *state, c byte) error {
 	}
 	s.valReady = true
 	return nil
+}
+
+func SetOpener(driver string, loc string, cleanup bool) {
+	donefunc := func() error { return nil }
+	if cleanup {
+		donefunc = func() error { return os.RemoveAll(loc) }
+	}
+	if driver == "badger" {
+		DsOpener = func() (ds.TxnDatastore, Donefunc) {
+			d, err := badger.NewDatastore(loc, &badger.DefaultOptions)
+			if err != nil {
+				panic("could not create db instance")
+			}
+			return d, donefunc
+		}
+	} else if driver == "level" {
+		DsOpener = func() (ds.TxnDatastore, Donefunc) {
+			d, err := leveldb.NewDatastore(loc, &leveldb.Options{})
+			if err != nil {
+				panic("could not create db instance")
+			}
+			return d, donefunc
+		}
+	} else {
+		// TODO
+		panic("unknown database")
+	}
 }
