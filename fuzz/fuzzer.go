@@ -11,104 +11,168 @@ import (
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
-	badger "github.com/ipfs/go-ds-badger"
-	leveldb "github.com/ipfs/go-ds-leveldb"
 )
 
-type Donefunc func() error
+//go:generate go run ./cmd/generate
 
-// DsOpener is the concrete datastore. that Fuzz will fuzz against.
-var DsOpener func() (ds.TxnDatastore, Donefunc)
-var dsInst ds.TxnDatastore
-var df Donefunc
+// openers contains the known datastore implementations.
+var openers map[string]func(string) ds.TxnDatastore
 
-var ctr int32
-
-func RandSeed(seed int32) {
-	ctr = seed
-	// also reset the key cache.
-	cachedKeys = 1
+// AddOpener allows registration of a new driver for fuzzing.
+func AddOpener(name string, opener func(loc string) ds.TxnDatastore) {
+	if openers == nil {
+		openers = make(map[string]func(string) ds.TxnDatastore)
+	}
+	openers[name] = opener
 }
 
 // Threads is a measure of concurrency.
+// Note: if Threads > 1, determinism is not guaranteed.
 var Threads int
-var wg sync.WaitGroup
 
 func init() {
-	dir, _ := ioutil.TempDir("", "fuzz*")
-	SetOpener("badger", dir, true)
+	if openers == nil {
+		openers = make(map[string]func(string) ds.TxnDatastore)
+	}
 	Threads = 1
-
-	keyCache[0] = ds.NewKey("/")
-	cachedKeys = 1
 }
 
-// GetInst gets the current DB handle.
-func GetInst() ds.TxnDatastore {
-	return dsInst
+// RunState encapulates the state of a given fuzzing run
+type RunState struct {
+	inst          ds.TxnDatastore
+	inputChannels []chan<- byte
+	wg            sync.WaitGroup
+	Cancel        context.CancelFunc
+
+	keyCache   [128]ds.Key
+	cachedKeys int32
+	ctr        int32
 }
 
-func setup() ([]chan byte, context.CancelFunc) {
-	// TODO: dynamic thread starting.
+// DB returns the datastore being driven by this instance
+func (r *RunState) DB() ds.TxnDatastore {
+	return r.inst
+}
+
+type threadState struct {
+	op
+	keyReady bool
+	key      ds.Key
+	valReady bool
+	val      []byte
+	reader   ds.Read
+	writer   ds.Write
+	txn      ds.Txn
+	*RunState
+}
+
+// Open instantiates an instance of the database implementation for testing.
+func Open(driver string, location string, cleanup bool) (*RunState, error) {
 	ctx, cncl := context.WithCancel(context.Background())
 
-	Cleanup()
-	dsInst, df = DsOpener()
+	opener, ok := openers[driver]
+	if !ok {
+		cncl()
+		return nil, fmt.Errorf("no such driver: %s", driver)
+	}
 
-	wg.Add(Threads)
-	drivers := make([]chan byte, Threads)
+	state := RunState{}
+	state.inst = opener(location)
+	state.keyCache[0] = ds.NewKey("/")
+	state.cachedKeys = 1
+
+	state.wg.Add(Threads)
+
+	// wrap the context cancel to block until everythign is fully closed.
+	doneCh := make(chan struct{})
+	state.Cancel = func() {
+		for i := 0; i < Threads; i++ {
+			close(state.inputChannels[i])
+		}
+		cncl()
+		<-doneCh
+	}
+	go func() {
+		state.wg.Wait()
+		state.inst.Close()
+		if cleanup {
+			os.RemoveAll(location)
+		}
+		close(doneCh)
+	}()
+
+	state.inputChannels = make([]chan<- byte, Threads)
 	for i := 0; i < Threads; i++ {
-		drivers[i] = make(chan byte, 15)
-		go threadDriver(ctx, drivers[i])
+		dr := make(chan byte, 15)
+		go threadDriver(ctx, &state, dr)
+		state.inputChannels[i] = dr
 	}
-	return drivers, cncl
-}
-
-func Cleanup() {
-	if dsInst != nil {
-		dsInst.Close()
-		df()
-	}
+	return &state, nil
 }
 
 // Fuzz is a go-fuzzer compatible input point for replaying
 // data (interpreted as a script of commands)
-// to a chosen ipfs datastore implementation
+// to kown ipfs datastore implementations
 func Fuzz(data []byte) int {
-	drivers, cncl := setup()
-	drive(drivers, data)
-	for i := 0; i < Threads; i++ {
-		close(drivers[i])
+	var impls []string
+	for impl := range openers {
+		impls = append(impls, impl)
 	}
-	cncl()
-	wg.Wait()
-	Cleanup()
+
+	defaultLoc, _ := ioutil.TempDir("", "fuzz-*")
+
+	if len(impls) == 0 {
+		fmt.Fprintf(os.Stderr, "No datastores to fuzz.\n")
+		return -1
+	} else if len(impls) == 1 {
+		return FuzzDB(impls[0], defaultLoc, true, data)
+	} else {
+		impl := impls[int(data[0])%len(impls)]
+		return FuzzDB(impl, defaultLoc, true, data[1:])
+	}
+}
+
+// FuzzDB fuzzes a given database entry, providing sufficient hooks to be
+// used by CLI commands.
+func FuzzDB(driver string, location string, cleanup bool, data []byte) int {
+	inst, err := Open(driver, location, cleanup)
+	if err != nil {
+		return -1
+	}
+	inst.Fuzz(data)
+	inst.Cancel()
 	return 0
 }
 
-func drive(drivers []chan byte, data []byte) {
+// FuzzStream does the same as fuzz but with streaming input
+func FuzzStream(driver string, location string, cleanup bool, data io.Reader) error {
+	inst, err := Open("badger", "tmp", true)
+	if err != nil {
+		return err
+	}
+
+	inst.FuzzStream(data)
+	inst.Cancel()
+	return nil
+}
+
+// Fuzz sends a set of bytes to drive the current open datastore instance.
+func (r *RunState) Fuzz(data []byte) {
 	for i, b := range data {
-		drivers[i%Threads] <- b
+		r.inputChannels[i%Threads] <- b
 	}
 }
 
-// FuzzStream does the same as fuzz but with streaming input
-func FuzzStream(data io.Reader) int {
-	drivers, cncl := setup()
+// FuzzStream sends a set of bytes to drive the current instance from a reader.
+func (r *RunState) FuzzStream(data io.Reader) {
 	b := make([]byte, 4096)
 	for {
 		n, _ := data.Read(b)
 		if n == 0 {
 			break
 		}
-		drive(drivers, b[:n])
+		r.Fuzz(b[:n])
 	}
-	for i := 0; i < Threads; i++ {
-		close(drivers[i])
-	}
-	cncl()
-	wg.Wait()
-	return 0
 }
 
 type op byte
@@ -128,22 +192,12 @@ const (
 	opMax
 )
 
-type state struct {
-	op
-	keyReady bool
-	key      ds.Key
-	valReady bool
-	val      []byte
-	reader   ds.Read
-	writer   ds.Write
-	txn      ds.Txn
-}
-
-func threadDriver(ctx context.Context, cmnds chan byte) error {
-	defer wg.Done()
-	s := state{}
-	s.reader = dsInst
-	s.writer = dsInst
+func threadDriver(ctx context.Context, runState *RunState, cmnds chan byte) error {
+	defer runState.wg.Done()
+	s := threadState{}
+	s.RunState = runState
+	s.reader = runState.inst
+	s.writer = runState.inst
 
 	for {
 		select {
@@ -158,7 +212,7 @@ func threadDriver(ctx context.Context, cmnds chan byte) error {
 	}
 }
 
-func nextState(s *state, c byte) error {
+func nextState(s *threadState, c byte) error {
 	if s.op == opNone {
 		s.op = op(c) % opMax
 		return nil
@@ -213,7 +267,7 @@ func nextState(s *state, c byte) error {
 		return nil
 	} else if s.op == opNewTX {
 		if s.txn == nil {
-			s.txn, _ = dsInst.NewTransaction(((c & 1) == 1))
+			s.txn, _ = s.RunState.inst.NewTransaction(((c & 1) == 1))
 			if (c & 1) != 1 { // read+write
 				s.writer = s.txn
 			}
@@ -225,8 +279,8 @@ func nextState(s *state, c byte) error {
 		if s.txn != nil {
 			s.txn.Discard()
 			s.txn = nil
-			s.reader = dsInst
-			s.writer = dsInst
+			s.reader = s.RunState.inst
+			s.writer = s.RunState.inst
 		}
 		reset(s)
 		return nil
@@ -234,8 +288,8 @@ func nextState(s *state, c byte) error {
 		if s.txn != nil {
 			s.txn.Discard()
 			s.txn = nil
-			s.reader = dsInst
-			s.writer = dsInst
+			s.reader = s.RunState.inst
+			s.writer = s.RunState.inst
 		}
 		reset(s)
 		return nil
@@ -243,45 +297,42 @@ func nextState(s *state, c byte) error {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		dsInst.Sync(s.key)
+		s.RunState.inst.Sync(s.key)
 		reset(s)
 		return nil
 	}
 	return nil
 }
 
-func reset(s *state) {
+func reset(s *threadState) {
 	s.op = opNone
 	s.keyReady = false
 	s.key = ds.RawKey("")
 	s.valReady = false
 }
 
-var keyCache [128]ds.Key
-var cachedKeys int32
-
-func makeKey(s *state, c byte) error {
-	keys := atomic.LoadInt32(&cachedKeys)
+func makeKey(s *threadState, c byte) error {
+	keys := atomic.LoadInt32(&s.RunState.cachedKeys)
 	if keys > 128 {
 		keys = 128
 	}
 	if c&1 == 1 {
 		// 50% chance we want to-reuse an existing key
-		s.key = keyCache[(c>>1)%byte(keys)]
+		s.key = s.RunState.keyCache[(c>>1)%byte(keys)]
 		s.keyReady = true
 	} else {
-		s.key = ds.NewKey(fmt.Sprintf("key-%d", atomic.AddInt32(&ctr, 1)))
+		s.key = ds.NewKey(fmt.Sprintf("key-%d", atomic.AddInt32(&s.ctr, 1)))
 		// half the time we'll make it a child of an existing key
 		if c&2 == 2 {
-			s.key = keyCache[(c>>1)%byte(keys)].Child(s.key)
+			s.key = s.RunState.keyCache[(c>>1)%byte(keys)].Child(s.key)
 		}
 		// new key
 		if keys < 128 {
-			keys = atomic.AddInt32(&cachedKeys, 1)
+			keys = atomic.AddInt32(&s.RunState.cachedKeys, 1)
 			if keys >= 128 {
-				atomic.StoreInt32(&cachedKeys, 128)
+				atomic.StoreInt32(&s.RunState.cachedKeys, 128)
 			} else {
-				keyCache[keys-1] = s.key
+				s.RunState.keyCache[keys-1] = s.key
 			}
 		}
 		s.keyReady = true
@@ -289,38 +340,11 @@ func makeKey(s *state, c byte) error {
 	return nil
 }
 
-func makeValue(s *state, c byte) error {
+func makeValue(s *threadState, c byte) error {
 	s.val = make([]byte, c)
 	if c != 0 {
 		s.val[0] = 1
 	}
 	s.valReady = true
 	return nil
-}
-
-func SetOpener(driver string, loc string, cleanup bool) {
-	donefunc := func() error { return nil }
-	if cleanup {
-		donefunc = func() error { return os.RemoveAll(loc) }
-	}
-	if driver == "badger" {
-		DsOpener = func() (ds.TxnDatastore, Donefunc) {
-			d, err := badger.NewDatastore(loc, &badger.DefaultOptions)
-			if err != nil {
-				panic("could not create db instance")
-			}
-			return d, donefunc
-		}
-	} else if driver == "level" {
-		DsOpener = func() (ds.TxnDatastore, Donefunc) {
-			d, err := leveldb.NewDatastore(loc, &leveldb.Options{})
-			if err != nil {
-				panic("could not create db instance")
-			}
-			return d, donefunc
-		}
-	} else {
-		// TODO
-		panic("unknown database")
-	}
 }

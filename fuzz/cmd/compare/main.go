@@ -15,7 +15,7 @@ import (
 var input *string = pflag.StringP("input", "i", "", "file to read input from (stdin used if not specified)")
 var db1 *string = pflag.StringP("db1", "d", "badger", "database to fuzz")
 var db2 *string = pflag.StringP("db2", "e", "level", "database to fuzz")
-var dbFile *string = pflag.StringP("file", "f", "tmp", "where the db instaces should live on disk")
+var dbFile *string = pflag.StringP("file", "f", "tmp", "where the db instances should live on disk")
 var threads *int = pflag.IntP("threads", "t", 1, "concurrent threads")
 
 func main() {
@@ -33,37 +33,44 @@ func main() {
 		dat, err = ioutil.ReadFile(*input)
 	}
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not read %s: %v\n", *input, err)
+		fmt.Fprintf(os.Stderr, "Could not read %s: %v\n", *input, err)
 		return
 	}
 
-	fmt.Printf("running db 1\n")
-	base := *dbFile
-	*dbFile = base + "1"
-	fuzzer.RandSeed(0)
-	fuzzer.SetOpener(*db1, *dbFile, false)
-	ret := fuzzer.Fuzz(dat)
+	db1loc := *dbFile + "1"
+	inst1, err := fuzzer.Open(*db1, db1loc, false)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not open db: %v\n", err)
+		return
+	}
+	defer inst1.Cancel()
 
-	db1, _ := fuzzer.DsOpener()
+	db2loc := *dbFile + "2"
+	inst2, err := fuzzer.Open(*db2, db2loc, false)
+	if err != nil {
+		inst1.Cancel()
+		fmt.Fprintf(os.Stderr, "Could not open db: %v\n", err)
+		return
+	}
+	defer inst2.Cancel()
 
-	fmt.Printf("running db 2\n")
-	*dbFile = base + "2"
-	fuzzer.RandSeed(0)
-	fuzzer.SetOpener(*db2, *dbFile, false)
-	ret = fuzzer.Fuzz(dat)
-
-	db2, _ := fuzzer.DsOpener()
+	fmt.Printf("Running db1.........")
+	inst1.Fuzz(dat)
 	fmt.Printf("done\n")
-	// compare.
+	fmt.Printf("Running db2.........")
+	inst2.Fuzz(dat)
+	fmt.Printf("done\n")
+
+	fmt.Printf("Checking equality...")
+	db1 := inst1.DB()
+	db2 := inst2.DB()
 	r1, err := db1.Query(dsq.Query{})
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("checking equality\n")
 	for r := range r1.Next() {
 		if r.Error != nil {
-			// handle.
 			break
 		}
 		if r.Entry.Key == "/" {
@@ -80,10 +87,8 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("checking equality\n")
 	for r := range r2.Next() {
 		if r.Error != nil {
-			// handle.
 			break
 		}
 		if r.Entry.Key == "/" {
@@ -95,9 +100,7 @@ func main() {
 		}
 	}
 
-	db1.Close()
-	db2.Close()
-	fmt.Printf("done\n")
+	fmt.Printf("Done\n")
 
-	os.Exit(ret)
+	return
 }

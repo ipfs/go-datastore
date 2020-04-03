@@ -1,6 +1,6 @@
 package main
 
-// sees if a db instance is equivalent to some prefix of running an input script.
+// Checks if a db instance is equivalent to some prefix of an input script.
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 )
 
 var input *string = pflag.StringP("input", "i", "", "file to read input from (stdin used if not specified)")
-var db *string = pflag.StringP("db", "d", "badger", "database driver")
+var db *string = pflag.StringP("db", "d", "go-ds-badger", "database driver")
 var dbPrev *string = pflag.StringP("exist", "e", "tmp1", "database instance already made")
 var dbFile *string = pflag.StringP("file", "f", "tmp2", "where the replay should live")
 var threads *int = pflag.IntP("threads", "t", 1, "concurrent threads")
@@ -30,14 +30,13 @@ type validatingReader struct {
 func (v *validatingReader) Read(buf []byte) (n int, err error) {
 	if v.i == len(v.b) {
 		return 0, nil
-	} else {
-		if v.validator(false) {
-			v.validI = v.i
-		}
-		buf[0] = v.b[v.i]
-		v.i++
-		return 1, nil
 	}
+	if v.validator(false) {
+		v.validI = v.i
+	}
+	buf[0] = v.b[v.i]
+	v.i++
+	return 1, nil
 }
 
 func main() {
@@ -57,20 +56,27 @@ func main() {
 		return
 	}
 
-	fuzzer.SetOpener(*db, *dbPrev, false)
-	db1, _ := fuzzer.DsOpener()
+	previousDB, err := fuzzer.Open(*db, *dbPrev, false)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not open: %v\n", err)
+		return
+	}
+	defer previousDB.Cancel()
 
-	fuzzer.SetOpener(*db, *dbFile, false)
-
-	fuzzer.RandSeed(0)
+	replayDB, err := fuzzer.Open(*db, *dbFile, true)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not open: %v\n", err)
+		return
+	}
+	defer replayDB.Cancel()
 
 	reader := validatingReader{dat, 0, func(verbose bool) bool {
-		res, _ := fuzzer.GetInst().Query(dsq.Query{})
+		res, _ := replayDB.DB().Query(dsq.Query{})
 		for e := range res.Next() {
 			if e.Entry.Key == "/" {
 				continue
 			}
-			if h, _ := db1.Has(ds.NewKey(e.Entry.Key)); !h {
+			if h, _ := previousDB.DB().Has(ds.NewKey(e.Entry.Key)); !h {
 				if verbose {
 					fmt.Printf("failed - script run db has %s not in existing.\n", e.Entry.Key)
 				}
@@ -78,12 +84,12 @@ func main() {
 			}
 		}
 		// next; make sure the other way is equal.
-		res, _ = db1.Query(dsq.Query{})
+		res, _ = previousDB.DB().Query(dsq.Query{})
 		for e := range res.Next() {
 			if e.Entry.Key == "/" {
 				continue
 			}
-			if h, _ := fuzzer.GetInst().Has(ds.NewKey(e.Entry.Key)); !h {
+			if h, _ := replayDB.DB().Has(ds.NewKey(e.Entry.Key)); !h {
 				if verbose {
 					fmt.Printf("failed - existing db has %s not in replay.\n", e.Entry.Key)
 				}
@@ -93,13 +99,11 @@ func main() {
 		// db images are the same.
 		return true
 	}, -1}
-	fuzzer.FuzzStream(&reader)
+
+	replayDB.FuzzStream(&reader)
 	if reader.validator(true) {
 		reader.validI = reader.i
 	}
-	fuzzer.Cleanup()
-
-	db1.Close()
 
 	if reader.validI > -1 {
 		fmt.Printf("Matched at stream position %d.\n", reader.validI)
