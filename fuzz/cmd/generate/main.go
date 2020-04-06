@@ -1,4 +1,4 @@
-// This file is invoked at the fuzzer level by `go generate`
+// This file is invoked by `go generate`
 package main
 
 import (
@@ -36,17 +36,21 @@ func main() {
 		name := nameComponents[len(nameComponents)-1]
 		f, err := os.Create(fmt.Sprintf("provider_%s.go", name))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to create provider file: %v", err)
+			fmt.Fprintf(os.Stderr, "failed to create provider file: %v\n", err)
 			os.Exit(1)
 		}
 		defer f.Close()
-		provideTemplate.Execute(f, struct {
+		err = provideTemplate.Execute(f, struct {
 			Package     string
 			PackageName string
 		}{
 			Package:     provider,
 			PackageName: name,
 		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write provider: %v\n", err)
+			os.Exit(1)
+		}
 	}
 }
 

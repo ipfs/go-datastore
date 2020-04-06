@@ -46,7 +46,7 @@ type RunState struct {
 
 	keyCache   [128]ds.Key
 	cachedKeys int32
-	ctr        int32
+	ctr        int32 //nolint:structcheck,unused
 }
 
 // DB returns the datastore being driven by this instance
@@ -192,7 +192,7 @@ const (
 	opMax
 )
 
-func threadDriver(ctx context.Context, runState *RunState, cmnds chan byte) error {
+func threadDriver(ctx context.Context, runState *RunState, cmnds chan byte) {
 	defer runState.wg.Done()
 	s := threadState{}
 	s.RunState = runState
@@ -203,11 +203,11 @@ func threadDriver(ctx context.Context, runState *RunState, cmnds chan byte) erro
 		select {
 		case c, ok := <-cmnds:
 			if !ok {
-				return nil
+				return
 			}
 			_ = nextState(&s, c)
 		case <-ctx.Done():
-			return nil
+			return
 		}
 	}
 }
@@ -220,21 +220,21 @@ func nextState(s *threadState, c byte) error {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		s.reader.Get(s.key)
+		_, _ = s.reader.Get(s.key)
 		reset(s)
 		return nil
 	} else if s.op == opHas {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		s.reader.Has(s.key)
+		_, _ = s.reader.Has(s.key)
 		reset(s)
 		return nil
 	} else if s.op == opGetSize {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		s.reader.GetSize(s.key)
+		_, _ = s.reader.GetSize(s.key)
 		reset(s)
 		return nil
 	} else if s.op == opQuery {
@@ -255,14 +255,14 @@ func nextState(s *threadState, c byte) error {
 		if !s.valReady {
 			return makeValue(s, c)
 		}
-		s.writer.Put(s.key, s.val)
+		_ = s.writer.Put(s.key, s.val)
 		reset(s)
 		return nil
 	} else if s.op == opDelete {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		s.writer.Delete(s.key)
+		_ = s.writer.Delete(s.key)
 		reset(s)
 		return nil
 	} else if s.op == opNewTX {
@@ -297,7 +297,7 @@ func nextState(s *threadState, c byte) error {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		s.RunState.inst.Sync(s.key)
+		_ = s.RunState.inst.Sync(s.key)
 		reset(s)
 		return nil
 	}
