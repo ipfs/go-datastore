@@ -27,3 +27,8 @@ Finally, build the fuzzing artifact, and fuzz
 go-fuzz-build
 go-fuzz
 ```
+
+If you don't have `go-fuzz` installed, execute
+```
+go get -u github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build
+```

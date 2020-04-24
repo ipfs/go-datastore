@@ -112,7 +112,7 @@ func Open(driver string, location string, cleanup bool) (*RunState, error) {
 
 // Fuzz is a go-fuzzer compatible input point for replaying
 // data (interpreted as a script of commands)
-// to kown ipfs datastore implementations
+// to known ipfs datastore implementations
 func Fuzz(data []byte) int {
 	var impls []string
 	for impl := range openers {

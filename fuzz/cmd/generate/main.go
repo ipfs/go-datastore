@@ -25,6 +25,9 @@ func main() {
 
 	for _, provider := range providers {
 		provider = strings.TrimSpace(provider)
+		if len(provider) == 0 {
+			continue
+		}
 		cmd := exec.Command("go", "get", provider)
 		err := cmd.Run()
 		if err != nil {
