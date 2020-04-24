@@ -8,13 +8,7 @@ implementations.
 Usage
 ----
 
-First, get the code
-```golang
-go get github.com/ipfs/go-datastore
-cd go-datastore/fuzz
-```
-
-Next, configure the datastores to fuzz (from this directory)
+First, configure the datastores to fuzz (from this directory):
 ```golang
 // either run via `go run`
 go run ./cmd/generate github.com/ipfs/go-ds-badger
@@ -22,13 +16,13 @@ go run ./cmd/generate github.com/ipfs/go-ds-badger
 DS_PROVIDERS="github.com/ipfs/go-ds-badger" go generate
 ```
 
-Finally, build the fuzzing artifact, and fuzz
+Then, build the fuzzing artifact and fuzz:
 ```golang
 go-fuzz-build
 go-fuzz
 ```
 
-If you don't have `go-fuzz` installed, execute
+If you don't have `go-fuzz` installed, it can be acquired as:
 ```
 go get -u github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build
 ```
