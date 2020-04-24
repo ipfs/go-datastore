@@ -1,0 +1,5 @@
+provider_*.go
+*.zip
+corpus
+crashers
+suppressions
