@@ -16,12 +16,12 @@ import (
 //go:generate go run ./cmd/generate
 
 // openers contains the known datastore implementations.
-var openers map[string]func(string) ds.TxnDatastore
+var openers map[string]func(string) ds.Datastore
 
 // AddOpener allows registration of a new driver for fuzzing.
-func AddOpener(name string, opener func(loc string) ds.TxnDatastore) {
+func AddOpener(name string, opener func(loc string) ds.Datastore) {
 	if openers == nil {
-		openers = make(map[string]func(string) ds.TxnDatastore)
+		openers = make(map[string]func(string) ds.Datastore)
 	}
 	openers[name] = opener
 }
@@ -32,14 +32,16 @@ var Threads int
 
 func init() {
 	if openers == nil {
-		openers = make(map[string]func(string) ds.TxnDatastore)
+		openers = make(map[string]func(string) ds.Datastore)
 	}
 	Threads = 1
 }
 
 // RunState encapulates the state of a given fuzzing run
 type RunState struct {
-	inst          ds.TxnDatastore
+	inst ds.Datastore
+	// opMax signals which operations the instance supports.
+	opMax         op
 	inputChannels []chan<- byte
 	wg            sync.WaitGroup
 	Cancel        context.CancelFunc
@@ -50,8 +52,16 @@ type RunState struct {
 }
 
 // DB returns the datastore being driven by this instance
-func (r *RunState) DB() ds.TxnDatastore {
+func (r *RunState) DB() ds.Datastore {
 	return r.inst
+}
+
+// TxnDB returns the transaciton database if the store under test supports transactions
+func (r *RunState) TxnDB() ds.TxnDatastore {
+	if txdb, ok := r.inst.(ds.TxnDatastore); ok {
+		return txdb
+	}
+	return nil
 }
 
 type threadState struct {
@@ -78,6 +88,11 @@ func Open(driver string, location string, cleanup bool) (*RunState, error) {
 
 	state := RunState{}
 	state.inst = opener(location)
+	state.opMax = opMax
+	// don't attempt transaction operations on non-txn datastores.
+	if state.TxnDB() == nil {
+		state.opMax = opNewTX
+	}
 	state.keyCache[0] = ds.NewKey("/")
 	state.cachedKeys = 1
 
@@ -146,7 +161,7 @@ func FuzzDB(driver string, location string, cleanup bool, data []byte) int {
 
 // FuzzStream does the same as fuzz but with streaming input
 func FuzzStream(driver string, location string, cleanup bool, data io.Reader) error {
-	inst, err := Open("badger", "tmp", true)
+	inst, err := Open(driver, location, cleanup)
 	if err != nil {
 		return err
 	}
@@ -185,10 +200,10 @@ const (
 	opQuery
 	opPut
 	opDelete
+	opSync
 	opNewTX
 	opCommitTX
 	opDiscardTX
-	opSync
 	opMax
 )
 
@@ -214,7 +229,7 @@ func threadDriver(ctx context.Context, runState *RunState, cmnds chan byte) {
 
 func nextState(s *threadState, c byte) error {
 	if s.op == opNone {
-		s.op = op(c) % opMax
+		s.op = op(c) % s.RunState.opMax
 		return nil
 	} else if s.op == opGet {
 		if !s.keyReady {
@@ -267,11 +282,13 @@ func nextState(s *threadState, c byte) error {
 		return nil
 	} else if s.op == opNewTX {
 		if s.txn == nil {
-			s.txn, _ = s.RunState.inst.NewTransaction(((c & 1) == 1))
-			if (c & 1) != 1 { // read+write
-				s.writer = s.txn
+			if tdb := s.RunState.TxnDB(); tdb != nil {
+				s.txn, _ = tdb.NewTransaction(((c & 1) == 1))
+				if (c & 1) != 1 { // read+write
+					s.writer = s.txn
+				}
+				s.reader = s.txn
 			}
-			s.reader = s.txn
 		}
 		reset(s)
 		return nil
