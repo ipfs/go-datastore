@@ -64,7 +64,7 @@ import prov "{{ .Package }}"
 import ds "github.com/ipfs/go-datastore"
 
 func init() {
-	AddOpener("{{ .PackageName }}", func(loc string) ds.TxnDatastore {
+	AddOpener("{{ .PackageName }}", func(loc string) ds.Datastore {
 		d, err := prov.NewDatastore(loc, nil)
 		if err != nil {
 			panic("could not create db instance")
