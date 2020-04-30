@@ -7,7 +7,7 @@ import (
 	dsq "github.com/ipfs/go-datastore/query"
 )
 
-// MutexDatastore contains a child datastire and a mutex.
+// MutexDatastore contains a child datastore and a mutex.
 // used for coarse sync
 type MutexDatastore struct {
 	sync.RWMutex
