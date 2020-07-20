@@ -4,6 +4,8 @@
 package failstore
 
 import (
+	"context"
+
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 )
@@ -27,73 +29,73 @@ func NewFailstore(c ds.Datastore, efunc func(string) error) *Failstore {
 }
 
 // Put puts a key/value into the datastore.
-func (d *Failstore) Put(k ds.Key, val []byte) error {
+func (d *Failstore) Put(ctx context.Context, k ds.Key, val []byte) error {
 	err := d.errfunc("put")
 	if err != nil {
 		return err
 	}
 
-	return d.child.Put(k, val)
+	return d.child.Put(ctx, k, val)
 }
 
 // Sync implements Datastore.Sync
-func (d *Failstore) Sync(prefix ds.Key) error {
+func (d *Failstore) Sync(ctx context.Context, prefix ds.Key) error {
 	err := d.errfunc("sync")
 	if err != nil {
 		return err
 	}
 
-	return d.child.Sync(prefix)
+	return d.child.Sync(ctx, prefix)
 }
 
 // Get retrieves a value from the datastore.
-func (d *Failstore) Get(k ds.Key) ([]byte, error) {
+func (d *Failstore) Get(ctx context.Context, k ds.Key) ([]byte, error) {
 	err := d.errfunc("get")
 	if err != nil {
 		return nil, err
 	}
 
-	return d.child.Get(k)
+	return d.child.Get(ctx, k)
 }
 
 // Has returns if the datastore contains a key/value.
-func (d *Failstore) Has(k ds.Key) (bool, error) {
+func (d *Failstore) Has(ctx context.Context, k ds.Key) (bool, error) {
 	err := d.errfunc("has")
 	if err != nil {
 		return false, err
 	}
 
-	return d.child.Has(k)
+	return d.child.Has(ctx, k)
 }
 
 // GetSize returns the size of the value in the datastore, if present.
-func (d *Failstore) GetSize(k ds.Key) (int, error) {
+func (d *Failstore) GetSize(ctx context.Context, k ds.Key) (int, error) {
 	err := d.errfunc("getsize")
 	if err != nil {
 		return -1, err
 	}
 
-	return d.child.GetSize(k)
+	return d.child.GetSize(ctx, k)
 }
 
 // Delete removes a key/value from the datastore.
-func (d *Failstore) Delete(k ds.Key) error {
+func (d *Failstore) Delete(ctx context.Context, k ds.Key) error {
 	err := d.errfunc("delete")
 	if err != nil {
 		return err
 	}
 
-	return d.child.Delete(k)
+	return d.child.Delete(ctx, k)
 }
 
 // Query performs a query on the datastore.
-func (d *Failstore) Query(q dsq.Query) (dsq.Results, error) {
+func (d *Failstore) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 	err := d.errfunc("query")
 	if err != nil {
 		return nil, err
 	}
 
-	return d.child.Query(q)
+	return d.child.Query(ctx, q)
 }
 
 // DiskUsage implements the PersistentDatastore interface.
@@ -133,28 +135,28 @@ func (d *Failstore) Batch() (ds.Batch, error) {
 }
 
 // Put does a batch put.
-func (b *FailBatch) Put(k ds.Key, val []byte) error {
+func (b *FailBatch) Put(ctx context.Context, k ds.Key, val []byte) error {
 	if err := b.dstore.errfunc("batch-put"); err != nil {
 		return err
 	}
 
-	return b.cb.Put(k, val)
+	return b.cb.Put(ctx, k, val)
 }
 
 // Delete does a batch delete.
-func (b *FailBatch) Delete(k ds.Key) error {
+func (b *FailBatch) Delete(ctx context.Context, k ds.Key) error {
 	if err := b.dstore.errfunc("batch-delete"); err != nil {
 		return err
 	}
 
-	return b.cb.Delete(k)
+	return b.cb.Delete(ctx, k)
 }
 
 // Commit commits all operations in the batch.
-func (b *FailBatch) Commit() error {
+func (b *FailBatch) Commit(ctx context.Context) error {
 	if err := b.dstore.errfunc("batch-commit"); err != nil {
 		return err
 	}
 
-	return b.cb.Commit()
+	return b.cb.Commit(ctx)
 }

@@ -18,6 +18,7 @@
 package examples
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -51,7 +52,7 @@ func (d *Datastore) KeyFilename(key ds.Key) string {
 }
 
 // Put stores the given value.
-func (d *Datastore) Put(key ds.Key, value []byte) (err error) {
+func (d *Datastore) Put(ctx context.Context, key ds.Key, value []byte) (err error) {
 	fn := d.KeyFilename(key)
 
 	// mkdirall above.
@@ -65,12 +66,12 @@ func (d *Datastore) Put(key ds.Key, value []byte) (err error) {
 
 // Sync would ensure that any previous Puts under the prefix are written to disk.
 // However, they already are.
-func (d *Datastore) Sync(prefix ds.Key) error {
+func (d *Datastore) Sync(ctx context.Context, prefix ds.Key) error {
 	return nil
 }
 
 // Get returns the value for given key
-func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
+func (d *Datastore) Get(ctx context.Context, key ds.Key) (value []byte, err error) {
 	fn := d.KeyFilename(key)
 	if !isFile(fn) {
 		return nil, ds.ErrNotFound
@@ -80,16 +81,16 @@ func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 }
 
 // Has returns whether the datastore has a value for a given key
-func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
-	return ds.GetBackedHas(d, key)
+func (d *Datastore) Has(ctx context.Context, key ds.Key) (exists bool, err error) {
+	return ds.GetBackedHas(ctx, d, key)
 }
 
-func (d *Datastore) GetSize(key ds.Key) (size int, err error) {
-	return ds.GetBackedSize(d, key)
+func (d *Datastore) GetSize(ctx context.Context, key ds.Key) (size int, err error) {
+	return ds.GetBackedSize(ctx, d, key)
 }
 
 // Delete removes the value for given key
-func (d *Datastore) Delete(key ds.Key) (err error) {
+func (d *Datastore) Delete(ctx context.Context, key ds.Key) (err error) {
 	fn := d.KeyFilename(key)
 	if !isFile(fn) {
 		return nil
@@ -103,7 +104,7 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 }
 
 // Query implements Datastore.Query
-func (d *Datastore) Query(q query.Query) (query.Results, error) {
+func (d *Datastore) Query(ctx context.Context, q query.Query) (query.Results, error) {
 
 	results := make(chan query.Result)
 
@@ -122,7 +123,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 			key := ds.NewKey(path)
 			result.Entry.Key = key.String()
 			if !q.KeysOnly {
-				result.Entry.Value, result.Error = d.Get(key)
+				result.Entry.Value, result.Error = d.Get(ctx, key)
 			}
 			results <- result
 		}

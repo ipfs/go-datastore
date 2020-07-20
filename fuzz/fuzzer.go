@@ -220,14 +220,14 @@ func threadDriver(ctx context.Context, runState *RunState, cmnds chan byte) {
 			if !ok {
 				return
 			}
-			_ = nextState(&s, c)
+			_ = nextState(ctx, &s, c)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func nextState(s *threadState, c byte) error {
+func nextState(ctx context.Context, s *threadState, c byte) error {
 	if s.op == opNone {
 		s.op = op(c) % s.RunState.opMax
 		return nil
@@ -235,25 +235,25 @@ func nextState(s *threadState, c byte) error {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_, _ = s.reader.Get(s.key)
+		_, _ = s.reader.Get(ctx, s.key)
 		reset(s)
 		return nil
 	} else if s.op == opHas {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_, _ = s.reader.Has(s.key)
+		_, _ = s.reader.Has(ctx, s.key)
 		reset(s)
 		return nil
 	} else if s.op == opGetSize {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_, _ = s.reader.GetSize(s.key)
+		_, _ = s.reader.GetSize(ctx, s.key)
 		reset(s)
 		return nil
 	} else if s.op == opQuery {
-		r, _ := s.reader.Query(dsq.Query{})
+		r, _ := s.reader.Query(ctx, dsq.Query{})
 		defer r.Close()
 		reset(s)
 
@@ -270,14 +270,14 @@ func nextState(s *threadState, c byte) error {
 		if !s.valReady {
 			return makeValue(s, c)
 		}
-		_ = s.writer.Put(s.key, s.val)
+		_ = s.writer.Put(ctx, s.key, s.val)
 		reset(s)
 		return nil
 	} else if s.op == opDelete {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_ = s.writer.Delete(s.key)
+		_ = s.writer.Delete(ctx, s.key)
 		reset(s)
 		return nil
 	} else if s.op == opNewTX {
@@ -314,7 +314,7 @@ func nextState(s *threadState, c byte) error {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_ = s.RunState.inst.Sync(s.key)
+		_ = s.RunState.inst.Sync(ctx, s.key)
 		reset(s)
 		return nil
 	}

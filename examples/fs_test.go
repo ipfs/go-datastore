@@ -2,6 +2,7 @@ package examples
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -35,6 +36,7 @@ func (ks *DSSuite) TestOpen(c *C) {
 }
 
 func (ks *DSSuite) TestBasic(c *C) {
+	ctx := context.Background()
 
 	keys := strsToKeys([]string{
 		"foo",
@@ -46,17 +48,17 @@ func (ks *DSSuite) TestBasic(c *C) {
 	})
 
 	for _, k := range keys {
-		err := ks.ds.Put(k, []byte(k.String()))
+		err := ks.ds.Put(ctx, k, []byte(k.String()))
 		c.Check(err, Equals, nil)
 	}
 
 	for _, k := range keys {
-		v, err := ks.ds.Get(k)
+		v, err := ks.ds.Get(ctx, k)
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v, []byte(k.String())), Equals, true)
 	}
 
-	r, err := ks.ds.Query(query.Query{Prefix: "/foo/bar/"})
+	r, err := ks.ds.Query(ctx, query.Query{Prefix: "/foo/bar/"})
 	if err != nil {
 		c.Check(err, Equals, nil)
 	}
@@ -87,6 +89,8 @@ func (ks *DSSuite) TestBasic(c *C) {
 }
 
 func (ks *DSSuite) TestDiskUsage(c *C) {
+	ctx := context.Background()
+
 	keys := strsToKeys([]string{
 		"foo",
 		"foo/bar",
@@ -100,7 +104,7 @@ func (ks *DSSuite) TestDiskUsage(c *C) {
 	for _, k := range keys {
 		value := []byte(k.String())
 		totalBytes += len(value)
-		err := ks.ds.Put(k, value)
+		err := ks.ds.Put(ctx, k, value)
 		c.Check(err, Equals, nil)
 	}
 

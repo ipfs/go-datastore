@@ -1,6 +1,7 @@
 package dstest
 
 import (
+	"context"
 	"reflect"
 	"runtime"
 	"testing"
@@ -35,7 +36,8 @@ func getFunctionName(i interface{}) string {
 }
 
 func clearDs(t *testing.T, ds dstore.Datastore) {
-	q, err := ds.Query(query.Query{KeysOnly: true})
+	ctx := context.Background()
+	q, err := ds.Query(ctx, query.Query{KeysOnly: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +46,7 @@ func clearDs(t *testing.T, ds dstore.Datastore) {
 		t.Fatal(err)
 	}
 	for _, r := range res {
-		if err := ds.Delete(dstore.RawKey(r.Key)); err != nil {
+		if err := ds.Delete(ctx, dstore.RawKey(r.Key)); err != nil {
 			t.Fatal(err)
 		}
 	}

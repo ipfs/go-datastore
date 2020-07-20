@@ -2,6 +2,7 @@ package namespace_test
 
 import (
 	"bytes"
+	"context"
 	"sort"
 	"testing"
 
@@ -26,6 +27,7 @@ func (ks *DSSuite) TestBasic(c *C) {
 }
 
 func (ks *DSSuite) testBasic(c *C, prefix string) {
+	ctx := context.Background()
 
 	mpds := ds.NewMapDatastore()
 	nsds := ns.Wrap(mpds, ds.NewKey(prefix))
@@ -40,22 +42,22 @@ func (ks *DSSuite) testBasic(c *C, prefix string) {
 	})
 
 	for _, k := range keys {
-		err := nsds.Put(k, []byte(k.String()))
+		err := nsds.Put(ctx, k, []byte(k.String()))
 		c.Check(err, Equals, nil)
 	}
 
 	for _, k := range keys {
-		v1, err := nsds.Get(k)
+		v1, err := nsds.Get(ctx, k)
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v1, []byte(k.String())), Equals, true)
 
-		v2, err := mpds.Get(ds.NewKey(prefix).Child(k))
+		v2, err := mpds.Get(ctx, ds.NewKey(prefix).Child(k))
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v2, []byte(k.String())), Equals, true)
 	}
 
 	run := func(d ds.Datastore, q dsq.Query) []ds.Key {
-		r, err := d.Query(q)
+		r, err := d.Query(ctx, q)
 		c.Check(err, Equals, nil)
 
 		e, err := r.Rest()
@@ -80,6 +82,8 @@ func (ks *DSSuite) testBasic(c *C, prefix string) {
 }
 
 func (ks *DSSuite) TestQuery(c *C) {
+	ctx := context.Background()
+
 	mpds := dstest.NewTestDatastore(true)
 	nsds := ns.Wrap(mpds, ds.NewKey("/foo"))
 
@@ -93,11 +97,11 @@ func (ks *DSSuite) TestQuery(c *C) {
 	})
 
 	for _, k := range keys {
-		err := mpds.Put(k, []byte(k.String()))
+		err := mpds.Put(ctx, k, []byte(k.String()))
 		c.Check(err, Equals, nil)
 	}
 
-	qres, err := nsds.Query(dsq.Query{})
+	qres, err := nsds.Query(ctx, dsq.Query{})
 	c.Check(err, Equals, nil)
 
 	expect := []dsq.Entry{
@@ -118,7 +122,7 @@ func (ks *DSSuite) TestQuery(c *C) {
 	err = qres.Close()
 	c.Check(err, Equals, nil)
 
-	qres, err = nsds.Query(dsq.Query{Prefix: "bar"})
+	qres, err = nsds.Query(ctx, dsq.Query{Prefix: "bar"})
 	c.Check(err, Equals, nil)
 
 	expect = []dsq.Entry{
