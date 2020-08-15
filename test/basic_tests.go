@@ -126,12 +126,17 @@ func SubtestNotFounds(t *testing.T, ds dstore.Datastore) {
 	switch err {
 	case dstore.ErrNotFound:
 	case nil:
-		t.Fatal("expected error getting size after delete")
+		t.Fatal("expected error getting size of not found key")
 	default:
-		t.Fatal("wrong error getting size after delete: ", err)
+		t.Fatal("wrong error getting size of not found key", err)
 	}
 	if size != -1 {
 		t.Fatal("expected missing size to be -1")
+	}
+
+	err = ds.Delete(badk)
+	if err != nil {
+		t.Fatal("error calling delete on not found key: ", err)
 	}
 }
 
