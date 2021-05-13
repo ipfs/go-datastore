@@ -89,15 +89,15 @@ func (ks *DSSuite) TestBasic(c *C) {
 	c.Log("listA: ", listA)
 	c.Log("listB: ", listB)
 
-	if err := ktds.Check(); err != dstest.TestError {
+	if err := ktds.Check(); err != dstest.ErrTest {
 		c.Errorf("Unexpected Check() error: %s", err)
 	}
 
-	if err := ktds.CollectGarbage(); err != dstest.TestError {
+	if err := ktds.CollectGarbage(); err != dstest.ErrTest {
 		c.Errorf("Unexpected CollectGarbage() error: %s", err)
 	}
 
-	if err := ktds.Scrub(); err != dstest.TestError {
+	if err := ktds.Scrub(); err != dstest.ErrTest {
 		c.Errorf("Unexpected Scrub() error: %s", err)
 	}
 }

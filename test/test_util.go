@@ -10,9 +10,7 @@ import (
 	dstore "github.com/ipfs/go-datastore"
 )
 
-var (
-	TestError = errors.New("test error")
-)
+var ErrTest = errors.New("test error")
 
 func RunBatchTest(t *testing.T, ds dstore.Batching) {
 	batch, err := ds.Batch()
@@ -164,21 +162,21 @@ func NewTestDatastore(testErrors bool) *testDatastore {
 
 func (d *testDatastore) Check() error {
 	if d.testErrors {
-		return TestError
+		return ErrTest
 	}
 	return nil
 }
 
 func (d *testDatastore) Scrub() error {
 	if d.testErrors {
-		return TestError
+		return ErrTest
 	}
 	return nil
 }
 
 func (d *testDatastore) CollectGarbage() error {
 	if d.testErrors {
-		return TestError
+		return ErrTest
 	}
 	return nil
 }
