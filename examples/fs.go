@@ -39,7 +39,7 @@ type Datastore struct {
 // NewDatastore returns a new fs Datastore at given `path`
 func NewDatastore(path string) (ds.Datastore, error) {
 	if !isDir(path) {
-		return nil, fmt.Errorf("Failed to find directory at: %v (file? perms?)", path)
+		return nil, fmt.Errorf("failed to find directory at: %v (file? perms?)", path)
 	}
 
 	return &Datastore{path: path}, nil
@@ -104,10 +104,9 @@ func (d *Datastore) Delete(key ds.Key) (err error) {
 
 // Query implements Datastore.Query
 func (d *Datastore) Query(q query.Query) (query.Results, error) {
-
 	results := make(chan query.Result)
 
-	walkFn := func(path string, info os.FileInfo, err error) error {
+	walkFn := func(path string, info os.FileInfo, _ error) error {
 		// remove ds path prefix
 		relPath, err := filepath.Rel(d.path, path)
 		if err == nil {
@@ -115,9 +114,7 @@ func (d *Datastore) Query(q query.Query) (query.Results, error) {
 		}
 
 		if !info.IsDir() {
-			if strings.HasSuffix(path, ObjectKeySuffix) {
-				path = path[:len(path)-len(ObjectKeySuffix)]
-			}
+			path = strings.TrimSuffix(path, ObjectKeySuffix)
 			var result query.Result
 			key := ds.NewKey(path)
 			result.Entry.Key = key.String()
