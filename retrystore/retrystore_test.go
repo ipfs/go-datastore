@@ -1,6 +1,7 @@
 package retrystore
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -10,6 +11,8 @@ import (
 )
 
 func TestRetryFailure(t *testing.T) {
+	ctx := context.Background()
+
 	myErr := fmt.Errorf("this is an actual error")
 	var count int
 	fstore := failstore.NewFailstore(ds.NewMapDatastore(), func(op string) error {
@@ -27,7 +30,7 @@ func TestRetryFailure(t *testing.T) {
 
 	k := ds.NewKey("test")
 
-	_, err := rds.Get(k)
+	_, err := rds.Get(ctx, k)
 	if err == nil {
 		t.Fatal("expected this to fail")
 	}
@@ -42,6 +45,8 @@ func TestRetryFailure(t *testing.T) {
 }
 
 func TestRealErrorGetsThrough(t *testing.T) {
+	ctx := context.Background()
+
 	myErr := fmt.Errorf("this is an actual error")
 	fstore := failstore.NewFailstore(ds.NewMapDatastore(), func(op string) error {
 		return myErr
@@ -56,23 +61,25 @@ func TestRealErrorGetsThrough(t *testing.T) {
 	}
 
 	k := ds.NewKey("test")
-	_, err := rds.Get(k)
+	_, err := rds.Get(ctx, k)
 	if err != myErr {
 		t.Fatal("expected my own error")
 	}
 
-	_, err = rds.Has(k)
+	_, err = rds.Has(ctx, k)
 	if err != myErr {
 		t.Fatal("expected my own error")
 	}
 
-	err = rds.Put(k, nil)
+	err = rds.Put(ctx, k, nil)
 	if err != myErr {
 		t.Fatal("expected my own error")
 	}
 }
 
 func TestRealErrorAfterTemp(t *testing.T) {
+	ctx := context.Background()
+
 	myErr := fmt.Errorf("this is an actual error")
 	tempErr := fmt.Errorf("this is a temp error")
 	var count int
@@ -94,13 +101,15 @@ func TestRealErrorAfterTemp(t *testing.T) {
 	}
 
 	k := ds.NewKey("test")
-	_, err := rds.Get(k)
+	_, err := rds.Get(ctx, k)
 	if err != myErr {
 		t.Fatal("expected my own error")
 	}
 }
 
 func TestSuccessAfterTemp(t *testing.T) {
+	ctx := context.Background()
+
 	tempErr := fmt.Errorf("this is a temp error")
 	var count int
 	fstore := failstore.NewFailstore(ds.NewMapDatastore(), func(op string) error {
@@ -123,12 +132,12 @@ func TestSuccessAfterTemp(t *testing.T) {
 	k := ds.NewKey("test")
 	val := []byte("foo")
 
-	err := rds.Put(k, val)
+	err := rds.Put(ctx, k, val)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	has, err := rds.Has(k)
+	has, err := rds.Has(ctx, k)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +146,7 @@ func TestSuccessAfterTemp(t *testing.T) {
 		t.Fatal("should have this thing")
 	}
 
-	out, err := rds.Get(k)
+	out, err := rds.Get(ctx, k)
 	if err != nil {
 		t.Fatal(err)
 	}

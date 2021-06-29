@@ -1,6 +1,7 @@
 package delayed
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -10,14 +11,16 @@ import (
 )
 
 func TestDelayed(t *testing.T) {
+	ctx := context.Background()
+
 	d := New(datastore.NewMapDatastore(), delay.Fixed(time.Second))
 	now := time.Now()
 	k := datastore.NewKey("test")
-	err := d.Put(k, []byte("value"))
+	err := d.Put(ctx, k, []byte("value"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = d.Get(k)
+	_, err = d.Get(ctx, k)
 	if err != nil {
 		t.Fatal(err)
 	}

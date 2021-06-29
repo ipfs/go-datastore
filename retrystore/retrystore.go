@@ -3,6 +3,7 @@
 package retrystore
 
 import (
+	"context"
 	"time"
 
 	ds "github.com/ipfs/go-datastore"
@@ -44,22 +45,22 @@ func (d *Datastore) runOp(op func() error) error {
 }
 
 // DiskUsage implements the PersistentDatastore interface.
-func (d *Datastore) DiskUsage() (uint64, error) {
+func (d *Datastore) DiskUsage(ctx context.Context) (uint64, error) {
 	var size uint64
 	err := d.runOp(func() error {
 		var err error
-		size, err = ds.DiskUsage(d.Batching)
+		size, err = ds.DiskUsage(ctx, d.Batching)
 		return err
 	})
 	return size, err
 }
 
 // Get retrieves a value given a key.
-func (d *Datastore) Get(k ds.Key) ([]byte, error) {
+func (d *Datastore) Get(ctx context.Context, k ds.Key) ([]byte, error) {
 	var val []byte
 	err := d.runOp(func() error {
 		var err error
-		val, err = d.Batching.Get(k)
+		val, err = d.Batching.Get(ctx, k)
 		return err
 	})
 
@@ -67,36 +68,36 @@ func (d *Datastore) Get(k ds.Key) ([]byte, error) {
 }
 
 // Put stores a key/value.
-func (d *Datastore) Put(k ds.Key, val []byte) error {
+func (d *Datastore) Put(ctx context.Context, k ds.Key, val []byte) error {
 	return d.runOp(func() error {
-		return d.Batching.Put(k, val)
+		return d.Batching.Put(ctx, k, val)
 	})
 }
 
 // Sync implements Datastore.Sync
-func (d *Datastore) Sync(prefix ds.Key) error {
+func (d *Datastore) Sync(ctx context.Context, prefix ds.Key) error {
 	return d.runOp(func() error {
-		return d.Batching.Sync(prefix)
+		return d.Batching.Sync(ctx, prefix)
 	})
 }
 
 // Has checks if a key is stored.
-func (d *Datastore) Has(k ds.Key) (bool, error) {
+func (d *Datastore) Has(ctx context.Context, k ds.Key) (bool, error) {
 	var has bool
 	err := d.runOp(func() error {
 		var err error
-		has, err = d.Batching.Has(k)
+		has, err = d.Batching.Has(ctx, k)
 		return err
 	})
 	return has, err
 }
 
 // GetSize returns the size of the value in the datastore, if present.
-func (d *Datastore) GetSize(k ds.Key) (int, error) {
+func (d *Datastore) GetSize(ctx context.Context, k ds.Key) (int, error) {
 	var size int
 	err := d.runOp(func() error {
 		var err error
-		size, err = d.Batching.GetSize(k)
+		size, err = d.Batching.GetSize(ctx, k)
 		return err
 	})
 	return size, err

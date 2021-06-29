@@ -2,6 +2,7 @@ package keytransform_test
 
 import (
 	"bytes"
+	"context"
 	"sort"
 	"testing"
 
@@ -35,6 +36,8 @@ var pair = &kt.Pair{
 }
 
 func (ks *DSSuite) TestBasic(c *C) {
+	ctx := context.Background()
+
 	mpds := dstest.NewTestDatastore(true)
 	ktds := kt.Wrap(mpds, pair)
 
@@ -48,22 +51,22 @@ func (ks *DSSuite) TestBasic(c *C) {
 	})
 
 	for _, k := range keys {
-		err := ktds.Put(k, []byte(k.String()))
+		err := ktds.Put(ctx, k, []byte(k.String()))
 		c.Check(err, Equals, nil)
 	}
 
 	for _, k := range keys {
-		v1, err := ktds.Get(k)
+		v1, err := ktds.Get(ctx, k)
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v1, []byte(k.String())), Equals, true)
 
-		v2, err := mpds.Get(ds.NewKey("abc").Child(k))
+		v2, err := mpds.Get(ctx, ds.NewKey("abc").Child(k))
 		c.Check(err, Equals, nil)
 		c.Check(bytes.Equal(v2, []byte(k.String())), Equals, true)
 	}
 
 	run := func(d ds.Datastore, q dsq.Query) []ds.Key {
-		r, err := d.Query(q)
+		r, err := d.Query(ctx, q)
 		c.Check(err, Equals, nil)
 
 		e, err := r.Rest()
@@ -89,15 +92,15 @@ func (ks *DSSuite) TestBasic(c *C) {
 	c.Log("listA: ", listA)
 	c.Log("listB: ", listB)
 
-	if err := ktds.Check(); err != dstest.ErrTest {
+	if err := ktds.Check(ctx); err != nil && err != dstest.ErrTest {
 		c.Errorf("Unexpected Check() error: %s", err)
 	}
 
-	if err := ktds.CollectGarbage(); err != dstest.ErrTest {
+	if err := ktds.CollectGarbage(ctx); err != nil && err != dstest.ErrTest {
 		c.Errorf("Unexpected CollectGarbage() error: %s", err)
 	}
 
-	if err := ktds.Scrub(); err != dstest.ErrTest {
+	if err := ktds.Scrub(ctx); err != nil && err != dstest.ErrTest {
 		c.Errorf("Unexpected Scrub() error: %s", err)
 	}
 }
