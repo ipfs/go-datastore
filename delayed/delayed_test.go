@@ -27,7 +27,7 @@ func TestDelayed(t *testing.T) {
 }
 
 func TestDelayedAll(t *testing.T) {
-	// Delay for virtually no time, we just want to make sure this works correctly, not that it
+	// Don't actually delay, we just want to make sure this works correctly, not that it
 	// delays anything.
-	dstest.SubtestAll(t, New(datastore.NewMapDatastore(), delay.Fixed(time.Nanosecond)))
+	dstest.SubtestAll(t, New(datastore.NewMapDatastore(), delay.Fixed(0)))
 }
