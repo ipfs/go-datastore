@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"testing"
 
+	detectrace "github.com/ipfs/go-detect-race"
+
 	dstore "github.com/ipfs/go-datastore"
 	query "github.com/ipfs/go-datastore/query"
 )
@@ -13,7 +15,6 @@ import (
 var BasicSubtests = []func(t *testing.T, ds dstore.Datastore){
 	SubtestBasicPutGet,
 	SubtestNotFounds,
-	SubtestCombinations,
 	SubtestPrefix,
 	SubtestOrder,
 	SubtestLimit,
@@ -21,6 +22,13 @@ var BasicSubtests = []func(t *testing.T, ds dstore.Datastore){
 	SubtestManyKeysAndQuery,
 	SubtestReturnSizes,
 	SubtestBasicSync,
+}
+
+// Only enable the expensive "combinations" test when not running the race detector.
+func init() {
+	if !detectrace.WithRace() {
+		BasicSubtests = append(BasicSubtests, SubtestCombinations)
+	}
 }
 
 // BatchSubtests is a list of all basic batching datastore tests.
