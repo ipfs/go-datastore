@@ -3,6 +3,7 @@ package mount_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	datastore "github.com/ipfs/go-datastore"
 	autobatch "github.com/ipfs/go-datastore/autobatch"
@@ -725,14 +726,14 @@ func TestLookupPrio(t *testing.T) {
 }
 
 func TestNestedMountSync(t *testing.T) {
-	internalDSRoot := datastore.NewMapDatastore()
-	internalDSFoo := datastore.NewMapDatastore()
-	internalDSFooBar := datastore.NewMapDatastore()
+	internalDSRoot := sync.MutexWrap(datastore.NewMapDatastore())
+	internalDSFoo := sync.MutexWrap(datastore.NewMapDatastore())
+	internalDSFooBar := sync.MutexWrap(datastore.NewMapDatastore())
 
 	m := mount.New([]mount.Mount{
-		{Prefix: datastore.NewKey("/foo"), Datastore: autobatch.NewAutoBatching(internalDSFoo, 10)},
-		{Prefix: datastore.NewKey("/foo/bar"), Datastore: autobatch.NewAutoBatching(internalDSFooBar, 10)},
-		{Prefix: datastore.NewKey("/"), Datastore: autobatch.NewAutoBatching(internalDSRoot, 10)},
+		{Prefix: datastore.NewKey("/foo"), Datastore: autobatch.NewAutoBatching(internalDSFoo, 10, 100*time.Millisecond)},
+		{Prefix: datastore.NewKey("/foo/bar"), Datastore: autobatch.NewAutoBatching(internalDSFooBar, 10, 100*time.Millisecond)},
+		{Prefix: datastore.NewKey("/"), Datastore: autobatch.NewAutoBatching(internalDSRoot, 10, 100*time.Millisecond)},
 	})
 
 	// Testing scenarios

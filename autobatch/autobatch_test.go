@@ -4,18 +4,20 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
 
 	ds "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/sync"
 	dstest "github.com/ipfs/go-datastore/test"
 )
 
 func TestAutobatch(t *testing.T) {
-	dstest.SubtestAll(t, NewAutoBatching(ds.NewMapDatastore(), 16))
+	dstest.SubtestAll(t, NewAutoBatching(sync.MutexWrap(ds.NewMapDatastore()), 16, time.Second))
 }
 
 func TestFlushing(t *testing.T) {
-	child := ds.NewMapDatastore()
-	d := NewAutoBatching(child, 16)
+	child := sync.MutexWrap(ds.NewMapDatastore())
+	d := NewAutoBatching(child, 16, 500*time.Millisecond)
 
 	var keys []ds.Key
 	for i := 0; i < 16; i++ {
@@ -70,6 +72,9 @@ func TestFlushing(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// flushing is async so we can rely on having it happening immediately
+	time.Sleep(100 * time.Millisecond)
+
 	// should be flushed now, try to get keys from child datastore
 	for _, k := range keys[:14] {
 		val, err := child.Get(k)
@@ -102,11 +107,29 @@ func TestFlushing(t *testing.T) {
 	if !bytes.Equal(val, v) {
 		t.Fatal("wrong value")
 	}
+
+	// let's test the maximum delay with a single key
+	key17 := ds.NewKey("test17")
+	err = d.Put(key17, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(600 * time.Millisecond)
+
+	val, err = child.Get(key17)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(val, v) {
+		t.Fatal("wrong value")
+	}
 }
 
 func TestSync(t *testing.T) {
 	child := ds.NewMapDatastore()
-	d := NewAutoBatching(child, 100)
+	d := NewAutoBatching(child, 100, time.Second)
 
 	put := func(key ds.Key) {
 		if err := d.Put(key, []byte(key.String())); err != nil {
