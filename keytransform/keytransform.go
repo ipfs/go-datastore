@@ -1,6 +1,8 @@
 package keytransform
 
 import (
+	"context"
+
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 )
@@ -33,42 +35,42 @@ func (d *Datastore) Children() []ds.Datastore {
 }
 
 // Put stores the given value, transforming the key first.
-func (d *Datastore) Put(key ds.Key, value []byte) (err error) {
-	return d.child.Put(d.ConvertKey(key), value)
+func (d *Datastore) Put(ctx context.Context, key ds.Key, value []byte) (err error) {
+	return d.child.Put(ctx, d.ConvertKey(key), value)
 }
 
 // Sync implements Datastore.Sync
-func (d *Datastore) Sync(prefix ds.Key) error {
-	return d.child.Sync(d.ConvertKey(prefix))
+func (d *Datastore) Sync(ctx context.Context, prefix ds.Key) error {
+	return d.child.Sync(ctx, d.ConvertKey(prefix))
 }
 
 // Get returns the value for given key, transforming the key first.
-func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
-	return d.child.Get(d.ConvertKey(key))
+func (d *Datastore) Get(ctx context.Context, key ds.Key) (value []byte, err error) {
+	return d.child.Get(ctx, d.ConvertKey(key))
 }
 
 // Has returns whether the datastore has a value for a given key, transforming
 // the key first.
-func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
-	return d.child.Has(d.ConvertKey(key))
+func (d *Datastore) Has(ctx context.Context, key ds.Key) (exists bool, err error) {
+	return d.child.Has(ctx, d.ConvertKey(key))
 }
 
 // GetSize returns the size of the value named by the given key, transforming
 // the key first.
-func (d *Datastore) GetSize(key ds.Key) (size int, err error) {
-	return d.child.GetSize(d.ConvertKey(key))
+func (d *Datastore) GetSize(ctx context.Context, key ds.Key) (size int, err error) {
+	return d.child.GetSize(ctx, d.ConvertKey(key))
 }
 
 // Delete removes the value for given key
-func (d *Datastore) Delete(key ds.Key) (err error) {
-	return d.child.Delete(d.ConvertKey(key))
+func (d *Datastore) Delete(ctx context.Context, key ds.Key) (err error) {
+	return d.child.Delete(ctx, d.ConvertKey(key))
 }
 
 // Query implements Query, inverting keys on the way back out.
-func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
+func (d *Datastore) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 	nq, cq := d.prepareQuery(q)
 
-	cqr, err := d.child.Query(cq)
+	cqr, err := d.child.Query(ctx, cq)
 	if err != nil {
 		return nil, err
 	}
@@ -194,17 +196,17 @@ func (d *Datastore) Close() error {
 }
 
 // DiskUsage implements the PersistentDatastore interface.
-func (d *Datastore) DiskUsage() (uint64, error) {
-	return ds.DiskUsage(d.child)
+func (d *Datastore) DiskUsage(ctx context.Context) (uint64, error) {
+	return ds.DiskUsage(ctx, d.child)
 }
 
-func (d *Datastore) Batch() (ds.Batch, error) {
+func (d *Datastore) Batch(ctx context.Context) (ds.Batch, error) {
 	bds, ok := d.child.(ds.Batching)
 	if !ok {
 		return nil, ds.ErrBatchUnsupported
 	}
 
-	childbatch, err := bds.Batch()
+	childbatch, err := bds.Batch(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -220,35 +222,35 @@ type transformBatch struct {
 	f KeyMapping
 }
 
-func (t *transformBatch) Put(key ds.Key, val []byte) error {
-	return t.dst.Put(t.f(key), val)
+func (t *transformBatch) Put(ctx context.Context, key ds.Key, val []byte) error {
+	return t.dst.Put(ctx, t.f(key), val)
 }
 
-func (t *transformBatch) Delete(key ds.Key) error {
-	return t.dst.Delete(t.f(key))
+func (t *transformBatch) Delete(ctx context.Context, key ds.Key) error {
+	return t.dst.Delete(ctx, t.f(key))
 }
 
-func (t *transformBatch) Commit() error {
-	return t.dst.Commit()
+func (t *transformBatch) Commit(ctx context.Context) error {
+	return t.dst.Commit(ctx)
 }
 
-func (d *Datastore) Check() error {
+func (d *Datastore) Check(ctx context.Context) error {
 	if c, ok := d.child.(ds.CheckedDatastore); ok {
-		return c.Check()
+		return c.Check(ctx)
 	}
 	return nil
 }
 
-func (d *Datastore) Scrub() error {
+func (d *Datastore) Scrub(ctx context.Context) error {
 	if c, ok := d.child.(ds.ScrubbedDatastore); ok {
-		return c.Scrub()
+		return c.Scrub(ctx)
 	}
 	return nil
 }
 
-func (d *Datastore) CollectGarbage() error {
+func (d *Datastore) CollectGarbage(ctx context.Context) error {
 	if c, ok := d.child.(ds.GCDatastore); ok {
-		return c.CollectGarbage()
+		return c.CollectGarbage(ctx)
 	}
 	return nil
 }

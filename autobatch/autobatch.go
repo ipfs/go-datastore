@@ -4,6 +4,8 @@
 package autobatch
 
 import (
+	"context"
+
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 )
@@ -34,16 +36,16 @@ func NewAutoBatching(d ds.Batching, size int) *Datastore {
 }
 
 // Delete deletes a key/value
-func (d *Datastore) Delete(k ds.Key) error {
+func (d *Datastore) Delete(ctx context.Context, k ds.Key) error {
 	d.buffer[k] = op{delete: true}
 	if len(d.buffer) > d.maxBufferEntries {
-		return d.Flush()
+		return d.Flush(ctx)
 	}
 	return nil
 }
 
 // Get retrieves a value given a key.
-func (d *Datastore) Get(k ds.Key) ([]byte, error) {
+func (d *Datastore) Get(ctx context.Context, k ds.Key) ([]byte, error) {
 	o, ok := d.buffer[k]
 	if ok {
 		if o.delete {
@@ -52,22 +54,22 @@ func (d *Datastore) Get(k ds.Key) ([]byte, error) {
 		return o.value, nil
 	}
 
-	return d.child.Get(k)
+	return d.child.Get(ctx, k)
 }
 
 // Put stores a key/value.
-func (d *Datastore) Put(k ds.Key, val []byte) error {
+func (d *Datastore) Put(ctx context.Context, k ds.Key, val []byte) error {
 	d.buffer[k] = op{value: val}
 	if len(d.buffer) > d.maxBufferEntries {
-		return d.Flush()
+		return d.Flush(ctx)
 	}
 	return nil
 }
 
 // Sync flushes all operations on keys at or under the prefix
 // from the current batch to the underlying datastore
-func (d *Datastore) Sync(prefix ds.Key) error {
-	b, err := d.child.Batch()
+func (d *Datastore) Sync(ctx context.Context, prefix ds.Key) error {
+	b, err := d.child.Batch(ctx)
 	if err != nil {
 		return err
 	}
@@ -79,9 +81,9 @@ func (d *Datastore) Sync(prefix ds.Key) error {
 
 		var err error
 		if o.delete {
-			err = b.Delete(k)
+			err = b.Delete(ctx, k)
 		} else {
-			err = b.Put(k, o.value)
+			err = b.Put(ctx, k, o.value)
 		}
 		if err != nil {
 			return err
@@ -90,12 +92,12 @@ func (d *Datastore) Sync(prefix ds.Key) error {
 		delete(d.buffer, k)
 	}
 
-	return b.Commit()
+	return b.Commit(ctx)
 }
 
 // Flush flushes the current batch to the underlying datastore.
-func (d *Datastore) Flush() error {
-	b, err := d.child.Batch()
+func (d *Datastore) Flush(ctx context.Context) error {
+	b, err := d.child.Batch(ctx)
 	if err != nil {
 		return err
 	}
@@ -103,9 +105,9 @@ func (d *Datastore) Flush() error {
 	for k, o := range d.buffer {
 		var err error
 		if o.delete {
-			err = b.Delete(k)
+			err = b.Delete(ctx, k)
 		} else {
-			err = b.Put(k, o.value)
+			err = b.Put(ctx, k, o.value)
 		}
 		if err != nil {
 			return err
@@ -114,21 +116,21 @@ func (d *Datastore) Flush() error {
 	// clear out buffer
 	d.buffer = make(map[ds.Key]op, d.maxBufferEntries)
 
-	return b.Commit()
+	return b.Commit(ctx)
 }
 
 // Has checks if a key is stored.
-func (d *Datastore) Has(k ds.Key) (bool, error) {
+func (d *Datastore) Has(ctx context.Context, k ds.Key) (bool, error) {
 	o, ok := d.buffer[k]
 	if ok {
 		return !o.delete, nil
 	}
 
-	return d.child.Has(k)
+	return d.child.Has(ctx, k)
 }
 
 // GetSize implements Datastore.GetSize
-func (d *Datastore) GetSize(k ds.Key) (int, error) {
+func (d *Datastore) GetSize(ctx context.Context, k ds.Key) (int, error) {
 	o, ok := d.buffer[k]
 	if ok {
 		if o.delete {
@@ -137,26 +139,27 @@ func (d *Datastore) GetSize(k ds.Key) (int, error) {
 		return len(o.value), nil
 	}
 
-	return d.child.GetSize(k)
+	return d.child.GetSize(ctx, k)
 }
 
 // Query performs a query
-func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
-	err := d.Flush()
+func (d *Datastore) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
+	err := d.Flush(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return d.child.Query(q)
+	return d.child.Query(ctx, q)
 }
 
 // DiskUsage implements the PersistentDatastore interface.
-func (d *Datastore) DiskUsage() (uint64, error) {
-	return ds.DiskUsage(d.child)
+func (d *Datastore) DiskUsage(ctx context.Context) (uint64, error) {
+	return ds.DiskUsage(ctx, d.child)
 }
 
 func (d *Datastore) Close() error {
-	err1 := d.Flush()
+	ctx := context.Background()
+	err1 := d.Flush(ctx)
 	err2 := d.child.Close()
 	if err1 != nil {
 		return err1
