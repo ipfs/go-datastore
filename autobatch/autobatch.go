@@ -4,13 +4,15 @@
 package autobatch
 
 import (
-	"log"
 	"sync"
 	"time"
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
+	logging "github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("datastore/autobatch")
 
 // Datastore implements a go-datastore.
 type Datastore struct {
@@ -62,12 +64,12 @@ func (d *Datastore) runBatcher() {
 
 		b, err := d.prepareBatch(nil)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 		err = b.Commit()
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 	}
