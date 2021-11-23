@@ -17,6 +17,10 @@ type Failstore struct {
 	errfunc func(string) error
 }
 
+var _ ds.Datastore = (*Failstore)(nil)
+var _ ds.Batching = (*Failstore)(nil)
+var _ ds.PersistentDatastore = (*Failstore)(nil)
+
 // NewFailstore creates a new datastore with the given error function.
 // The efunc will be called with different strings depending on the
 // datastore function: put, get, has, delete, query, batch, batch-put,
@@ -116,6 +120,8 @@ type FailBatch struct {
 	cb     ds.Batch
 	dstore *Failstore
 }
+
+var _ ds.Batch = (*FailBatch)(nil)
 
 // Batch returns a new Batch Failstore.
 func (d *Failstore) Batch(ctx context.Context) (ds.Batch, error) {

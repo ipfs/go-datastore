@@ -24,6 +24,10 @@ type Datastore struct {
 	ds.Batching
 }
 
+var _ ds.Datastore = (*Datastore)(nil)
+var _ ds.Batching = (*Datastore)(nil)
+var _ ds.PersistentDatastore = (*Datastore)(nil)
+
 var errFmtString = "ran out of retries trying to get past temporary error: %w"
 
 func (d *Datastore) runOp(op func() error) error {

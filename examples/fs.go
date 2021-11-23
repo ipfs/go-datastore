@@ -37,6 +37,10 @@ type Datastore struct {
 	path string
 }
 
+var _ ds.Datastore = (*Datastore)(nil)
+var _ ds.Batching = (*Datastore)(nil)
+var _ ds.PersistentDatastore = (*Datastore)(nil)
+
 // NewDatastore returns a new fs Datastore at given `path`
 func NewDatastore(path string) (ds.Datastore, error) {
 	if !isDir(path) {

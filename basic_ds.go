@@ -14,6 +14,9 @@ type MapDatastore struct {
 	values map[Key][]byte
 }
 
+var _ Datastore = (*MapDatastore)(nil)
+var _ Batching = (*MapDatastore)(nil)
+
 // NewMapDatastore constructs a MapDatastore. It is _not_ thread-safe by
 // default, wrap using sync.MutexWrap if you need thread safety (the answer here
 // is usually yes).
@@ -91,6 +94,9 @@ func (d *MapDatastore) Close() error {
 type NullDatastore struct {
 }
 
+var _ Datastore = (*NullDatastore)(nil)
+var _ Batching = (*NullDatastore)(nil)
+
 // NewNullDatastore constructs a null datastoe
 func NewNullDatastore() *NullDatastore {
 	return &NullDatastore{}
@@ -144,6 +150,14 @@ type LogDatastore struct {
 	Name  string
 	child Datastore
 }
+
+var _ Datastore = (*LogDatastore)(nil)
+var _ Batching = (*LogDatastore)(nil)
+var _ GCDatastore = (*LogDatastore)(nil)
+var _ PersistentDatastore = (*LogDatastore)(nil)
+var _ ScrubbedDatastore = (*LogDatastore)(nil)
+var _ CheckedDatastore = (*LogDatastore)(nil)
+var _ Shim = (*LogDatastore)(nil)
 
 // Shim is a datastore which has a child.
 type Shim interface {
@@ -225,6 +239,8 @@ type LogBatch struct {
 	Name  string
 	child Batch
 }
+
+var _ Batch = (*LogBatch)(nil)
 
 func (d *LogDatastore) Batch(ctx context.Context) (Batch, error) {
 	log.Printf("%s: Batch\n", d.Name)
