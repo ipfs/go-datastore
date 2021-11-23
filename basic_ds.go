@@ -131,7 +131,7 @@ func (d *NullDatastore) Query(ctx context.Context, q dsq.Query) (dsq.Results, er
 	return dsq.ResultsWithEntries(q, nil), nil
 }
 
-func (d *NullDatastore) Batch() (Batch, error) {
+func (d *NullDatastore) Batch(ctx context.Context) (Batch, error) {
 	return NewBasicBatch(d), nil
 }
 
