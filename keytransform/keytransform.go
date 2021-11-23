@@ -29,6 +29,14 @@ type Datastore struct {
 	KeyTransform
 }
 
+var _ ds.Datastore = (*Datastore)(nil)
+var _ ds.Batching = (*Datastore)(nil)
+var _ ds.Shim = (*Datastore)(nil)
+var _ ds.PersistentDatastore = (*Datastore)(nil)
+var _ ds.CheckedDatastore = (*Datastore)(nil)
+var _ ds.ScrubbedDatastore = (*Datastore)(nil)
+var _ ds.GCDatastore = (*Datastore)(nil)
+
 // Children implements ds.Shim
 func (d *Datastore) Children() []ds.Datastore {
 	return []ds.Datastore{d.child}
@@ -222,6 +230,8 @@ type transformBatch struct {
 	f KeyMapping
 }
 
+var _ ds.Batch = (*transformBatch)(nil)
+
 func (t *transformBatch) Put(ctx context.Context, key ds.Key, val []byte) error {
 	return t.dst.Put(ctx, t.f(key), val)
 }
@@ -254,9 +264,3 @@ func (d *Datastore) CollectGarbage(ctx context.Context) error {
 	}
 	return nil
 }
-
-var _ ds.Datastore = (*Datastore)(nil)
-var _ ds.GCDatastore = (*Datastore)(nil)
-var _ ds.Batching = (*Datastore)(nil)
-var _ ds.PersistentDatastore = (*Datastore)(nil)
-var _ ds.ScrubbedDatastore = (*Datastore)(nil)

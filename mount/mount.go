@@ -69,6 +69,11 @@ type Datastore struct {
 }
 
 var _ ds.Datastore = (*Datastore)(nil)
+var _ ds.Batching = (*Datastore)(nil)
+var _ ds.PersistentDatastore = (*Datastore)(nil)
+var _ ds.CheckedDatastore = (*Datastore)(nil)
+var _ ds.ScrubbedDatastore = (*Datastore)(nil)
+var _ ds.GCDatastore = (*Datastore)(nil)
 
 // lookup looks up the datastore in which the given key lives.
 func (d *Datastore) lookup(key ds.Key) (ds.Datastore, ds.Key, ds.Key) {
@@ -405,6 +410,8 @@ type mountBatch struct {
 
 	d *Datastore
 }
+
+var _ ds.Batch = (*mountBatch)(nil)
 
 // Batch returns a batch that operates over all mounted datastores.
 func (d *Datastore) Batch(ctx context.Context) (ds.Batch, error) {

@@ -22,7 +22,9 @@ type Delayed struct {
 	delay delay.D
 }
 
+var _ ds.Datastore = (*Delayed)(nil)
 var _ ds.Batching = (*Delayed)(nil)
+var _ ds.PersistentDatastore = (*Delayed)(nil)
 var _ io.Closer = (*Delayed)(nil)
 
 // Put implements the ds.Datastore interface.
