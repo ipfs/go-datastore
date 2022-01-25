@@ -26,6 +26,11 @@ func TestLRUStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	var evictedKeys []ds.Key
+	lruStore.SetOnEvicted(func(ctx context.Context, key ds.Key) {
+		evictedKeys = append(evictedKeys, key)
+	})
+
 	key := ds.NewKey("hw")
 	val := []byte("hello world")
 
@@ -60,6 +65,12 @@ func TestLRUStore(t *testing.T) {
 	_, err = lruStore.dstore.Get(ctx, key)
 	if err != ds.ErrNotFound {
 		t.Fatalf("value for %q was not removed from datastore", key)
+	}
+	if len(evictedKeys) != 1 {
+		t.Fatalf("expected 1 evicted item, got %d", len(evictedKeys))
+	}
+	if evictedKeys[0] != key {
+		t.Fatal("wrong key for evicted item")
 	}
 
 	// Check that key-0 is able to be retrieved

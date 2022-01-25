@@ -16,11 +16,12 @@ import (
 
 // LRUStore is a LRU-cache that stores keys in memory and values in a datastore.
 type LRUStore struct {
-	dstore ds.Datastore
-	lru    *lru.Cache
-	lock   sync.RWMutex
-	rmErr  error
-	rmCtx  context.Context
+	dstore    ds.Datastore
+	onEvicted func(context.Context, ds.Key)
+	lru       *lru.Cache
+	lock      sync.RWMutex
+	rmErr     error
+	rmCtx     context.Context
 }
 
 var _ ds.Datastore = (*LRUStore)(nil)
@@ -47,8 +48,12 @@ func New(ctx context.Context, dstore ds.Datastore, capacity int) (*LRUStore, err
 	// Set the function to remove items from the datastore when they are
 	// evicted from lru.
 	cache.OnEvicted = func(key lru.Key, val interface{}) {
+		dskey := key.(ds.Key)
+		if ls.onEvicted != nil {
+			ls.onEvicted(ls.rmCtx, dskey)
+		}
 		// Remove item from datastore that was evicted from LRU.
-		err := dstore.Delete(ls.rmCtx, key.(ds.Key))
+		err := dstore.Delete(ls.rmCtx, dskey)
 		if err != nil {
 			ls.rmErr = err
 		}
@@ -229,6 +234,19 @@ func (ls *LRUStore) Clear(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+// SetOnEvicted provides a function to call when an item is being evicted from
+// the LRUStore.  The onEvicted function is called before the value is removed
+// from the datastore, so if needed the value can still be looked up.  The
+// onEvicted function is called while the LRUStore is exclusively locked,
+// blocking any other cache function.  Calling a LRUStore function from withing
+// the onEvicted function will cause a deadlock.
+func (ls *LRUStore) SetOnEvicted(onEvicted func(context.Context, ds.Key)) {
+	ls.lock.RLock()
+	defer ls.lock.RUnlock()
+
+	ls.onEvicted = onEvicted
 }
 
 // loadKeys loads previously stored keys into LRU memory, without any LRU order.
