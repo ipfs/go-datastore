@@ -97,7 +97,7 @@ type NullDatastore struct {
 var _ Datastore = (*NullDatastore)(nil)
 var _ Batching = (*NullDatastore)(nil)
 
-// NewNullDatastore constructs a null datastoe
+// NewNullDatastore constructs a null datastore
 func NewNullDatastore() *NullDatastore {
 	return &NullDatastore{}
 }
