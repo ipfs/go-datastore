@@ -68,3 +68,32 @@ func TestFilterKeyPrefix(t *testing.T) {
 		"/ab/fg",
 	})
 }
+
+func TestFilterKeySubstring(t *testing.T) {
+	testKeyFilter(t, FilterKeySubstring{"/a"}, sampleKeys, []string{
+		"/ab/c",
+		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
+		"/a",
+		"/abce",
+		"/abcf",
+		"/ab",
+	})
+	testKeyFilter(t, FilterKeySubstring{"/ab"}, sampleKeys, []string{
+		"/ab/c",
+		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
+		"/abce",
+		"/abcf",
+		"/ab",
+	})
+
+	testKeyFilter(t, FilterKeySubstring{"/ab/"}, sampleKeys, []string{
+		"/ab/c",
+		"/ab/cd",
+		"/ab/ef",
+		"/ab/fg",
+	})
+}

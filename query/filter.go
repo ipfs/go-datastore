@@ -100,3 +100,15 @@ func (f FilterKeyPrefix) Filter(e Entry) bool {
 func (f FilterKeyPrefix) String() string {
 	return fmt.Sprintf("PREFIX(%q)", f.Prefix)
 }
+
+type FilterKeySubstring struct {
+	KeySubstring string
+}
+
+func (f FilterKeySubstring) Filter(e Entry) bool {
+	return strings.Contains(e.Key, f.KeySubstring)
+}
+
+func (f FilterKeySubstring) String() string {
+	return fmt.Sprintf("CONTAINS(%q)", f.KeySubstring)
+}
