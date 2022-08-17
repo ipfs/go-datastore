@@ -117,4 +117,6 @@ func (t *nullTxn) Commit(ctx context.Context) error {
 	return nil
 }
 
-func (t *nullTxn) Discard(ctx context.Context) {}
+func (t *nullTxn) Discard(ctx context.Context) error {
+	return nil
+}

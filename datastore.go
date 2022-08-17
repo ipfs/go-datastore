@@ -173,7 +173,7 @@ type Txn interface {
 	// them to the underlying Datastore. Any calls made to Discard after Commit
 	// has been successfully called will have no effect on the transaction and
 	// state of the Datastore, making it safe to defer.
-	Discard(ctx context.Context)
+	Discard(ctx context.Context) error
 }
 
 // TxnDatastore is an interface that should be implemented by datastores that
