@@ -1,7 +1,7 @@
 package datastore_test
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"testing"
 
@@ -16,7 +16,7 @@ func TestMapDatastore(t *testing.T) {
 
 func TestLogDatastore(t *testing.T) {
 	defer log.SetOutput(log.Writer())
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 	ds := datastore.NewLogDatastore(datastore.NewMapDatastore(), "")
 	dstest.SubtestAll(t, ds)
 }

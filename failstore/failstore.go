@@ -110,7 +110,7 @@ func (d *Failstore) DiskUsage(ctx context.Context) (uint64, error) {
 	return ds.DiskUsage(ctx, d.child)
 }
 
-//  Close implements the Datastore interface
+// Close implements the Datastore interface
 func (d *Failstore) Close() error {
 	return d.child.Close()
 }

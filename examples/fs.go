@@ -5,9 +5,9 @@
 // This means key some segments will not work. For example, the
 // following keys will result in unwanted behavior:
 //
-//     - "/foo/./bar"
-//     - "/foo/../bar"
-//     - "/foo\x00bar"
+//   - "/foo/./bar"
+//   - "/foo/../bar"
+//   - "/foo\x00bar"
 //
 // Keys that only differ in case may be confused with each other on
 // case insensitive file systems, for example in OS X.
@@ -20,7 +20,6 @@ package examples
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -65,7 +64,7 @@ func (d *Datastore) Put(ctx context.Context, key ds.Key, value []byte) (err erro
 		return err
 	}
 
-	return ioutil.WriteFile(fn, value, 0666)
+	return os.WriteFile(fn, value, 0666)
 }
 
 // Sync would ensure that any previous Puts under the prefix are written to disk.
@@ -81,7 +80,7 @@ func (d *Datastore) Get(ctx context.Context, key ds.Key) (value []byte, err erro
 		return nil, ds.ErrNotFound
 	}
 
-	return ioutil.ReadFile(fn)
+	return os.ReadFile(fn)
 }
 
 // Has returns whether the datastore has a value for a given key
