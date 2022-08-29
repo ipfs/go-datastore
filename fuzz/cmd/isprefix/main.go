@@ -4,7 +4,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	ds "github.com/ipfs/go-datastore"
@@ -47,9 +47,9 @@ func main() {
 	var dat []byte
 	var err error
 	if *input == "" {
-		dat, err = ioutil.ReadAll(os.Stdin)
+		dat, err = io.ReadAll(os.Stdin)
 	} else {
-		dat, err = ioutil.ReadFile(*input)
+		dat, err = os.ReadFile(*input)
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not read %s: %v\n", *input, err)
