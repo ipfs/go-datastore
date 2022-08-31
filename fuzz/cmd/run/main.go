@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	fuzzer "github.com/ipfs/go-datastore/fuzz"
@@ -22,7 +21,7 @@ func main() {
 	fuzzer.Threads = *threads
 
 	if *input != "" {
-		dat, err := ioutil.ReadFile(*input)
+		dat, err := os.ReadFile(*input)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not read %s: %v\n", *input, err)
 			os.Exit(1)

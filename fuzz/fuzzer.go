@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -134,7 +133,7 @@ func Fuzz(data []byte) int {
 		impls = append(impls, impl)
 	}
 
-	defaultLoc, _ := ioutil.TempDir("", "fuzz-*")
+	defaultLoc, _ := os.MkdirTemp("", "fuzz-*")
 
 	if len(impls) == 0 {
 		fmt.Fprintf(os.Stderr, "No datastores to fuzz.\n")
