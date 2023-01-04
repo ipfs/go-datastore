@@ -227,6 +227,7 @@ func threadDriver(ctx context.Context, runState *RunState, cmnds chan byte) {
 }
 
 func nextState(s *threadState, c byte) error {
+	ctx := context.Background()
 	if s.op == opNone {
 		s.op = op(c) % s.RunState.opMax
 		return nil
@@ -234,25 +235,25 @@ func nextState(s *threadState, c byte) error {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_, _ = s.reader.Get(s.key)
+		_, _ = s.reader.Get(ctx, s.key)
 		reset(s)
 		return nil
 	} else if s.op == opHas {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_, _ = s.reader.Has(s.key)
+		_, _ = s.reader.Has(ctx, s.key)
 		reset(s)
 		return nil
 	} else if s.op == opGetSize {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_, _ = s.reader.GetSize(s.key)
+		_, _ = s.reader.GetSize(ctx, s.key)
 		reset(s)
 		return nil
 	} else if s.op == opQuery {
-		r, _ := s.reader.Query(dsq.Query{})
+		r, _ := s.reader.Query(ctx, dsq.Query{})
 		defer r.Close()
 		reset(s)
 
@@ -269,20 +270,20 @@ func nextState(s *threadState, c byte) error {
 		if !s.valReady {
 			return makeValue(s, c)
 		}
-		_ = s.writer.Put(s.key, s.val)
+		_ = s.writer.Put(ctx, s.key, s.val)
 		reset(s)
 		return nil
 	} else if s.op == opDelete {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_ = s.writer.Delete(s.key)
+		_ = s.writer.Delete(ctx, s.key)
 		reset(s)
 		return nil
 	} else if s.op == opNewTX {
 		if s.txn == nil {
 			if tdb := s.RunState.TxnDB(); tdb != nil {
-				s.txn, _ = tdb.NewTransaction(((c & 1) == 1))
+				s.txn, _ = tdb.NewTransaction(ctx, ((c & 1) == 1))
 				if (c & 1) != 1 { // read+write
 					s.writer = s.txn
 				}
@@ -293,7 +294,7 @@ func nextState(s *threadState, c byte) error {
 		return nil
 	} else if s.op == opCommitTX {
 		if s.txn != nil {
-			s.txn.Discard()
+			s.txn.Discard(ctx)
 			s.txn = nil
 			s.reader = s.RunState.inst
 			s.writer = s.RunState.inst
@@ -302,7 +303,7 @@ func nextState(s *threadState, c byte) error {
 		return nil
 	} else if s.op == opDiscardTX {
 		if s.txn != nil {
-			s.txn.Discard()
+			s.txn.Discard(ctx)
 			s.txn = nil
 			s.reader = s.RunState.inst
 			s.writer = s.RunState.inst
@@ -313,7 +314,7 @@ func nextState(s *threadState, c byte) error {
 		if !s.keyReady {
 			return makeKey(s, c)
 		}
-		_ = s.RunState.inst.Sync(s.key)
+		_ = s.RunState.inst.Sync(ctx, s.key)
 		reset(s)
 		return nil
 	}
