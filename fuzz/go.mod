@@ -10,7 +10,7 @@ require (
 
 require (
 	github.com/alexbrainman/goissue34681 v0.0.0-20191006012335-3fc7a47baff5 // indirect
-	github.com/gogo/protobuf v1.2.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/ipfs/go-log v1.0.3 // indirect
 	github.com/ipfs/go-log/v2 v2.0.3 // indirect
