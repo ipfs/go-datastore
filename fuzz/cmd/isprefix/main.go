@@ -3,6 +3,7 @@ package main
 // Checks if a db instance is equivalent to some prefix of an input script.
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -71,12 +72,13 @@ func main() {
 	defer replayDB.Cancel()
 
 	reader := validatingReader{dat, 0, func(verbose bool) bool {
-		res, _ := replayDB.DB().Query(dsq.Query{})
+		ctx := context.Background()
+		res, _ := replayDB.DB().Query(ctx, dsq.Query{})
 		for e := range res.Next() {
 			if e.Entry.Key == "/" {
 				continue
 			}
-			if h, _ := previousDB.DB().Has(ds.NewKey(e.Entry.Key)); !h {
+			if h, _ := previousDB.DB().Has(ctx, ds.NewKey(e.Entry.Key)); !h {
 				if verbose {
 					fmt.Printf("failed - script run db has %s not in existing.\n", e.Entry.Key)
 				}
@@ -84,12 +86,12 @@ func main() {
 			}
 		}
 		// next; make sure the other way is equal.
-		res, _ = previousDB.DB().Query(dsq.Query{})
+		res, _ = previousDB.DB().Query(ctx, dsq.Query{})
 		for e := range res.Next() {
 			if e.Entry.Key == "/" {
 				continue
 			}
-			if h, _ := replayDB.DB().Has(ds.NewKey(e.Entry.Key)); !h {
+			if h, _ := replayDB.DB().Has(ctx, ds.NewKey(e.Entry.Key)); !h {
 				if verbose {
 					fmt.Printf("failed - existing db has %s not in replay.\n", e.Entry.Key)
 				}
