@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -64,7 +65,9 @@ func main() {
 	fmt.Printf("Checking equality...")
 	db1 := inst1.DB()
 	db2 := inst2.DB()
-	r1, err := db1.Query(dsq.Query{})
+
+	ctx := context.Background()
+	r1, err := db1.Query(ctx, dsq.Query{})
 	if err != nil {
 		panic(err)
 	}
@@ -77,12 +80,12 @@ func main() {
 			continue
 		}
 
-		if exist, _ := db2.Has(ds.NewKey(r.Entry.Key)); !exist {
+		if exist, _ := db2.Has(ctx, ds.NewKey(r.Entry.Key)); !exist {
 			fmt.Fprintf(os.Stderr, "db2 failed to get key %s held by db1\n", r.Entry.Key)
 		}
 	}
 
-	r2, err := db2.Query(dsq.Query{})
+	r2, err := db2.Query(ctx, dsq.Query{})
 	if err != nil {
 		panic(err)
 	}
@@ -95,7 +98,7 @@ func main() {
 			continue
 		}
 
-		if exist, _ := db1.Has(ds.NewKey(r.Entry.Key)); !exist {
+		if exist, _ := db1.Has(ctx, ds.NewKey(r.Entry.Key)); !exist {
 			fmt.Fprintf(os.Stderr, "db1 failed to get key %s held by db2\n", r.Entry.Key)
 		}
 	}
