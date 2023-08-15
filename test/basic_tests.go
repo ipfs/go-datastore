@@ -3,8 +3,8 @@ package dstest
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"reflect"
 	"strings"
 	"testing"
