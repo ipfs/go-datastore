@@ -3,9 +3,9 @@ package dstest
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base32"
 	"errors"
-	"math/rand"
 	"testing"
 
 	dstore "github.com/ipfs/go-datastore"
