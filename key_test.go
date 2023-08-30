@@ -204,3 +204,23 @@ func TestKeyUnmarshalJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestKey_RootNamespace(t *testing.T) {
+	tests := []struct {
+		name string
+		key  string
+		want string
+	}{
+		{name: "empty path", key: "/", want: ""},
+		{name: "single namespace", key: "/Comedy", want: "Comedy"},
+		{name: "long path", key: "/Comedy/MontyPython/Actor:JohnCleese", want: "Comedy"},
+		{name: "root + type", key: "/Comedy:MontyPython", want: "Comedy:MontyPython"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := RawKey(tt.key).RootNamespace(); got != tt.want {
+				t.Errorf("RootNamespace() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

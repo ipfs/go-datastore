@@ -150,6 +150,19 @@ func (k Key) BaseNamespace() string {
 	return n[len(n)-1]
 }
 
+// RootNamespace returns the "root" namespace of this key
+//
+//	NewKey("/Comedy/MontyPython/Actor:JohnCleese").RootNamespace()
+//	"Comedy"
+//	NewKey("/").RootNamespace()
+//	""
+//	NewKey("/Comedy:MontyPython").RootNamespace()
+//	"Comedy:MontyPython"
+func (k Key) RootNamespace() string {
+	n := k.Namespaces()
+	return n[0]
+}
+
 // Type returns the "type" of this key (value of last namespace).
 //
 //	NewKey("/Comedy/MontyPython/Actor:JohnCleese").Type()
