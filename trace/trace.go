@@ -10,6 +10,7 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	otel "go.opentelemetry.io/otel/trace"
 )
 
@@ -36,52 +37,101 @@ var (
 )
 
 // Put implements the ds.Datastore interface.
-func (t *Datastore) Put(ctx context.Context, key ds.Key, value []byte) (err error) {
+func (t *Datastore) Put(ctx context.Context, key ds.Key, value []byte) error {
 	ctx, span := t.tracer.Start(ctx, "Put", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.ds.Put(ctx, key, value)
+
+	err := t.ds.Put(ctx, key, value)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return err
 }
 
 // Sync implements Datastore.Sync
 func (t *Datastore) Sync(ctx context.Context, key ds.Key) error {
 	ctx, span := t.tracer.Start(ctx, "Sync", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.ds.Sync(ctx, key)
+
+	err := t.ds.Sync(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return err
 }
 
 // Get implements the ds.Datastore interface.
 func (t *Datastore) Get(ctx context.Context, key ds.Key) (value []byte, err error) {
 	ctx, span := t.tracer.Start(ctx, "Get", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.ds.Get(ctx, key)
+
+	val, err := t.ds.Get(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return val, err
 }
 
 // Has implements the ds.Datastore interface.
-func (t *Datastore) Has(ctx context.Context, key ds.Key) (exists bool, err error) {
+func (t *Datastore) Has(ctx context.Context, key ds.Key) (bool, error) {
 	ctx, span := t.tracer.Start(ctx, "Has", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.ds.Has(ctx, key)
+
+	exists, err := t.ds.Has(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return exists, err
 }
 
 // GetSize implements the ds.Datastore interface.
-func (t *Datastore) GetSize(ctx context.Context, key ds.Key) (size int, err error) {
+func (t *Datastore) GetSize(ctx context.Context, key ds.Key) (int, error) {
 	ctx, span := t.tracer.Start(ctx, "GetSize", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.ds.GetSize(ctx, key)
+
+	size, err := t.ds.GetSize(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return size, err
 }
 
 // Delete implements the ds.Datastore interface.
-func (t *Datastore) Delete(ctx context.Context, key ds.Key) (err error) {
+func (t *Datastore) Delete(ctx context.Context, key ds.Key) error {
 	ctx, span := t.tracer.Start(ctx, "Delete", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.ds.Delete(ctx, key)
+
+	err := t.ds.Delete(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return err
 }
 
 // Query implements the ds.Datastore interface.
 func (t *Datastore) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 	ctx, span := t.tracer.Start(ctx, "Query", otel.WithAttributes(attribute.String("query", q.String())))
 	defer span.End()
-	return t.ds.Query(ctx, q)
+
+	res, err := t.ds.Query(ctx, q)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return res, err
 }
 
 // Batch implements the ds.Batching interface.
@@ -89,8 +139,13 @@ func (t *Datastore) Batch(ctx context.Context) (ds.Batch, error) {
 	ctx, span := t.tracer.Start(ctx, "Batch")
 	defer span.End()
 
-	if batch, ok := t.ds.(ds.Batching); ok {
-		return batch.Batch(ctx)
+	if dstore, ok := t.ds.(ds.Batching); ok {
+		batch, err := dstore.Batch(ctx)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+		return batch, err
 	}
 
 	return ds.NewBasicBatch(t), nil
@@ -100,7 +155,14 @@ func (t *Datastore) Batch(ctx context.Context) (ds.Batch, error) {
 func (t *Datastore) DiskUsage(ctx context.Context) (uint64, error) {
 	ctx, span := t.tracer.Start(ctx, "DiskUsage")
 	defer span.End()
-	return ds.DiskUsage(ctx, t.ds)
+
+	usage, err := ds.DiskUsage(ctx, t.ds)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return usage, err
 }
 
 // Scrub implements the ds.ScrubbedDatastore interface.
@@ -109,7 +171,12 @@ func (t *Datastore) Scrub(ctx context.Context) error {
 	defer span.End()
 
 	if dstore, ok := t.tracer.(ds.ScrubbedDatastore); ok {
-		return dstore.Scrub(ctx)
+		err := dstore.Scrub(ctx)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+		return err
 	}
 
 	return nil
@@ -121,7 +188,12 @@ func (t *Datastore) CollectGarbage(ctx context.Context) error {
 	defer span.End()
 
 	if dstore, ok := t.tracer.(ds.GCDatastore); ok {
-		return dstore.CollectGarbage(ctx)
+		err := dstore.CollectGarbage(ctx)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+		return err
 	}
 
 	return nil
@@ -133,7 +205,12 @@ func (t *Datastore) Check(ctx context.Context) error {
 	defer span.End()
 
 	if dstore, ok := t.tracer.(ds.CheckedDatastore); ok {
-		return dstore.Check(ctx)
+		err := dstore.Check(ctx)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+		return err
 	}
 
 	return nil
@@ -147,6 +224,8 @@ func (t *Datastore) NewTransaction(ctx context.Context, readOnly bool) (ds.Txn, 
 	if txnDs, ok := t.ds.(ds.TxnDatastore); ok {
 		txn, err := txnDs.NewTransaction(ctx, readOnly)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
 		return &Txn{txn: txn, tracer: t.tracer}, nil
@@ -172,52 +251,101 @@ type Txn struct {
 var _ ds.Txn = (*Txn)(nil)
 
 // Put implements the ds.Txn interface.
-func (t *Txn) Put(ctx context.Context, key ds.Key, value []byte) (err error) {
+func (t *Txn) Put(ctx context.Context, key ds.Key, value []byte) error {
 	ctx, span := t.tracer.Start(ctx, "Put", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.txn.Put(ctx, key, value)
+
+	err := t.txn.Put(ctx, key, value)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return err
 }
 
 // Get implements the ds.Txn interface.
 func (t *Txn) Get(ctx context.Context, key ds.Key) (value []byte, err error) {
 	ctx, span := t.tracer.Start(ctx, "Get", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.txn.Get(ctx, key)
+
+	val, err := t.txn.Get(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return val, err
 }
 
 // Has implements the ds.Txn interface.
-func (t *Txn) Has(ctx context.Context, key ds.Key) (exists bool, err error) {
+func (t *Txn) Has(ctx context.Context, key ds.Key) (bool, error) {
 	ctx, span := t.tracer.Start(ctx, "Has", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.txn.Has(ctx, key)
+
+	exists, err := t.txn.Has(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return exists, err
 }
 
 // GetSize implements the ds.Txn interface.
-func (t *Txn) GetSize(ctx context.Context, key ds.Key) (size int, err error) {
+func (t *Txn) GetSize(ctx context.Context, key ds.Key) (int, error) {
 	ctx, span := t.tracer.Start(ctx, "GetSize", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.txn.GetSize(ctx, key)
+
+	size, err := t.txn.GetSize(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return size, err
 }
 
 // Delete implements the ds.Txn interface.
-func (t *Txn) Delete(ctx context.Context, key ds.Key) (err error) {
+func (t *Txn) Delete(ctx context.Context, key ds.Key) error {
 	ctx, span := t.tracer.Start(ctx, "Delete", otel.WithAttributes(attribute.String("key", key.String())))
 	defer span.End()
-	return t.txn.Delete(ctx, key)
+
+	err := t.txn.Delete(ctx, key)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return err
 }
 
 // Query implements the ds.Txn interface.
 func (t *Txn) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 	ctx, span := t.tracer.Start(ctx, "Query", otel.WithAttributes(attribute.String("query", q.String())))
 	defer span.End()
-	return t.txn.Query(ctx, q)
+
+	res, err := t.txn.Query(ctx, q)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return res, err
 }
 
 // Commit implements the ds.Txn interface.
 func (t *Txn) Commit(ctx context.Context) error {
 	ctx, span := t.tracer.Start(ctx, "Commit")
 	defer span.End()
-	return t.txn.Commit(ctx)
+
+	err := t.txn.Commit(ctx)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return err
 }
 
 // Discard implements the ds.Txn interface.
