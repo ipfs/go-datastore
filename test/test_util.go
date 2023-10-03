@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	dstore "github.com/ipfs/go-datastore"
+	dsq "github.com/ipfs/go-datastore/query"
 )
 
 var ErrTest = errors.New("test error")
@@ -186,4 +187,173 @@ func (d *testDatastore) CollectGarbage(_ context.Context) error {
 		return ErrTest
 	}
 	return nil
+}
+
+var _ dstore.TxnDatastore = (*testTxnDatastore)(nil)
+
+type testTxnDatastore struct {
+	testErrors bool
+
+	*dstore.MapDatastore
+}
+
+func NewTestTxnDatastore(testErrors bool) *testTxnDatastore {
+	return &testTxnDatastore{
+		testErrors:   testErrors,
+		MapDatastore: dstore.NewMapDatastore(),
+	}
+}
+
+func (t *testTxnDatastore) NewTransaction(ctx context.Context, readOnly bool) (dstore.Txn, error) {
+	if t.testErrors {
+		return nil, ErrTest
+	}
+	return newTestTx(t.testErrors, t.MapDatastore), nil
+}
+
+var _ dstore.Txn = (*testTxn)(nil)
+
+type testTxn struct {
+	testTxErrors bool
+
+	dirty     map[dstore.Key][]byte
+	committed *dstore.MapDatastore
+}
+
+func newTestTx(testTxErrors bool, committed *dstore.MapDatastore) *testTxn {
+	return &testTxn{
+		testTxErrors: testTxErrors,
+		dirty:        make(map[dstore.Key][]byte),
+		committed:    committed,
+	}
+}
+
+// It is unclear from the dstore.Txn interface definition whether reads should happen from the dirty or committed or both
+// It says that operations will not be applied until Commit() is called, but this doesn't really make sense for the Read
+// operations as their interface is not designed for returning results asynchronously (except Query).
+// For this test datastore, we simply Read from both dirty and committed entries with dirty values overshadowing committed values.
+
+// NOTE: looking at go-ds-badger2, it looks like Get, Has, and GetSize only read from the dirty (uncommitted badger txn),
+// whereas Query considers both the dirty transaction and the underlying committed datastore.
+
+func (t *testTxn) Get(ctx context.Context, key dstore.Key) ([]byte, error) {
+	if t.testTxErrors {
+		return nil, ErrTest
+	}
+	if val, ok := t.dirty[key]; ok {
+		return val, nil
+	}
+	return t.committed.Get(ctx, key)
+}
+
+func (t *testTxn) Has(ctx context.Context, key dstore.Key) (bool, error) {
+	if t.testTxErrors {
+		return false, ErrTest
+	}
+	if _, ok := t.dirty[key]; ok {
+		return true, nil
+	}
+
+	return t.committed.Has(ctx, key)
+}
+
+func (t *testTxn) GetSize(ctx context.Context, key dstore.Key) (int, error) {
+	if t.testTxErrors {
+		return 0, ErrTest
+	}
+	if val, ok := t.dirty[key]; ok {
+		return len(val), nil
+	}
+
+	return t.committed.GetSize(ctx, key)
+}
+
+func (t *testTxn) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
+	if t.testTxErrors {
+		return nil, ErrTest
+	}
+
+	// not entirely sure if Query is *supposed* to access both uncommitted and committed data, but if so I think this
+	// is the simplest way of handling it and the overhead should be fine for testing purposes
+	transientStore := dstore.NewMapDatastore()
+	transientBatch, err := transientStore.Batch(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// move committed results into the transientStore
+	committedResults, err := t.committed.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		committedResults.Close()
+	}()
+
+	for {
+		res, ok := committedResults.NextSync()
+		if !ok {
+			break
+		}
+		if res.Error != nil {
+			return nil, res.Error
+		}
+		key := dstore.RawKey(res.Key)
+		if err := transientBatch.Put(ctx, key, res.Value); err != nil {
+			return nil, err
+		}
+	}
+	// overwrite transientStore with the dirty results so we can query the union of them
+	for k, v := range t.dirty {
+		if err := transientBatch.Put(ctx, k, v); err != nil {
+			return nil, err
+		}
+	}
+
+	// commit the transientStore batch
+	if err := transientBatch.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	// apply the query to the transient store, return its results
+	return transientStore.Query(ctx, q)
+}
+
+func (t *testTxn) Put(ctx context.Context, key dstore.Key, value []byte) error {
+	if t.testTxErrors {
+		return ErrTest
+	}
+	t.dirty[key] = value
+	return nil
+}
+
+func (t *testTxn) Delete(ctx context.Context, key dstore.Key) error {
+	if t.testTxErrors {
+		return ErrTest
+	}
+	if _, ok := t.dirty[key]; ok {
+		delete(t.dirty, key)
+	}
+	return t.committed.Delete(ctx, key)
+}
+
+func (t *testTxn) Commit(ctx context.Context) error {
+	if t.testTxErrors {
+		return ErrTest
+	}
+
+	batch, err := t.committed.Batch(ctx)
+	if err != nil {
+		return err
+	}
+	for k, v := range t.dirty {
+		if err := batch.Put(ctx, k, v); err != nil {
+			return err
+		}
+	}
+	return batch.Commit(ctx)
+}
+
+func (t *testTxn) Discard(ctx context.Context) {
+	t.dirty = make(map[dstore.Key][]byte)
 }
