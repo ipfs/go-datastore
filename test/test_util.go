@@ -197,34 +197,52 @@ type testTxnDatastore struct {
 	*dstore.MapDatastore
 }
 
-func NewTestTxnDatastore(testErrors bool) *testTxnDatastore {
+func NewTestTxnDatastore(ms *dstore.MapDatastore, testErrors bool) *testTxnDatastore {
+	if ms == nil {
+		ms = dstore.NewMapDatastore()
+	}
 	return &testTxnDatastore{
 		testErrors:   testErrors,
-		MapDatastore: dstore.NewMapDatastore(),
+		MapDatastore: ms,
 	}
 }
 
-func (t *testTxnDatastore) NewTransaction(ctx context.Context, readOnly bool) (dstore.Txn, error) {
+func (t *testTxnDatastore) Check(_ context.Context) error {
 	if t.testErrors {
-		return nil, ErrTest
+		return ErrTest
 	}
+	return nil
+}
+
+func (t *testTxnDatastore) Scrub(_ context.Context) error {
+	if t.testErrors {
+		return ErrTest
+	}
+	return nil
+}
+
+func (t *testTxnDatastore) CollectGarbage(_ context.Context) error {
+	if t.testErrors {
+		return ErrTest
+	}
+	return nil
+}
+
+func (t *testTxnDatastore) NewTransaction(ctx context.Context, readOnly bool) (dstore.Txn, error) {
 	return newTestTx(t.testErrors, t.MapDatastore), nil
 }
 
 var _ dstore.Txn = (*testTxn)(nil)
 
 type testTxn struct {
-	testTxErrors bool
-
 	dirty     map[dstore.Key][]byte
 	committed *dstore.MapDatastore
 }
 
 func newTestTx(testTxErrors bool, committed *dstore.MapDatastore) *testTxn {
 	return &testTxn{
-		testTxErrors: testTxErrors,
-		dirty:        make(map[dstore.Key][]byte),
-		committed:    committed,
+		dirty:     make(map[dstore.Key][]byte),
+		committed: committed,
 	}
 }
 
@@ -237,9 +255,6 @@ func newTestTx(testTxErrors bool, committed *dstore.MapDatastore) *testTxn {
 // whereas Query considers both the dirty transaction and the underlying committed datastore.
 
 func (t *testTxn) Get(ctx context.Context, key dstore.Key) ([]byte, error) {
-	if t.testTxErrors {
-		return nil, ErrTest
-	}
 	if val, ok := t.dirty[key]; ok {
 		return val, nil
 	}
@@ -247,9 +262,6 @@ func (t *testTxn) Get(ctx context.Context, key dstore.Key) ([]byte, error) {
 }
 
 func (t *testTxn) Has(ctx context.Context, key dstore.Key) (bool, error) {
-	if t.testTxErrors {
-		return false, ErrTest
-	}
 	if _, ok := t.dirty[key]; ok {
 		return true, nil
 	}
@@ -258,9 +270,6 @@ func (t *testTxn) Has(ctx context.Context, key dstore.Key) (bool, error) {
 }
 
 func (t *testTxn) GetSize(ctx context.Context, key dstore.Key) (int, error) {
-	if t.testTxErrors {
-		return 0, ErrTest
-	}
 	if val, ok := t.dirty[key]; ok {
 		return len(val), nil
 	}
@@ -269,10 +278,6 @@ func (t *testTxn) GetSize(ctx context.Context, key dstore.Key) (int, error) {
 }
 
 func (t *testTxn) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
-	if t.testTxErrors {
-		return nil, ErrTest
-	}
-
 	// not entirely sure if Query is *supposed* to access both uncommitted and committed data, but if so I think this
 	// is the simplest way of handling it and the overhead should be fine for testing purposes
 	transientStore := dstore.NewMapDatastore()
@@ -320,17 +325,11 @@ func (t *testTxn) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 }
 
 func (t *testTxn) Put(ctx context.Context, key dstore.Key, value []byte) error {
-	if t.testTxErrors {
-		return ErrTest
-	}
 	t.dirty[key] = value
 	return nil
 }
 
 func (t *testTxn) Delete(ctx context.Context, key dstore.Key) error {
-	if t.testTxErrors {
-		return ErrTest
-	}
 	if _, ok := t.dirty[key]; ok {
 		delete(t.dirty, key)
 	}
@@ -338,10 +337,6 @@ func (t *testTxn) Delete(ctx context.Context, key dstore.Key) error {
 }
 
 func (t *testTxn) Commit(ctx context.Context) error {
-	if t.testTxErrors {
-		return ErrTest
-	}
-
 	batch, err := t.committed.Batch(ctx)
 	if err != nil {
 		return err
