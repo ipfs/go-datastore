@@ -330,9 +330,7 @@ func (t *testTxn) Put(ctx context.Context, key dstore.Key, value []byte) error {
 }
 
 func (t *testTxn) Delete(ctx context.Context, key dstore.Key) error {
-	if _, ok := t.dirty[key]; ok {
-		delete(t.dirty, key)
-	}
+	delete(t.dirty, key)
 	return t.committed.Delete(ctx, key)
 }
 
