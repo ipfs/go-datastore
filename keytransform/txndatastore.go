@@ -19,12 +19,12 @@ func WrapTxnDatastore(child ds.TxnDatastore, t KeyTransform) *TxnDatastore {
 		panic("child (ds.TxnDatastore) is nil")
 	}
 
-	return &TxnDatastore{ds: Wrap(child, t), child: child, KeyTransform: t}
+	return &TxnDatastore{Datastore: Wrap(child, t), child: child, KeyTransform: t}
 }
 
 // TxnDatastore keeps a KeyTransform function
 type TxnDatastore struct {
-	ds    *Datastore
+	*Datastore
 	child ds.TxnDatastore
 
 	KeyTransform
@@ -39,73 +39,7 @@ var _ ds.ScrubbedDatastore = (*TxnDatastore)(nil)
 var _ ds.GCDatastore = (*TxnDatastore)(nil)
 var _ ds.TxnDatastore = (*TxnDatastore)(nil)
 
-// Children implements ds.Shim
-func (d *TxnDatastore) Children() []ds.Datastore {
-	return []ds.Datastore{d.child}
-}
-
-// Put stores the given value, transforming the key first.
-func (d *TxnDatastore) Put(ctx context.Context, key ds.Key, value []byte) (err error) {
-	return d.ds.Put(ctx, d.ConvertKey(key), value)
-}
-
-// Sync implements Datastore.Sync
-func (d *TxnDatastore) Sync(ctx context.Context, prefix ds.Key) error {
-	return d.ds.Sync(ctx, d.ConvertKey(prefix))
-}
-
-// Get returns the value for given key, transforming the key first.
-func (d *TxnDatastore) Get(ctx context.Context, key ds.Key) (value []byte, err error) {
-	return d.ds.Get(ctx, d.ConvertKey(key))
-}
-
-// Has returns whether the datastore has a value for a given key, transforming
-// the key first.
-func (d *TxnDatastore) Has(ctx context.Context, key ds.Key) (exists bool, err error) {
-	return d.ds.Has(ctx, d.ConvertKey(key))
-}
-
-// GetSize returns the size of the value named by the given key, transforming
-// the key first.
-func (d *TxnDatastore) GetSize(ctx context.Context, key ds.Key) (size int, err error) {
-	return d.ds.GetSize(ctx, d.ConvertKey(key))
-}
-
-// Delete removes the value for given key
-func (d *TxnDatastore) Delete(ctx context.Context, key ds.Key) (err error) {
-	return d.ds.Delete(ctx, d.ConvertKey(key))
-}
-
-// Query implements Query, inverting keys on the way back out.
-func (d *TxnDatastore) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
-	return d.ds.Query(ctx, q)
-}
-
-func (d *TxnDatastore) Close() error {
-	return d.ds.Close()
-}
-
-// DiskUsage implements the PersistentTxnDatastore interface.
-func (d *TxnDatastore) DiskUsage(ctx context.Context) (uint64, error) {
-	return d.ds.DiskUsage(ctx)
-}
-
-func (d *TxnDatastore) Batch(ctx context.Context) (ds.Batch, error) {
-	return d.ds.Batch(ctx)
-}
-
-func (d *TxnDatastore) Check(ctx context.Context) error {
-	return d.ds.Check(ctx)
-}
-
-func (d *TxnDatastore) Scrub(ctx context.Context) error {
-	return d.ds.Scrub(ctx)
-}
-
-func (d *TxnDatastore) CollectGarbage(ctx context.Context) error {
-	return d.ds.CollectGarbage(ctx)
-}
-
+// NewTransaction satisfies ds.TxnDatastore
 func (d *TxnDatastore) NewTransaction(ctx context.Context, readOnly bool) (ds.Txn, error) {
 	childTxn, err := d.child.NewTransaction(ctx, readOnly)
 	if err != nil {
