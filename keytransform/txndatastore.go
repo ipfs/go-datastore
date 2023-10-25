@@ -45,11 +45,11 @@ func (d *TxnDatastore) NewTransaction(ctx context.Context, readOnly bool) (ds.Tx
 	if err != nil {
 		return nil, err
 	}
-	return &txnWrapper{child: childTxn, KeyTransform: d.KeyTransform}, nil
+	return &txnWrapper{Txn: childTxn, KeyTransform: d.KeyTransform}, nil
 }
 
 type txnWrapper struct {
-	child ds.Txn
+	ds.Txn
 
 	KeyTransform
 }
@@ -57,21 +57,21 @@ type txnWrapper struct {
 var _ ds.Txn = (*txnWrapper)(nil)
 
 func (t *txnWrapper) Get(ctx context.Context, key ds.Key) (value []byte, err error) {
-	return t.child.Get(ctx, t.ConvertKey(key))
+	return t.Txn.Get(ctx, t.ConvertKey(key))
 }
 
 func (t *txnWrapper) Has(ctx context.Context, key ds.Key) (exists bool, err error) {
-	return t.child.Has(ctx, t.ConvertKey(key))
+	return t.Txn.Has(ctx, t.ConvertKey(key))
 }
 
 func (t *txnWrapper) GetSize(ctx context.Context, key ds.Key) (size int, err error) {
-	return t.child.GetSize(ctx, t.ConvertKey(key))
+	return t.Txn.GetSize(ctx, t.ConvertKey(key))
 }
 
 func (t *txnWrapper) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 	nq, cq := t.prepareQuery(q)
 
-	cqr, err := t.child.Query(ctx, cq)
+	cqr, err := t.Txn.Query(ctx, cq)
 	if err != nil {
 		return nil, err
 	}
@@ -193,17 +193,9 @@ orders:
 }
 
 func (t txnWrapper) Put(ctx context.Context, key ds.Key, value []byte) error {
-	return t.child.Put(ctx, t.ConvertKey(key), value)
+	return t.Txn.Put(ctx, t.ConvertKey(key), value)
 }
 
 func (t txnWrapper) Delete(ctx context.Context, key ds.Key) error {
-	return t.child.Delete(ctx, t.ConvertKey(key))
-}
-
-func (t txnWrapper) Commit(ctx context.Context) error {
-	return t.child.Commit(ctx)
-}
-
-func (t txnWrapper) Discard(ctx context.Context) {
-	t.child.Discard(ctx)
+	return t.Txn.Delete(ctx, t.ConvertKey(key))
 }
