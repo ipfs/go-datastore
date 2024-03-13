@@ -2,7 +2,6 @@ module github.com/ipfs/go-datastore/fuzz
 
 go 1.21
 
-
 require (
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ds-flatfs v0.5.1
