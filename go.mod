@@ -21,4 +21,4 @@ require (
 	go.uber.org/atomic v1.6.0 // indirect
 )
 
-go 1.21
+go 1.22
