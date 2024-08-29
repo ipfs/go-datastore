@@ -24,3 +24,11 @@ func Wrap(child ds.Datastore, prefix ds.Key) *ktds.Datastore {
 
 	return ktds.Wrap(child, PrefixTransform(prefix))
 }
+
+func WrapTxnDatastore(child ds.TxnDatastore, prefix ds.Key) *ktds.TxnDatastore {
+	if child == nil {
+		panic("child (ds.TxnDatastore) is nil")
+	}
+
+	return ktds.WrapTxnDatastore(child, PrefixTransform(prefix))
+}
