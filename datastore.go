@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"iter"
 
 	query "github.com/ipfs/go-datastore/query"
 )
@@ -92,6 +93,46 @@ type Read interface {
 	//   for entry := range entries { ... }
 	//
 	Query(ctx context.Context, q query.Query) (query.Results, error)
+}
+
+// QueryIter returns a go iterator that allows ranging over query results.
+// The range yields two values, a result Entry and an error. If an error is
+// returned then iteration stops.
+//
+// Example:
+//
+//	qry := query.Query{
+//		Prefix: keyPrefix,
+//	}
+//	var foundVal []byte
+//	for ent, err := range QueryIter(dstore, qry) {
+//		if err != nil {
+//			return err
+//		}
+//		if ent.Key == lookingFor {
+//			foundVal = ent.Val
+//			break
+//		}
+//	}
+func QueryIter(ctx context.Context, ds Read, q query.Query) iter.Seq2[query.Entry, error] {
+	return func(yield func(query.Entry, error) bool) {
+		results, err := ds.Query(ctx, q)
+		if err != nil {
+			yield(query.Entry{}, err)
+			return
+		}
+		defer results.Close()
+
+		for result := range results.Next() {
+			if result.Error != nil {
+				yield(query.Entry{}, result.Error)
+				return
+			}
+			if !yield(result.Entry, nil) {
+				return
+			}
+		}
+	}
 }
 
 // Batching datastores support deferred, grouped updates to the database.
