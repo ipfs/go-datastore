@@ -51,6 +51,7 @@ Notes:
 */
 type Query struct {
 	Prefix            string   // namespaces the query to results whose keys have Prefix
+	SeekPrefix        string   // if set, an alternate to Prefix that initially positions the query (n/a for some impls)
 	Filters           []Filter // filter results. apply sequentially
 	Orders            []Order  // order results. apply hierarchically
 	Limit             int      // maximum number of results
