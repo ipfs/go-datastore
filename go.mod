@@ -20,4 +20,4 @@ require (
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 )
 
-go 1.22
+go 1.23
