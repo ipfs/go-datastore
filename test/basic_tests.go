@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	detectrace "github.com/ipfs/go-detect-race"
-
 	dstore "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 )
@@ -19,14 +17,6 @@ import (
 // tests are usually run with. Best to set to round numbers like
 // 20, 30, 40... and at least to 20.
 var ElemCount = 100
-
-func init() {
-	// Reduce the default element count when the race detector is enabled so these tests don't
-	// take forever.
-	if detectrace.WithRace() {
-		ElemCount = 20
-	}
-}
 
 func TestElemCount(t *testing.T) {
 	if ElemCount < 20 {
