@@ -3,7 +3,7 @@ module github.com/ipfs/go-datastore/fuzz
 go 1.23
 
 require (
-	github.com/ipfs/go-datastore v0.6.1-0.20250219034406-ef1186950969
+	github.com/ipfs/go-datastore v0.6.1-0.20250219160736-8c287c499933
 	github.com/ipfs/go-ds-flatfs v0.5.1
 	github.com/spf13/pflag v1.0.3
 )
@@ -22,5 +22,3 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 )
-
-replace github.com/ipfs/go-datastore => ../
