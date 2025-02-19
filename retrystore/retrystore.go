@@ -4,10 +4,10 @@ package retrystore
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	ds "github.com/ipfs/go-datastore"
-	xerrors "golang.org/x/xerrors"
 )
 
 // Datastore wraps a Batching datastore with a
@@ -28,8 +28,6 @@ var _ ds.Datastore = (*Datastore)(nil)
 var _ ds.Batching = (*Datastore)(nil)
 var _ ds.PersistentDatastore = (*Datastore)(nil)
 
-var errFmtString = "ran out of retries trying to get past temporary error: %w"
-
 func (d *Datastore) runOp(op func() error) error {
 	err := op()
 	if err == nil || !d.TempErrFunc(err) {
@@ -45,7 +43,7 @@ func (d *Datastore) runOp(op func() error) error {
 		}
 	}
 
-	return xerrors.Errorf(errFmtString, err)
+	return fmt.Errorf("ran out of retries trying to get past temporary error: %w", err)
 }
 
 // DiskUsage implements the PersistentDatastore interface.
