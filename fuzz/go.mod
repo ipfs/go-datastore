@@ -22,3 +22,5 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 )
+
+replace github.com/ipfs/go-datastore => ../
