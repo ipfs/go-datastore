@@ -1,10 +1,9 @@
 package query
 
 import (
+	"context"
 	"fmt"
 	"time"
-
-	goprocess "github.com/jbenet/goprocess"
 )
 
 /*
@@ -149,14 +148,16 @@ type Results interface {
 	Next() <-chan Result      // returns a channel to wait for the next result
 	NextSync() (Result, bool) // blocks and waits to return the next result, second parameter returns false when results are exhausted
 	Rest() ([]Entry, error)   // waits till processing finishes, returns all entries at once.
-	Close() error             // client may call Close to signal early exit
+	Close()                   // client may call Close to signal early exit
 }
 
 // results implements Results
 type results struct {
 	query Query
-	proc  goprocess.Process
 	res   <-chan Result
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func (r *results) Next() <-chan Result {
@@ -176,12 +177,12 @@ func (r *results) Rest() ([]Entry, error) {
 		}
 		es = append(es, e.Entry)
 	}
-	<-r.proc.Closed() // wait till the processing finishes.
+	<-r.ctx.Done() // wait till the processing finishes.
 	return es, nil
 }
 
-func (r *results) Close() error {
-	return r.proc.Close()
+func (r *results) Close() {
+	r.cancel()
 }
 
 func (r *results) Query() Query {
@@ -199,17 +200,21 @@ func (r *results) Query() Query {
 //   - datastores must respect <-Process.Closing(), which intermediates
 //     an early close signal from the client.
 type ResultBuilder struct {
-	Query   Query
-	process goprocess.Process
-	Output  chan Result
+	Query  Query
+	Output chan Result
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // Results returns a Results to to this builder.
 func (rb *ResultBuilder) Results() Results {
 	return &results{
 		query: rb.Query,
-		proc:  rb.process,
 		res:   rb.Output,
+
+		ctx:    rb.ctx,
+		cancel: rb.cancel,
 	}
 }
 
@@ -225,9 +230,9 @@ func NewResultBuilder(q Query) *ResultBuilder {
 		Query:  q,
 		Output: make(chan Result, bufSize),
 	}
-	b.process = goprocess.WithTeardown(func() error {
+	b.ctx, b.cancel = context.WithCancel(context.Background())
+	context.AfterFunc(b.ctx, func() {
 		close(b.Output)
-		return nil
 	})
 	return b
 }
@@ -238,10 +243,11 @@ func NewResultBuilder(q Query) *ResultBuilder {
 // DEPRECATED: This iterator is impossible to cancel correctly. Canceling it
 // will leave anything trying to write to the result channel hanging.
 func ResultsWithChan(q Query, res <-chan Result) Results {
-	proc := func(worker goprocess.Process, out chan<- Result) {
+	proc := func(ctx context.Context, cancel context.CancelFunc, out chan<- Result) {
+		defer cancel()
 		for {
 			select {
-			case <-worker.Closing(): // client told us to close early
+			case <-ctx.Done(): // client told us to close early
 				return
 			case e, more := <-res:
 				if !more {
@@ -250,7 +256,7 @@ func ResultsWithChan(q Query, res <-chan Result) Results {
 
 				select {
 				case out <- e:
-				case <-worker.Closing(): // client told us to close early
+				case <-ctx.Done(): // client told us to close early
 					return
 				}
 			}
@@ -260,11 +266,8 @@ func ResultsWithChan(q Query, res <-chan Result) Results {
 	b := NewResultBuilder(q)
 
 	// go consume all the entries and add them to the results.
-	b.process.Go(func(worker goprocess.Process) {
-		proc(worker, b.Output)
-	})
+	go proc(b.ctx, b.cancel, b.Output)
 
-	go b.process.CloseAfterChildren() //nolint
 	return b.Results()
 }
 
@@ -287,12 +290,12 @@ func ResultsReplaceQuery(r Results, q Query) Results {
 	switch r := r.(type) {
 	case *results:
 		// note: not using field names to make sure all fields are copied
-		return &results{q, r.proc, r.res}
+		return &results{q, r.res, r.ctx, r.cancel}
 	case *resultsIter:
 		// note: not using field names to make sure all fields are copied
 		lr := r.legacyResults
 		if lr != nil {
-			lr = &results{q, lr.proc, lr.res}
+			lr = &results{q, lr.res, lr.ctx, lr.cancel}
 		}
 		return &resultsIter{q, r.next, r.close, lr}
 	default:
@@ -316,19 +319,17 @@ func ResultsFromIterator(q Query, iter Iterator) Results {
 	}
 }
 
-func noopClose() error {
-	return nil
-}
+func noopClose() {}
 
 type Iterator struct {
 	Next  func() (Result, bool)
-	Close func() error // note: might be called more than once
+	Close func() // note: might be called more than once
 }
 
 type resultsIter struct {
 	query         Query
 	next          func() (Result, bool)
-	close         func() error
+	close         func()
 	legacyResults *results
 }
 
@@ -340,13 +341,12 @@ func (r *resultsIter) Next() <-chan Result {
 func (r *resultsIter) NextSync() (Result, bool) {
 	if r.legacyResults != nil {
 		return r.legacyResults.NextSync()
-	} else {
-		res, ok := r.next()
-		if !ok {
-			r.close()
-		}
-		return res, ok
 	}
+	res, ok := r.next()
+	if !ok {
+		r.close()
+	}
+	return res, ok
 }
 
 func (r *resultsIter) Rest() ([]Entry, error) {
@@ -364,11 +364,11 @@ func (r *resultsIter) Rest() ([]Entry, error) {
 	return es, nil
 }
 
-func (r *resultsIter) Close() error {
+func (r *resultsIter) Close() {
 	if r.legacyResults != nil {
-		return r.legacyResults.Close()
+		r.legacyResults.Close()
 	} else {
-		return r.close()
+		r.close()
 	}
 }
 
@@ -384,22 +384,21 @@ func (r *resultsIter) useLegacyResults() {
 	b := NewResultBuilder(r.query)
 
 	// go consume all the entries and add them to the results.
-	b.process.Go(func(worker goprocess.Process) {
+	go func(ctx context.Context, cancel context.CancelFunc, out chan<- Result) {
+		defer cancel()
 		defer r.close()
 		for {
 			e, ok := r.next()
 			if !ok {
-				break
+				return
 			}
 			select {
-			case b.Output <- e:
-			case <-worker.Closing(): // client told us to close early
+			case out <- e:
+			case <-ctx.Done(): // client told us to close early
 				return
 			}
 		}
-	})
-
-	go b.process.CloseAfterChildren() //nolint
+	}(b.ctx, b.cancel, b.Output)
 
 	r.legacyResults = b.Results().(*results)
 }

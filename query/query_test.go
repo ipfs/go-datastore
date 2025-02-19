@@ -200,7 +200,7 @@ func TestResultsFromIteratorNoClose(t *testing.T) {
 	testResultsFromIterator(t, getKeysViaChan, nil)
 }
 
-func testResultsFromIterator(t *testing.T, getKeys func(rs Results) []string, close func() error) {
+func testResultsFromIterator(t *testing.T, getKeys func(rs Results) []string, close func()) {
 	i := 0
 	results := ResultsFromIterator(Query{}, Iterator{
 		Next: func() (Result, bool) {
@@ -221,9 +221,8 @@ func testResultsFromIterator(t *testing.T, getKeys func(rs Results) []string, cl
 
 func testResultsFromIteratorWClose(t *testing.T, getKeys func(rs Results) []string) {
 	closeCalled := 0
-	testResultsFromIterator(t, getKeys, func() error {
+	testResultsFromIterator(t, getKeys, func() {
 		closeCalled++
-		return nil
 	})
 	if closeCalled != 1 {
 		t.Errorf("close called %d times, expect it to be called just once", closeCalled)
