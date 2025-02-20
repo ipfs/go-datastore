@@ -158,8 +158,8 @@ type results struct {
 	query Query
 	res   <-chan Result
 
-	ctx    context.Context
 	cancel context.CancelFunc
+	closed chan struct{}
 }
 
 func (r *results) Next() <-chan Result {
@@ -179,7 +179,7 @@ func (r *results) Rest() ([]Entry, error) {
 		}
 		es = append(es, e.Entry)
 	}
-	<-r.ctx.Done() // wait till the processing finishes.
+	<-r.Done() // wait till the processing finishes.
 	return es, nil
 }
 
@@ -192,7 +192,7 @@ func (r *results) Query() Query {
 }
 
 func (r *results) Done() <-chan struct{} {
-	return r.ctx.Done()
+	return r.closed
 }
 
 // ResultBuilder is what implementors use to construct results
@@ -211,6 +211,7 @@ type ResultBuilder struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+	closed chan struct{}
 	wg     sync.WaitGroup
 }
 
@@ -220,8 +221,8 @@ func (rb *ResultBuilder) Results() Results {
 		query: rb.Query,
 		res:   rb.Output,
 
-		ctx:    rb.ctx,
 		cancel: rb.cancel,
+		closed: rb.closed,
 	}
 }
 
@@ -236,11 +237,14 @@ func NewResultBuilder(q Query) *ResultBuilder {
 	b := &ResultBuilder{
 		Query:  q,
 		Output: make(chan Result, bufSize),
+		closed: make(chan struct{}),
 	}
+
 	b.ctx, b.cancel = context.WithCancel(context.Background())
 	context.AfterFunc(b.ctx, func() {
 		b.wg.Wait()
 		close(b.Output)
+		close(b.closed)
 	})
 	return b
 }
@@ -307,12 +311,12 @@ func ResultsReplaceQuery(r Results, q Query) Results {
 	switch r := r.(type) {
 	case *results:
 		// note: not using field names to make sure all fields are copied
-		return &results{q, r.res, r.ctx, r.cancel}
+		return &results{q, r.res, r.cancel, r.closed}
 	case *resultsIter:
 		// note: not using field names to make sure all fields are copied
 		lr := r.legacyResults
 		if lr != nil {
-			lr = &results{q, lr.res, lr.ctx, lr.cancel}
+			lr = &results{q, lr.res, lr.cancel, lr.closed}
 		}
 		return &resultsIter{q, r.next, r.close, lr}
 	default:
