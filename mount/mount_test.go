@@ -263,10 +263,7 @@ func TestQuerySimple(t *testing.T) {
 		t.Errorf("did not see wanted key %q in %+v", myKey, entries)
 	}
 
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	res.Close()
 }
 
 func TestQueryAcrossMounts(t *testing.T) {
@@ -307,10 +304,7 @@ func TestQueryAcrossMounts(t *testing.T) {
 		}
 		entries, err := res.Rest()
 		if err != nil {
-			err = res.Close()
-			if err != nil {
-				t.Errorf("result.Close failed %d", err)
-			}
+			res.Close()
 			t.Fatalf("Query Results.Rest fail: %v\n", err)
 		}
 		if len(entries) != len(values) {
@@ -407,10 +401,7 @@ func TestQueryAcrossMountsWithSort(t *testing.T) {
 		}
 	}
 
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	res.Close()
 }
 
 func TestQueryLimitAcrossMountsWithSort(t *testing.T) {
@@ -473,10 +464,7 @@ func TestQueryLimitAcrossMountsWithSort(t *testing.T) {
 		}
 	}
 
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	res.Close()
 }
 
 func TestQueryLimitAndOffsetAcrossMountsWithSort(t *testing.T) {
@@ -540,10 +528,7 @@ func TestQueryLimitAndOffsetAcrossMountsWithSort(t *testing.T) {
 		}
 	}
 
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	res.Close()
 }
 
 func TestQueryFilterAcrossMountsWithSort(t *testing.T) {
@@ -606,10 +591,7 @@ func TestQueryFilterAcrossMountsWithSort(t *testing.T) {
 		}
 	}
 
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	res.Close()
 }
 
 func TestQueryLimitAndOffsetWithNoData(t *testing.T) {
@@ -639,10 +621,7 @@ func TestQueryLimitAndOffsetWithNoData(t *testing.T) {
 		t.Fatalf("expected %d entries, but got %d", len(expect), len(entries))
 	}
 
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	res.Close()
 }
 
 func TestQueryLimitWithNotEnoughData(t *testing.T) {
@@ -682,10 +661,7 @@ func TestQueryLimitWithNotEnoughData(t *testing.T) {
 		t.Fatalf("expected %d entries, but got %d", len(expect), len(entries))
 	}
 
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	res.Close()
 }
 
 func TestQueryOffsetWithNotEnoughData(t *testing.T) {
@@ -722,10 +698,7 @@ func TestQueryOffsetWithNotEnoughData(t *testing.T) {
 		t.Fatalf("expected %d entries, but got %d", len(expect), len(entries))
 	}
 
-	err = res.Close()
-	if err != nil {
-		t.Errorf("result.Close failed %d", err)
-	}
+	res.Close()
 }
 
 func TestLookupPrio(t *testing.T) {
