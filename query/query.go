@@ -185,6 +185,7 @@ func (r *results) Rest() ([]Entry, error) {
 
 func (r *results) Close() {
 	r.cancel()
+	<-r.closed
 }
 
 func (r *results) Query() Query {
