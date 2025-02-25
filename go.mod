@@ -3,7 +3,6 @@ module github.com/ipfs/go-datastore
 require (
 	github.com/google/uuid v1.6.0
 	github.com/ipfs/go-ipfs-delay v0.0.1
-	github.com/jbenet/goprocess v0.1.4
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/trace v1.16.0
 	go.uber.org/multierr v1.11.0

@@ -119,8 +119,7 @@ func (ks *DSSuite) TestQuery(c *C) {
 		c.Check(string(ent.Value), Equals, string(expect[i].Value))
 	}
 
-	err = qres.Close()
-	c.Check(err, Equals, nil)
+	qres.Close()
 
 	qres, err = nsds.Query(ctx, dsq.Query{Prefix: "bar"})
 	c.Check(err, Equals, nil)
