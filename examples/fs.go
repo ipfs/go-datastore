@@ -134,7 +134,30 @@ func (d *Datastore) Query(ctx context.Context, q query.Query) (query.Results, er
 		filepath.Walk(d.path, walkFn)
 		close(results)
 	}()
-	r := query.ResultsWithChan(q, results)
+
+	r := query.ResultsWithContext(q, func(ctx context.Context, out chan<- query.Result) {
+	loop:
+		for {
+			select {
+			case <-ctx.Done(): // client told us to close early
+				break loop
+			case e, more := <-results:
+				if !more {
+					return
+				}
+
+				select {
+				case out <- e:
+				case <-ctx.Done(): // client told us to close early
+					break loop
+				}
+			}
+		}
+		// Drain results on cancel so writer is unblocked.
+		for range results {
+		}
+	})
+
 	r = query.NaiveQueryApply(q, r)
 	return r, nil
 }
