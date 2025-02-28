@@ -1,5 +1,7 @@
 module github.com/ipfs/go-datastore
 
+go 1.23
+
 require (
 	github.com/google/uuid v1.6.0
 	github.com/ipfs/go-ipfs-delay v0.0.1
@@ -16,5 +18,3 @@ require (
 	github.com/kr/text v0.1.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 )
-
-go 1.23
