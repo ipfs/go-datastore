@@ -18,8 +18,8 @@ func NaiveFilter(qr Results, filter Filter) Results {
 				}
 			}
 		},
-		Close: func() {
-			qr.Close()
+		Close: func() error {
+			return qr.Close()
 		},
 	})
 }
@@ -43,12 +43,12 @@ func NaiveLimit(qr Results, limit int) Results {
 			limit--
 			return qr.NextSync()
 		},
-		Close: func() {
+		Close: func() error {
 			if closed {
-				return
+				return nil
 			}
 			closed = true
-			qr.Close()
+			return qr.Close()
 		},
 	})
 }
@@ -65,8 +65,8 @@ func NaiveOffset(qr Results, offset int) Results {
 			}
 			return qr.NextSync()
 		},
-		Close: func() {
-			qr.Close()
+		Close: func() error {
+			return qr.Close()
 		},
 	})
 }

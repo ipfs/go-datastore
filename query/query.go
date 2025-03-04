@@ -153,7 +153,7 @@ type Results interface {
 	Next() <-chan Result      // returns a channel to wait for the next result
 	NextSync() (Result, bool) // blocks and waits to return the next result, second parameter returns false when results are exhausted
 	Rest() ([]Entry, error)   // waits till processing finishes, returns all entries at once.
-	Close()                   // client may call Close to signal early exit
+	Close() error             // client may call Close to signal early exit
 	Done() <-chan struct{}    // signals that Results is closed
 }
 
@@ -187,9 +187,10 @@ func (r *results) Rest() ([]Entry, error) {
 	return es, nil
 }
 
-func (r *results) Close() {
+func (r *results) Close() error {
 	r.cancel()
 	<-r.closed
+	return nil
 }
 
 func (r *results) Query() Query {
@@ -273,17 +274,17 @@ func ResultsFromIterator(q Query, iter Iterator) Results {
 	}
 }
 
-func noopClose() {}
+func noopClose() error { return nil }
 
 type Iterator struct {
 	Next  func() (Result, bool)
-	Close func() // note: might be called more than once
+	Close func() error // note: might be called more than once
 }
 
 type resultsIter struct {
 	query   Query
 	next    func() (Result, bool)
-	close   func()
+	close   func() error
 	results *results
 }
 
@@ -318,7 +319,7 @@ func (r *resultsIter) Rest() ([]Entry, error) {
 	return es, nil
 }
 
-func (r *resultsIter) Close() {
+func (r *resultsIter) Close() error {
 	if r.results != nil {
 		// Close results collector. It will call r.close().
 		r.results.Close()
@@ -326,6 +327,7 @@ func (r *resultsIter) Close() {
 		// Call r.close() since there is no collector to call it when closed.
 		r.close()
 	}
+	return nil
 }
 
 func (r *resultsIter) Query() Query {
