@@ -140,11 +140,12 @@ func (h *querySet) Pop() interface{} {
 	return last
 }
 
-func (h *querySet) close() {
+func (h *querySet) close() error {
 	for _, qr := range h.heads {
 		qr.results.Close()
 	}
 	h.heads = nil
+	return nil
 }
 
 func (h *querySet) addResults(mount ds.Key, results query.Results) {

@@ -94,8 +94,8 @@ func (d *Datastore) Query(ctx context.Context, q dsq.Query) (dsq.Results, error)
 			}
 			return r, true
 		},
-		Close: func() {
-			cqr.Close()
+		Close: func() error {
+			return cqr.Close()
 		},
 	})
 	return dsq.NaiveQueryApply(nq, qr), nil
