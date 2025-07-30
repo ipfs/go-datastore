@@ -2,7 +2,7 @@ package keytransform
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
@@ -229,7 +229,7 @@ func (d *Datastore) Batch(ctx context.Context) (ds.Batch, error) {
 func (d *Datastore) NewTransaction(ctx context.Context, readOnly bool) (ds.Txn, error) {
 	tds, ok := d.child.(ds.TxnDatastore)
 	if !ok {
-		return nil, fmt.Errorf("txn not supported")
+		return nil, errors.New("keytransform: transaction feature not supported")
 	}
 
 	childTxn, err := tds.NewTransaction(ctx, readOnly)
