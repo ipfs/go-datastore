@@ -28,9 +28,12 @@ func GetRead(ctx context.Context) (datastore.Read, bool) {
 	return batch, ok
 }
 
-type key int
+type (
+	writeKeyTp int
+	readKeyTp  int
+)
 
 var (
-	writeKey key
-	readKey  key
+	writeKey writeKeyTp
+	readKey  readKeyTp
 )
