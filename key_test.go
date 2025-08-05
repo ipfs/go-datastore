@@ -7,17 +7,10 @@ import (
 	"testing"
 
 	. "github.com/ipfs/go-datastore"
-	. "gopkg.in/check.v1"
+	"github.com/stretchr/testify/require"
 )
 
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
-
-type KeySuite struct{}
-
-var _ = Suite(&KeySuite{})
-
-func (ks *KeySuite) SubtestKey(s string, c *C) {
+func subtestKey(t *testing.T, s string) {
 	fixed := path.Clean("/" + s)
 	namespaces := strings.Split(fixed, "/")[1:]
 	lastNamespace := namespaces[len(namespaces)-1]
@@ -33,120 +26,108 @@ func (ks *KeySuite) SubtestKey(s string, c *C) {
 	kpath := path.Clean(kparent + "/" + ktype)
 	kinstance := fixed + ":" + "inst"
 
-	c.Log("Testing: ", NewKey(s))
+	t.Log("Testing: ", NewKey(s))
 
-	c.Check(NewKey(s).String(), Equals, fixed)
-	c.Check(NewKey(s), Equals, NewKey(s))
-	c.Check(NewKey(s).String(), Equals, NewKey(s).String())
-	c.Check(NewKey(s).Name(), Equals, kname)
-	c.Check(NewKey(s).Type(), Equals, ktype)
-	c.Check(NewKey(s).Path().String(), Equals, kpath)
-	c.Check(NewKey(s).Instance("inst").String(), Equals, kinstance)
+	require.Equal(t, fixed, NewKey(s).String())
+	require.Equal(t, NewKey(s), NewKey(s))
+	require.Equal(t, NewKey(s).String(), NewKey(s).String())
+	require.Equal(t, kname, NewKey(s).Name())
+	require.Equal(t, ktype, NewKey(s).Type())
+	require.Equal(t, kpath, NewKey(s).Path().String())
+	require.Equal(t, kinstance, NewKey(s).Instance("inst").String())
 
-	c.Check(NewKey(s).Child(NewKey("cchildd")).String(), Equals, kchild)
-	c.Check(NewKey(s).Child(NewKey("cchildd")).Parent().String(), Equals, fixed)
-	c.Check(NewKey(s).ChildString("cchildd").String(), Equals, kchild)
-	c.Check(NewKey(s).ChildString("cchildd").Parent().String(), Equals, fixed)
-	c.Check(NewKey(s).Parent().String(), Equals, kparent)
-	c.Check(len(NewKey(s).List()), Equals, len(namespaces))
-	c.Check(len(NewKey(s).Namespaces()), Equals, len(namespaces))
+	require.Equal(t, kchild, NewKey(s).Child(NewKey("cchildd")).String())
+	require.Equal(t, fixed, NewKey(s).Child(NewKey("cchildd")).Parent().String())
+	require.Equal(t, kchild, NewKey(s).ChildString("cchildd").String())
+	require.Equal(t, fixed, NewKey(s).ChildString("cchildd").Parent().String())
+	require.Equal(t, kparent, NewKey(s).Parent().String())
+	require.Len(t, NewKey(s).List(), len(namespaces))
+	require.Len(t, NewKey(s).Namespaces(), len(namespaces))
 	for i, e := range NewKey(s).List() {
-		c.Check(namespaces[i], Equals, e)
+		require.Equal(t, e, namespaces[i])
 	}
 
-	c.Check(NewKey(s), Equals, NewKey(s))
-	c.Check(NewKey(s).Equal(NewKey(s)), Equals, true)
-	c.Check(NewKey(s).Equal(NewKey("/fdsafdsa/"+s)), Equals, false)
+	require.Equal(t, NewKey(s), NewKey(s))
+	require.True(t, NewKey(s).Equal(NewKey(s)))
+	require.False(t, NewKey(s).Equal(NewKey("/fdsafdsa/"+s)))
 
 	// less
-	c.Check(NewKey(s).Less(NewKey(s).Parent()), Equals, false)
-	c.Check(NewKey(s).Less(NewKey(s).ChildString("foo")), Equals, true)
+	require.False(t, NewKey(s).Less(NewKey(s).Parent()))
+	require.True(t, NewKey(s).Less(NewKey(s).ChildString("foo")))
 }
 
-func (ks *KeySuite) TestKeyBasic(c *C) {
-	ks.SubtestKey("", c)
-	ks.SubtestKey("abcde", c)
-	ks.SubtestKey("disahfidsalfhduisaufidsail", c)
-	ks.SubtestKey("/fdisahfodisa/fdsa/fdsafdsafdsafdsa/fdsafdsa/", c)
-	ks.SubtestKey("4215432143214321432143214321", c)
-	ks.SubtestKey("/fdisaha////fdsa////fdsafdsafdsafdsa/fdsafdsa/", c)
-	ks.SubtestKey("abcde:fdsfd", c)
-	ks.SubtestKey("disahfidsalfhduisaufidsail:fdsa", c)
-	ks.SubtestKey("/fdisahfodisa/fdsa/fdsafdsafdsafdsa/fdsafdsa/:", c)
-	ks.SubtestKey("4215432143214321432143214321:", c)
-	ks.SubtestKey("fdisaha////fdsa////fdsafdsafdsafdsa/fdsafdsa/f:fdaf", c)
+func TestKeyBasic(t *testing.T) {
+	subtestKey(t, "")
+	subtestKey(t, "abcde")
+	subtestKey(t, "disahfidsalfhduisaufidsail")
+	subtestKey(t, "/fdisahfodisa/fdsa/fdsafdsafdsafdsa/fdsafdsa/")
+	subtestKey(t, "4215432143214321432143214321")
+	subtestKey(t, "/fdisaha////fdsa////fdsafdsafdsafdsa/fdsafdsa/")
+	subtestKey(t, "abcde:fdsfd")
+	subtestKey(t, "disahfidsalfhduisaufidsail:fdsa")
+	subtestKey(t, "/fdisahfodisa/fdsa/fdsafdsafdsafdsa/fdsafdsa/:")
+	subtestKey(t, "4215432143214321432143214321:")
+	subtestKey(t, "fdisaha////fdsa////fdsafdsafdsafdsa/fdsafdsa/f:fdaf")
 }
 
-func CheckTrue(c *C, cond bool) {
-	c.Check(cond, Equals, true)
-}
-
-func (ks *KeySuite) TestKeyAncestry(c *C) {
+func TestKeyAncestry(t *testing.T) {
 	k1 := NewKey("/A/B/C")
 	k2 := NewKey("/A/B/C/D")
 	k3 := NewKey("/AB")
 	k4 := NewKey("/A")
 
-	c.Check(k1.String(), Equals, "/A/B/C")
-	c.Check(k2.String(), Equals, "/A/B/C/D")
-	CheckTrue(c, k1.IsAncestorOf(k2))
-	CheckTrue(c, k2.IsDescendantOf(k1))
-	CheckTrue(c, k4.IsAncestorOf(k2))
-	CheckTrue(c, k4.IsAncestorOf(k1))
-	CheckTrue(c, !k4.IsDescendantOf(k2))
-	CheckTrue(c, !k4.IsDescendantOf(k1))
-	CheckTrue(c, !k3.IsDescendantOf(k4))
-	CheckTrue(c, !k4.IsAncestorOf(k3))
-	CheckTrue(c, k2.IsDescendantOf(k4))
-	CheckTrue(c, k1.IsDescendantOf(k4))
-	CheckTrue(c, !k2.IsAncestorOf(k4))
-	CheckTrue(c, !k1.IsAncestorOf(k4))
-	CheckTrue(c, !k2.IsAncestorOf(k2))
-	CheckTrue(c, !k1.IsAncestorOf(k1))
-	c.Check(k1.Child(NewKey("D")).String(), Equals, k2.String())
-	c.Check(k1.ChildString("D").String(), Equals, k2.String())
-	c.Check(k1.String(), Equals, k2.Parent().String())
-	c.Check(k1.Path().String(), Equals, k2.Parent().Path().String())
+	require.Equal(t, "/A/B/C", k1.String())
+	require.Equal(t, "/A/B/C/D", k2.String())
+	require.True(t, k1.IsAncestorOf(k2))
+	require.True(t, k2.IsDescendantOf(k1))
+	require.True(t, k4.IsAncestorOf(k2))
+	require.True(t, k4.IsAncestorOf(k1))
+	require.False(t, k4.IsDescendantOf(k2))
+	require.False(t, k4.IsDescendantOf(k1))
+	require.False(t, k3.IsDescendantOf(k4))
+	require.False(t, k4.IsAncestorOf(k3))
+	require.True(t, k2.IsDescendantOf(k4))
+	require.True(t, k1.IsDescendantOf(k4))
+	require.False(t, k2.IsAncestorOf(k4))
+	require.False(t, k1.IsAncestorOf(k4))
+	require.False(t, k2.IsAncestorOf(k2))
+	require.False(t, k1.IsAncestorOf(k1))
+	require.Equal(t, k2.String(), k1.Child(NewKey("D")).String())
+	require.Equal(t, k2.String(), k1.ChildString("D").String())
+	require.Equal(t, k1.String(), k2.Parent().String())
+	require.Equal(t, k1.Path().String(), k2.Parent().Path().String())
 }
 
-func (ks *KeySuite) TestType(c *C) {
+func TestType(t *testing.T) {
 	k1 := NewKey("/A/B/C:c")
 	k2 := NewKey("/A/B/C:c/D:d")
 
-	CheckTrue(c, k1.IsAncestorOf(k2))
-	CheckTrue(c, k2.IsDescendantOf(k1))
-	c.Check(k1.Type(), Equals, "C")
-	c.Check(k2.Type(), Equals, "D")
-	c.Check(k1.Type(), Equals, k2.Parent().Type())
+	require.True(t, k1.IsAncestorOf(k2))
+	require.True(t, k2.IsDescendantOf(k1))
+	require.Equal(t, "C", k1.Type())
+	require.Equal(t, "D", k2.Type())
+	require.Equal(t, k1.Type(), k2.Parent().Type())
 }
 
-func (ks *KeySuite) TestRandom(c *C) {
+func TestRandom(t *testing.T) {
 	keys := map[Key]bool{}
 	for i := 0; i < 1000; i++ {
 		r := RandomKey()
 		_, found := keys[r]
-		CheckTrue(c, !found)
+		require.False(t, found)
 		keys[r] = true
 	}
-	CheckTrue(c, len(keys) == 1000)
+	require.Len(t, keys, 1000)
 }
 
-func (ks *KeySuite) TestLess(c *C) {
-
-	checkLess := func(a, b string) {
-		ak := NewKey(a)
-		bk := NewKey(b)
-		c.Check(ak.Less(bk), Equals, true)
-		c.Check(bk.Less(ak), Equals, false)
-	}
-
-	checkLess("/a/b/c", "/a/b/c/d")
-	checkLess("/a/b", "/a/b/c/d")
-	checkLess("/a", "/a/b/c/d")
-	checkLess("/a/a/c", "/a/b/c")
-	checkLess("/a/a/d", "/a/b/c")
-	checkLess("/a/b/c/d/e/f/g/h", "/b")
-	checkLess("/", "/a")
+func TestLess(t *testing.T) {
+	require.Less(t, "/a/b/c", "/a/b/c/d")
+	require.Less(t, "/a/b", "/a/b/c/d")
+	require.Less(t, "/a", "/a/b/c/d")
+	require.Less(t, "/a/a/c", "/a/b/c")
+	require.Less(t, "/a/a/d", "/a/b/c")
+	require.Less(t, "/a/b/c/d/e/f/g/h", "/b")
+	require.Less(t, "/", "/a")
 }
 
 func TestKeyMarshalJSON(t *testing.T) {
@@ -164,18 +145,13 @@ func TestKeyMarshalJSON(t *testing.T) {
 		if !(err == nil && c.err == "" || err != nil && err.Error() == c.err) {
 			t.Errorf("case %d marshal error mismatch: expected: %s, got: %s", i, c.err, err)
 		}
-		if !bytes.Equal(c.data, out) {
-			t.Errorf("case %d value mismatch: expected: %s, got: %s", i, string(c.data), string(out))
-		}
+		require.Truef(t, bytes.Equal(c.data, out), "case %d value mismatch: expected: %s, got: %s", i, string(c.data), string(out))
 
 		if c.err == "" {
 			key := Key{}
-			if err := key.UnmarshalJSON(out); err != nil {
-				t.Errorf("case %d error parsing key from json output: %s", i, err.Error())
-			}
-			if !c.key.Equal(key) {
-				t.Errorf("case %d parsed key from json output mismatch. expected: %s, got: %s", i, c.key.String(), key.String())
-			}
+			err = key.UnmarshalJSON(out)
+			require.NoErrorf(t, err, "case %d error parsing key from json output", i)
+			require.Truef(t, c.key.Equal(key), "case %d parsed key from json output mismatch. expected: %s, got: %s", i, c.key.String(), key.String())
 		}
 	}
 }
@@ -198,10 +174,7 @@ func TestKeyUnmarshalJSON(t *testing.T) {
 		if !(err == nil && c.err == "" || err != nil && err.Error() == c.err) {
 			t.Errorf("case %d marshal error mismatch: expected: %s, got: %s", i, c.err, err)
 		}
-
-		if !key.Equal(c.key) {
-			t.Errorf("case %d key mismatch: expected: %s, got: %s", i, c.key, key)
-		}
+		require.Truef(t, key.Equal(c.key), "case %d key mismatch: expected: %s, got: %s", i, c.key, key)
 	}
 }
 
@@ -218,9 +191,8 @@ func TestKey_RootNamespace(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := RawKey(tt.key).RootNamespace(); got != tt.want {
-				t.Errorf("RootNamespace() = %v, want %v", got, tt.want)
-			}
+			got := RawKey(tt.key).RootNamespace()
+			require.Equal(t, tt.want, got, "RootNamespace() returned wrong value")
 		})
 	}
 }

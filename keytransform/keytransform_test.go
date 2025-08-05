@@ -1,25 +1,16 @@
 package keytransform_test
 
 import (
-	"bytes"
 	"context"
 	"sort"
 	"testing"
-
-	. "gopkg.in/check.v1"
 
 	ds "github.com/ipfs/go-datastore"
 	kt "github.com/ipfs/go-datastore/keytransform"
 	dsq "github.com/ipfs/go-datastore/query"
 	dstest "github.com/ipfs/go-datastore/test"
+	"github.com/stretchr/testify/require"
 )
-
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
-
-type DSSuite struct{}
-
-var _ = Suite(&DSSuite{})
 
 var pair = &kt.Pair{
 	Convert: func(k ds.Key) ds.Key {
@@ -35,7 +26,7 @@ var pair = &kt.Pair{
 	},
 }
 
-func (ks *DSSuite) TestBasic(c *C) {
+func TestBasic(t *testing.T) {
 	ctx := context.Background()
 
 	mpds := dstest.NewTestDatastore(true)
@@ -52,32 +43,32 @@ func (ks *DSSuite) TestBasic(c *C) {
 
 	for _, k := range keys {
 		err := ktds.Put(ctx, k, []byte(k.String()))
-		c.Check(err, Equals, nil)
+		require.NoError(t, err)
 	}
 
 	for _, k := range keys {
 		v1, err := ktds.Get(ctx, k)
-		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v1, []byte(k.String())), Equals, true)
+		require.NoError(t, err)
+		require.Equal(t, []byte(k.String()), v1)
 
 		v2, err := mpds.Get(ctx, ds.NewKey("abc").Child(k))
-		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v2, []byte(k.String())), Equals, true)
+		require.NoError(t, err)
+		require.Equal(t, []byte(k.String()), v2)
 	}
 
 	run := func(d ds.Datastore, q dsq.Query) []ds.Key {
 		r, err := d.Query(ctx, q)
-		c.Check(err, Equals, nil)
+		require.NoError(t, err)
 
 		e, err := r.Rest()
-		c.Check(err, Equals, nil)
+		require.NoError(t, err)
 
 		return ds.EntryKeys(e)
 	}
 
 	listA := run(mpds, dsq.Query{})
 	listB := run(ktds, dsq.Query{})
-	c.Check(len(listA), Equals, len(listB))
+	require.Equal(t, len(listA), len(listB))
 
 	// sort them cause yeah.
 	sort.Sort(ds.KeySlice(listA))
@@ -85,24 +76,16 @@ func (ks *DSSuite) TestBasic(c *C) {
 
 	for i, kA := range listA {
 		kB := listB[i]
-		c.Check(pair.Invert(kA), Equals, kB)
-		c.Check(kA, Equals, pair.Convert(kB))
+		require.Equal(t, kB, pair.Invert(kA))
+		require.Equal(t, pair.Convert(kB), kA)
 	}
 
-	c.Log("listA: ", listA)
-	c.Log("listB: ", listB)
+	t.Log("listA: ", listA)
+	t.Log("listB: ", listB)
 
-	if err := ktds.Check(ctx); err != dstest.ErrTest {
-		c.Errorf("Unexpected Check() error: %s", err)
-	}
-
-	if err := ktds.CollectGarbage(ctx); err != dstest.ErrTest {
-		c.Errorf("Unexpected CollectGarbage() error: %s", err)
-	}
-
-	if err := ktds.Scrub(ctx); err != dstest.ErrTest {
-		c.Errorf("Unexpected Scrub() error: %s", err)
-	}
+	require.ErrorIs(t, ktds.Check(ctx), dstest.ErrTest)
+	require.ErrorIs(t, ktds.CollectGarbage(ctx), dstest.ErrTest)
+	require.ErrorIs(t, ktds.Scrub(ctx), dstest.ErrTest)
 }
 
 func strsToKeys(strs []string) []ds.Key {

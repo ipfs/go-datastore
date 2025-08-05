@@ -1,41 +1,24 @@
 package examples
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
-	. "gopkg.in/check.v1"
-
 	ds "github.com/ipfs/go-datastore"
 	query "github.com/ipfs/go-datastore/query"
+	"github.com/stretchr/testify/require"
 )
 
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
-
-type DSSuite struct {
-	dir string
-	ds  ds.Datastore
-}
-
-var _ = Suite(&DSSuite{})
-
-func (ks *DSSuite) SetUpTest(c *C) {
-	ks.dir = c.MkDir()
-	ks.ds, _ = NewDatastore(ks.dir)
-}
-
-func (ks *DSSuite) TestOpen(c *C) {
+func TestOpen(t *testing.T) {
 	_, err := NewDatastore("/tmp/foo/bar/baz")
-	c.Assert(err, Not(Equals), nil)
+	require.Error(t, err)
 
 	// setup ds
-	_, err = NewDatastore(ks.dir)
-	c.Assert(err, Equals, nil)
+	_, err = NewDatastore(t.TempDir())
+	require.NoError(t, err)
 }
 
-func (ks *DSSuite) TestBasic(c *C) {
+func TestBasic(t *testing.T) {
 	ctx := context.Background()
 
 	keys := strsToKeys([]string{
@@ -47,21 +30,21 @@ func (ks *DSSuite) TestBasic(c *C) {
 		"foo/bar/baz/barb",
 	})
 
+	dstore, err := NewDatastore(t.TempDir())
+	require.NoError(t, err)
 	for _, k := range keys {
-		err := ks.ds.Put(ctx, k, []byte(k.String()))
-		c.Check(err, Equals, nil)
+		err := dstore.Put(ctx, k, []byte(k.String()))
+		require.NoError(t, err)
 	}
 
 	for _, k := range keys {
-		v, err := ks.ds.Get(ctx, k)
-		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v, []byte(k.String())), Equals, true)
+		v, err := dstore.Get(ctx, k)
+		require.NoError(t, err)
+		require.Equal(t, []byte(k.String()), v)
 	}
 
-	r, err := ks.ds.Query(ctx, query.Query{Prefix: "/foo/bar/"})
-	if err != nil {
-		c.Check(err, Equals, nil)
-	}
+	r, err := dstore.Query(ctx, query.Query{Prefix: "/foo/bar/"})
+	require.NoError(t, err)
 
 	expect := []string{
 		"/foo/bar/baz",
@@ -69,26 +52,23 @@ func (ks *DSSuite) TestBasic(c *C) {
 		"/foo/bar/baz/barb",
 	}
 	all, err := r.Rest()
-	if err != nil {
-		c.Fatal(err)
-	}
-	c.Check(len(all), Equals, len(expect))
+	require.NoError(t, err)
+	require.Equal(t, len(all), len(expect))
 
 	for _, k := range expect {
 		found := false
 		for _, e := range all {
 			if e.Key == k {
 				found = true
+				break
 			}
 		}
 
-		if !found {
-			c.Error("did not find expected key: ", k)
-		}
+		require.True(t, found, "did not find expected key:", k)
 	}
 }
 
-func (ks *DSSuite) TestDiskUsage(c *C) {
+func TestDiskUsage(t *testing.T) {
 	ctx := context.Background()
 
 	keys := strsToKeys([]string{
@@ -100,21 +80,23 @@ func (ks *DSSuite) TestDiskUsage(c *C) {
 		"foo/bar/baz/barb",
 	})
 
+	dstore, err := NewDatastore(t.TempDir())
+	require.NoError(t, err)
+
 	totalBytes := 0
 	for _, k := range keys {
 		value := []byte(k.String())
 		totalBytes += len(value)
-		err := ks.ds.Put(ctx, k, value)
-		c.Check(err, Equals, nil)
+		err := dstore.Put(ctx, k, value)
+		require.NoError(t, err)
 	}
 
-	if ps, ok := ks.ds.(ds.PersistentDatastore); ok {
-		if s, err := ps.DiskUsage(ctx); s != uint64(totalBytes) || err != nil {
-			c.Error("unexpected size is: ", s)
-		}
-	} else {
-		c.Error("should implement PersistentDatastore")
-	}
+	ps, ok := dstore.(ds.PersistentDatastore)
+	require.True(t, ok, "should implement PersistentDatastore")
+
+	s, err := ps.DiskUsage(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(totalBytes), s, "unexpected size")
 }
 
 func strsToKeys(strs []string) []ds.Key {

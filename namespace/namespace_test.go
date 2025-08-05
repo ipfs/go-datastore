@@ -1,32 +1,23 @@
 package namespace_test
 
 import (
-	"bytes"
 	"context"
 	"sort"
 	"testing"
-
-	. "gopkg.in/check.v1"
 
 	ds "github.com/ipfs/go-datastore"
 	ns "github.com/ipfs/go-datastore/namespace"
 	dsq "github.com/ipfs/go-datastore/query"
 	dstest "github.com/ipfs/go-datastore/test"
+	"github.com/stretchr/testify/require"
 )
 
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
-
-type DSSuite struct{}
-
-var _ = Suite(&DSSuite{})
-
-func (ks *DSSuite) TestBasic(c *C) {
-	ks.testBasic(c, "abc")
-	ks.testBasic(c, "")
+func TestBasic(t *testing.T) {
+	testBasic(t, "abc")
+	testBasic(t, "")
 }
 
-func (ks *DSSuite) testBasic(c *C, prefix string) {
+func testBasic(t *testing.T, prefix string) {
 	ctx := context.Background()
 
 	mpds := ds.NewMapDatastore()
@@ -43,32 +34,32 @@ func (ks *DSSuite) testBasic(c *C, prefix string) {
 
 	for _, k := range keys {
 		err := nsds.Put(ctx, k, []byte(k.String()))
-		c.Check(err, Equals, nil)
+		require.NoError(t, err)
 	}
 
 	for _, k := range keys {
 		v1, err := nsds.Get(ctx, k)
-		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v1, []byte(k.String())), Equals, true)
+		require.NoError(t, err)
+		require.Equal(t, []byte(k.String()), v1)
 
 		v2, err := mpds.Get(ctx, ds.NewKey(prefix).Child(k))
-		c.Check(err, Equals, nil)
-		c.Check(bytes.Equal(v2, []byte(k.String())), Equals, true)
+		require.NoError(t, err)
+		require.Equal(t, []byte(k.String()), v2)
 	}
 
 	run := func(d ds.Datastore, q dsq.Query) []ds.Key {
 		r, err := d.Query(ctx, q)
-		c.Check(err, Equals, nil)
+		require.NoError(t, err)
 
 		e, err := r.Rest()
-		c.Check(err, Equals, nil)
+		require.NoError(t, err)
 
 		return ds.EntryKeys(e)
 	}
 
 	listA := run(mpds, dsq.Query{})
 	listB := run(nsds, dsq.Query{})
-	c.Check(len(listA), Equals, len(listB))
+	require.Equal(t, len(listA), len(listB))
 
 	// sort them cause yeah.
 	sort.Sort(ds.KeySlice(listA))
@@ -76,12 +67,12 @@ func (ks *DSSuite) testBasic(c *C, prefix string) {
 
 	for i, kA := range listA {
 		kB := listB[i]
-		c.Check(nsds.InvertKey(kA), Equals, kB)
-		c.Check(kA, Equals, nsds.ConvertKey(kB))
+		require.Equal(t, kB, nsds.InvertKey(kA))
+		require.Equal(t, nsds.ConvertKey(kB), kA)
 	}
 }
 
-func (ks *DSSuite) TestQuery(c *C) {
+func TestQuery(t *testing.T) {
 	ctx := context.Background()
 
 	mpds := dstest.NewTestDatastore(true)
@@ -98,11 +89,11 @@ func (ks *DSSuite) TestQuery(c *C) {
 
 	for _, k := range keys {
 		err := mpds.Put(ctx, k, []byte(k.String()))
-		c.Check(err, Equals, nil)
+		require.NoError(t, err)
 	}
 
 	qres, err := nsds.Query(ctx, dsq.Query{})
-	c.Check(err, Equals, nil)
+	require.NoError(t, err)
 
 	expect := []dsq.Entry{
 		{Key: "/bar", Size: len([]byte("/foo/bar")), Value: []byte("/foo/bar")},
@@ -111,43 +102,35 @@ func (ks *DSSuite) TestQuery(c *C) {
 	}
 
 	results, err := qres.Rest()
-	c.Check(err, Equals, nil)
+	require.NoError(t, err)
 	sort.Slice(results, func(i, j int) bool { return results[i].Key < results[j].Key })
 
 	for i, ent := range results {
-		c.Check(ent.Key, Equals, expect[i].Key)
-		c.Check(string(ent.Value), Equals, string(expect[i].Value))
+		require.Equal(t, expect[i].Key, ent.Key)
+		require.Equal(t, string(expect[i].Value), string(ent.Value))
 	}
 
 	qres.Close()
 
 	qres, err = nsds.Query(ctx, dsq.Query{Prefix: "bar"})
-	c.Check(err, Equals, nil)
+	require.NoError(t, err)
 
 	expect = []dsq.Entry{
 		{Key: "/bar/baz", Size: len([]byte("/foo/bar/baz")), Value: []byte("/foo/bar/baz")},
 	}
 
 	results, err = qres.Rest()
-	c.Check(err, Equals, nil)
+	require.NoError(t, err)
 	sort.Slice(results, func(i, j int) bool { return results[i].Key < results[j].Key })
 
 	for i, ent := range results {
-		c.Check(ent.Key, Equals, expect[i].Key)
-		c.Check(string(ent.Value), Equals, string(expect[i].Value))
+		require.Equal(t, expect[i].Key, ent.Key)
+		require.Equal(t, string(expect[i].Value), string(ent.Value))
 	}
 
-	if err := nsds.Check(ctx); err != dstest.ErrTest {
-		c.Errorf("Unexpected Check() error: %s", err)
-	}
-
-	if err := nsds.CollectGarbage(ctx); err != dstest.ErrTest {
-		c.Errorf("Unexpected CollectGarbage() error: %s", err)
-	}
-
-	if err := nsds.Scrub(ctx); err != dstest.ErrTest {
-		c.Errorf("Unexpected Scrub() error: %s", err)
-	}
+	require.ErrorIs(t, nsds.Check(ctx), dstest.ErrTest)
+	require.ErrorIs(t, nsds.CollectGarbage(ctx), dstest.ErrTest)
+	require.ErrorIs(t, nsds.Scrub(ctx), dstest.ErrTest)
 }
 
 func strsToKeys(strs []string) []ds.Key {
