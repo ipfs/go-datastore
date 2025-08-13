@@ -9,7 +9,6 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
-	go.uber.org/multierr v1.11.0
 )
 
 require (

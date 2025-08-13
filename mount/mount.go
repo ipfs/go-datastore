@@ -13,8 +13,6 @@ import (
 
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
-
-	"go.uber.org/multierr"
 )
 
 var (
@@ -236,22 +234,19 @@ func (d *Datastore) Put(ctx context.Context, key ds.Key, value []byte) error {
 
 // Sync implements Datastore.Sync
 func (d *Datastore) Sync(ctx context.Context, prefix ds.Key) error {
-	var merr error
+	var errs []error
 
 	// Sync all mount points below the prefix
 	// Sync the mount point right at (or above) the prefix
 	dstores, prefixes, rest := d.lookupAll(prefix)
 	for i, suffix := range rest {
 		if err := dstores[i].Sync(ctx, suffix); err != nil {
-			merr = multierr.Append(merr, fmt.Errorf(
-				"syncing datastore at %s: %w",
-				prefixes[i].String(),
-				err,
-			))
+			err = fmt.Errorf("syncing datastore at %s: %w", prefixes[i].String(), err)
+			errs = append(errs, err)
 		}
 	}
 
-	return merr
+	return errors.Join(errs...)
 }
 
 // Get returns the value associated with the key from the appropriate datastore.
@@ -357,39 +352,33 @@ func (d *Datastore) Query(ctx context.Context, master query.Query) (query.Result
 
 // Close closes all mounted datastores.
 func (d *Datastore) Close() error {
-	var merr error
+	var errs []error
 	for _, d := range d.mounts {
 		err := d.Datastore.Close()
 		if err != nil {
-			merr = multierr.Append(merr, fmt.Errorf(
-				"closing datastore at %s: %w",
-				d.Prefix.String(),
-				err,
-			))
+			err = fmt.Errorf("closing datastore at %s: %w", d.Prefix.String(), err)
+			errs = append(errs, err)
 		}
 	}
-	return merr
+	return errors.Join(errs...)
 }
 
 // DiskUsage returns the sum of DiskUsages for the mounted datastores.
 // Non PersistentDatastores will not be accounted.
 func (d *Datastore) DiskUsage(ctx context.Context) (uint64, error) {
 	var (
-		merr    error
+		errs    []error
 		duTotal uint64 = 0
 	)
 	for _, d := range d.mounts {
 		du, err := ds.DiskUsage(ctx, d.Datastore)
 		duTotal += du
 		if err != nil {
-			merr = multierr.Append(merr, fmt.Errorf(
-				"getting disk usage at %s: %w",
-				d.Prefix.String(),
-				err,
-			))
+			err = fmt.Errorf("getting disk usage at %s: %w", d.Prefix.String(), err)
+			errs = append(errs, err)
 		}
 	}
-	return duTotal, merr
+	return duTotal, errors.Join(errs...)
 }
 
 type mountBatch struct {
@@ -452,62 +441,51 @@ func (mt *mountBatch) Commit(ctx context.Context) error {
 	mt.lk.Lock()
 	defer mt.lk.Unlock()
 
-	var merr error
+	var errs []error
 	for p, t := range mt.mounts {
 		if err := t.Commit(ctx); err != nil {
-			merr = multierr.Append(merr, fmt.Errorf(
-				"committing batch to datastore at %s: %w",
-				p, err,
-			))
+			err = fmt.Errorf("committing batch to datastore at %s: %w", p, err)
+			errs = append(errs, err)
 		}
 	}
-	return merr
+	return errors.Join(errs...)
 }
 
 func (d *Datastore) Check(ctx context.Context) error {
-	var merr error
+	var errs []error
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.CheckedDatastore); ok {
 			if err := c.Check(ctx); err != nil {
-				merr = multierr.Append(merr, fmt.Errorf(
-					"checking datastore at %s: %w",
-					m.Prefix.String(),
-					err,
-				))
+				err = fmt.Errorf("checking datastore at %s: %w", m.Prefix.String(), err)
+				errs = append(errs, err)
 			}
 		}
 	}
-	return merr
+	return errors.Join(errs...)
 }
 
 func (d *Datastore) Scrub(ctx context.Context) error {
-	var merr error
+	var errs []error
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.ScrubbedDatastore); ok {
 			if err := c.Scrub(ctx); err != nil {
-				merr = multierr.Append(merr, fmt.Errorf(
-					"scrubbing datastore at %s: %w",
-					m.Prefix.String(),
-					err,
-				))
+				err = fmt.Errorf("scrubbing datastore at %s: %w", m.Prefix.String(), err)
+				errs = append(errs, err)
 			}
 		}
 	}
-	return merr
+	return errors.Join(errs...)
 }
 
 func (d *Datastore) CollectGarbage(ctx context.Context) error {
-	var merr error
+	var errs []error
 	for _, m := range d.mounts {
 		if c, ok := m.Datastore.(ds.GCDatastore); ok {
 			if err := c.CollectGarbage(ctx); err != nil {
-				merr = multierr.Append(merr, fmt.Errorf(
-					"gc on datastore at %s: %w",
-					m.Prefix.String(),
-					err,
-				))
+				err = fmt.Errorf("gc on datastore at %s: %w", m.Prefix.String(), err)
+				errs = append(errs, err)
 			}
 		}
 	}
-	return merr
+	return errors.Join(errs...)
 }
