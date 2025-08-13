@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -33,9 +33,10 @@ type Mount struct {
 // to least specific.
 func New(mounts []Mount) *Datastore {
 	// make a copy so we're sure it doesn't mutate
-	m := make([]Mount, len(mounts))
-	copy(m, mounts)
-	sort.Slice(m, func(i, j int) bool { return m[i].Prefix.String() > m[j].Prefix.String() })
+	m := slices.Clone(mounts)
+	slices.SortFunc(m, func(a, b Mount) int {
+		return strings.Compare(b.Prefix.String(), a.Prefix.String())
+	})
 	return &Datastore{mounts: m}
 }
 
