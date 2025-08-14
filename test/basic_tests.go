@@ -405,6 +405,7 @@ func randValue() []byte {
 
 func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	var input []dsq.Entry
 	for i := 0; i < count; i++ {
