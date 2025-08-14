@@ -124,6 +124,10 @@ func QueryIter(ctx context.Context, ds Read, q query.Query) iter.Seq2[query.Entr
 		defer results.Close()
 
 		for result := range results.Next() {
+			if ctx.Err() != nil {
+				yield(query.Entry{}, ctx.Err())
+				return
+			}
 			if result.Error != nil {
 				yield(query.Entry{}, result.Error)
 				return

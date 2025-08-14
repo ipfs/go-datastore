@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -403,7 +404,7 @@ func randValue() []byte {
 }
 
 func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 
 	var input []dsq.Entry
 	for i := 0; i < count; i++ {
@@ -535,6 +536,31 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		}
 		if q.ReturnsSizes && actual[i].Size <= 0 {
 			t.Errorf("for result %d, expected size > 0 with ReturnsSizes", i)
+		}
+	}
+
+	const cancelAt = 1
+	if len(actual) > cancelAt {
+		// Test that query iterator stops when context is canceled.
+		var i int
+		for ent, err := range dstore.QueryIter(ctx, ds, q) {
+			if err != nil {
+				if !errors.Is(err, context.Canceled) {
+					t.Fatal("query result error: ", err)
+				}
+				t.Log("err at:", i, err)
+				continue
+			}
+			if ent.Key == "" {
+				t.Fatal("entry has empty key")
+			}
+			i++
+			if i == cancelAt {
+				cancel()
+			}
+		}
+		if i != cancelAt {
+			t.Fatal("expected iteration to be canceled at", cancelAt, "canceled at", i)
 		}
 	}
 
