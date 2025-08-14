@@ -2,7 +2,8 @@ package namespace_test
 
 import (
 	"context"
-	"sort"
+	"slices"
+	"strings"
 	"testing"
 
 	ds "github.com/ipfs/go-datastore"
@@ -62,8 +63,12 @@ func testBasic(t *testing.T, prefix string) {
 	require.Equal(t, len(listA), len(listB))
 
 	// sort them cause yeah.
-	sort.Sort(ds.KeySlice(listA))
-	sort.Sort(ds.KeySlice(listB))
+	slices.SortFunc(listA, func(a, b ds.Key) int {
+		return a.Compare(b)
+	})
+	slices.SortFunc(listB, func(a, b ds.Key) int {
+		return a.Compare(b)
+	})
 
 	for i, kA := range listA {
 		kB := listB[i]
@@ -103,7 +108,9 @@ func TestQuery(t *testing.T) {
 
 	results, err := qres.Rest()
 	require.NoError(t, err)
-	sort.Slice(results, func(i, j int) bool { return results[i].Key < results[j].Key })
+	slices.SortFunc(results, func(a, b dsq.Entry) int {
+		return strings.Compare(a.Key, b.Key)
+	})
 
 	for i, ent := range results {
 		require.Equal(t, expect[i].Key, ent.Key)
@@ -121,7 +128,9 @@ func TestQuery(t *testing.T) {
 
 	results, err = qres.Rest()
 	require.NoError(t, err)
-	sort.Slice(results, func(i, j int) bool { return results[i].Key < results[j].Key })
+	slices.SortFunc(results, func(a, b dsq.Entry) int {
+		return strings.Compare(a.Key, b.Key)
+	})
 
 	for i, ent := range results {
 		require.Equal(t, expect[i].Key, ent.Key)

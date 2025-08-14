@@ -2,7 +2,7 @@ package keytransform_test
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"testing"
 
 	ds "github.com/ipfs/go-datastore"
@@ -71,8 +71,12 @@ func TestBasic(t *testing.T) {
 	require.Equal(t, len(listA), len(listB))
 
 	// sort them cause yeah.
-	sort.Sort(ds.KeySlice(listA))
-	sort.Sort(ds.KeySlice(listB))
+	slices.SortFunc(listA, func(a, b ds.Key) int {
+		return a.Compare(b)
+	})
+	slices.SortFunc(listB, func(a, b ds.Key) int {
+		return a.Compare(b)
+	})
 
 	for i, kA := range listA {
 		kB := listB[i]
