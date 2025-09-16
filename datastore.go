@@ -105,7 +105,7 @@ type Read interface {
 //		Prefix: keyPrefix,
 //	}
 //	var foundVal []byte
-//	for ent, err := range QueryIter(dstore, qry) {
+//	for ent, err := range QueryIter(ctx, dstore, qry) {
 //		if err != nil {
 //			return err
 //		}
