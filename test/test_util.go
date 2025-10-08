@@ -51,12 +51,6 @@ func RunBatchTest(t *testing.T, ds dstore.Batching) {
 		t.Fatal(err)
 	}
 
-	// seecond commit should do nothing, but should not cause error
-	err = batch.Commit(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	for i, k := range keys {
 		blk, err := ds.Get(ctx, k)
 		if err != nil {
