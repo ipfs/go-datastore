@@ -565,6 +565,8 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		}
 	}
 
+	// use a new context, since previous was cancelled.
+	ctx = context.Background()
 	t.Log("deleting all keys")
 	for _, e := range input {
 		if err := ds.Delete(ctx, dstore.RawKey(e.Key)); err != nil {
