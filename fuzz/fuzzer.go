@@ -329,10 +329,7 @@ func reset(s *threadState) {
 }
 
 func makeKey(s *threadState, c byte) error {
-	keys := atomic.LoadInt32(&s.RunState.cachedKeys)
-	if keys > 128 {
-		keys = 128
-	}
+	keys := min(atomic.LoadInt32(&s.RunState.cachedKeys), 128)
 	if c&1 == 1 {
 		// 50% chance we want to-reuse an existing key
 		s.key = s.RunState.keyCache[(c>>1)%byte(keys)]
