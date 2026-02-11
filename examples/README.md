@@ -12,5 +12,6 @@ go-datastore interface, there are several implementations you can choose from:
   settings don't work).
 * https://github.com/ipfs/go-ds-leveldb - Datastore implementation backed
   by LevelDB database. Good for small-size values and many keys.
-* https://github.com/ipfs/go-ds-badger - A fast datastore implementation
-  backed by BadgerDB. Good for most kinds of data.
+* https://github.com/ipfs/go-ds-pebble - A fast datastore implementation
+  backed by [Pebble](https://github.com/cockroachdb/pebble). Good for most
+  kinds of data.

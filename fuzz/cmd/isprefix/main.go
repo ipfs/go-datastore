@@ -16,7 +16,7 @@ import (
 )
 
 var input *string = pflag.StringP("input", "i", "", "file to read input from (stdin used if not specified)")
-var db *string = pflag.StringP("db", "d", "go-ds-badger", "database driver")
+var db *string = pflag.StringP("db", "d", "go-ds-pebble", "database driver")
 var dbPrev *string = pflag.StringP("exist", "e", "tmp1", "database instance already made")
 var dbFile *string = pflag.StringP("file", "f", "tmp2", "where the replay should live")
 var threads *int = pflag.IntP("threads", "t", 1, "concurrent threads")

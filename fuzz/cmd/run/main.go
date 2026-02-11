@@ -11,7 +11,7 @@ import (
 )
 
 var input *string = pflag.StringP("input", "i", "", "file to read input from (stdin used if not specified)")
-var db *string = pflag.StringP("database", "d", "go-ds-badger", "database to fuzz")
+var db *string = pflag.StringP("database", "d", "go-ds-pebble", "database to fuzz")
 var dbFile *string = pflag.StringP("file", "f", "tmp", "where the db instace should live on disk")
 var threads *int = pflag.IntP("threads", "t", 1, "concurrent threads")
 
