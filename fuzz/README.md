@@ -11,9 +11,9 @@ Usage
 First, configure the datastores to fuzz (from this directory):
 ```golang
 // either run via `go run`
-go run ./cmd/generate github.com/ipfs/go-ds-badger
+go run ./cmd/generate github.com/ipfs/go-ds-pebble
 // or `go generate`
-DS_PROVIDERS="github.com/ipfs/go-ds-badger" go generate
+DS_PROVIDERS="github.com/ipfs/go-ds-pebble" go generate
 ```
 
 Then, build the fuzzing artifact and fuzz:
