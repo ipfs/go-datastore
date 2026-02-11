@@ -4,9 +4,9 @@ import (
 	ds "github.com/ipfs/go-datastore"
 )
 
-func getFeatureSet(dstore ds.Datastore) map[interface{}]bool {
+func getFeatureSet(dstore ds.Datastore) map[any]bool {
 	features := ds.FeaturesForDatastore(dstore)
-	featureSet := map[interface{}]bool{}
+	featureSet := map[any]bool{}
 	for _, f := range features {
 		featureSet[f.Interface] = true
 	}

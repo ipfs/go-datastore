@@ -111,7 +111,7 @@ func TestType(t *testing.T) {
 
 func TestRandom(t *testing.T) {
 	keys := map[Key]bool{}
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		r := RandomKey()
 		_, found := keys[r]
 		require.False(t, found)

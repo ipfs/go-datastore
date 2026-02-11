@@ -21,7 +21,7 @@ func TestFlushing(t *testing.T) {
 	d := NewAutoBatching(child, 16)
 
 	var keys []ds.Key
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		keys = append(keys, ds.NewKey(fmt.Sprintf("test%d", i)))
 	}
 	v := []byte("hello world")
@@ -156,15 +156,15 @@ func internalSyncTest(t *testing.T, d, child ds.Datastore, op, undoOp func(ds.Ke
 
 	var keys []ds.Key
 	keymap := make(map[ds.Key]int)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		k := ds.NewKey(fmt.Sprintf("%d", i))
 		keymap[k] = len(keys)
 		keys = append(keys, k)
-		for j := 0; j < 2; j++ {
+		for j := range 2 {
 			k := ds.NewKey(fmt.Sprintf("%d/%d", i, j))
 			keymap[k] = len(keys)
 			keys = append(keys, k)
-			for k := 0; k < 2; k++ {
+			for k := range 2 {
 				k := ds.NewKey(fmt.Sprintf("%d/%d/%d", i, j, k))
 				keymap[k] = len(keys)
 				keys = append(keys, k)
