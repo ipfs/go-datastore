@@ -408,7 +408,7 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 	defer cancel()
 
 	var input []dsq.Entry
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		key := dstore.NewKey(s).String()
 		value := randValue()
@@ -419,7 +419,7 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		})
 	}
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := fmt.Sprintf("/prefix/%dkey%d", i, i)
 		key := dstore.NewKey(s).String()
 		value := randValue()
@@ -430,7 +430,7 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		})
 	}
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := fmt.Sprintf("/prefix/sub/%dkey%d", i, i)
 		key := dstore.NewKey(s).String()
 		value := randValue()
@@ -441,7 +441,7 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		})
 	}
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := fmt.Sprintf("/capital/%dKEY%d", i, i)
 		key := dstore.NewKey(s).String()
 		value := randValue()

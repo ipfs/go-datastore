@@ -23,7 +23,7 @@ func RunBatchTest(t *testing.T, ds dstore.Batching) {
 
 	var blocks [][]byte
 	var keys []dstore.Key
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		blk := make([]byte, 256*1024)
 		rand.Read(blk)
 		blocks = append(blocks, blk)
@@ -67,7 +67,7 @@ func RunBatchDeleteTest(t *testing.T, ds dstore.Batching) {
 	ctx := context.Background()
 
 	var keys []dstore.Key
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		blk := make([]byte, 16)
 		rand.Read(blk)
 
