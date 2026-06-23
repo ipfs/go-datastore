@@ -146,7 +146,6 @@ func TestLimit(t *testing.T) {
 }
 
 func TestOffset(t *testing.T) {
-
 	testOffset := func(t *testing.T, offset int, keys []string, expect []string) {
 		t.Helper()
 		e := make([]Entry, len(keys))
@@ -244,7 +243,7 @@ func getKeysViaNextSync(rs Results) []string {
 
 func getKeysViaRest(rs Results) []string {
 	rest, _ := rs.Rest()
-	ret := make([]string, 0)
+	ret := make([]string, 0, len(rest))
 	for _, e := range rest {
 		ret = append(ret, e.Key)
 	}
@@ -252,7 +251,7 @@ func getKeysViaRest(rs Results) []string {
 }
 
 func getKeysViaChan(rs Results) []string {
-	ret := make([]string, 0)
+	var ret []string
 	for r := range rs.Next() {
 		ret = append(ret, r.Key)
 	}

@@ -14,15 +14,15 @@ import (
 var ErrTest = errors.New("test error")
 
 func RunBatchTest(t *testing.T, ds dstore.Batching) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	batch, err := ds.Batch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var blocks [][]byte
-	var keys []dstore.Key
+	blocks := make([][]byte, 0, 20)
+	keys := make([]dstore.Key, 0, 20)
 	for range 20 {
 		blk := make([]byte, 256*1024)
 		rand.Read(blk)
@@ -31,7 +31,7 @@ func RunBatchTest(t *testing.T, ds dstore.Batching) {
 		key := dstore.NewKey(base32.StdEncoding.EncodeToString(blk[:8]))
 		keys = append(keys, key)
 
-		err := batch.Put(ctx, key, blk)
+		err = batch.Put(ctx, key, blk)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -64,9 +64,9 @@ func RunBatchTest(t *testing.T, ds dstore.Batching) {
 }
 
 func RunBatchDeleteTest(t *testing.T, ds dstore.Batching) {
-	ctx := context.Background()
+	ctx := t.Context()
 
-	var keys []dstore.Key
+	keys := make([]dstore.Key, 0, 20)
 	for range 20 {
 		blk := make([]byte, 16)
 		rand.Read(blk)
@@ -105,7 +105,7 @@ func RunBatchDeleteTest(t *testing.T, ds dstore.Batching) {
 }
 
 func RunBatchPutAndDeleteTest(t *testing.T, ds dstore.Batching) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	batch, err := ds.Batch(ctx)
 	if err != nil {
@@ -115,33 +115,33 @@ func RunBatchPutAndDeleteTest(t *testing.T, ds dstore.Batching) {
 	ka := dstore.NewKey("/a")
 	kb := dstore.NewKey("/b")
 
-	if err := batch.Put(ctx, ka, []byte{1}); err != nil {
+	if err = batch.Put(ctx, ka, []byte{1}); err != nil {
 		t.Error(err)
 	}
-	if err := batch.Put(ctx, kb, []byte{2}); err != nil {
+	if err = batch.Put(ctx, kb, []byte{2}); err != nil {
 		t.Error(err)
 	}
-	if err := batch.Delete(ctx, ka); err != nil {
+	if err = batch.Delete(ctx, ka); err != nil {
 		t.Error(err)
 	}
-	if err := batch.Delete(ctx, kb); err != nil {
+	if err = batch.Delete(ctx, kb); err != nil {
 		t.Error(err)
 	}
-	if err := batch.Put(ctx, kb, []byte{3}); err != nil {
+	if err = batch.Put(ctx, kb, []byte{3}); err != nil {
 		t.Error(err)
 	}
 
 	// TODO: assert that nothing has been flushed yet? What are the semantics here?
 
-	if err := batch.Commit(ctx); err != nil {
+	if err = batch.Commit(ctx); err != nil {
 		t.Error(err)
 	}
 
-	switch _, err := ds.Get(ctx, ka); err {
-	case dstore.ErrNotFound:
-	case nil:
+	_, err = ds.Get(ctx, ka)
+	if err == nil {
 		t.Errorf("expected to not find %s", ka)
-	default:
+	}
+	if !errors.Is(err, dstore.ErrNotFound) {
 		t.Error(err)
 	}
 
