@@ -35,7 +35,7 @@ func TestElemCount(t *testing.T) {
 }
 
 func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	k := dstore.NewKey("foo")
 	val := []byte("Hello Datastore!")
@@ -103,11 +103,10 @@ func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {
 	}
 
 	size, err = ds.GetSize(ctx, k)
-	switch err {
-	case dstore.ErrNotFound:
-	case nil:
+	if err == nil {
 		t.Fatal("expected error getting size after delete")
-	default:
+	}
+	if !errors.Is(err, dstore.ErrNotFound) {
 		t.Fatal("wrong error getting size after delete: ", err)
 	}
 	if size != -1 {
@@ -116,7 +115,7 @@ func SubtestBasicPutGet(t *testing.T, ds dstore.Datastore) {
 }
 
 func SubtestNotFounds(t *testing.T, ds dstore.Datastore) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	badk := dstore.NewKey("notreal")
 
@@ -138,11 +137,10 @@ func SubtestNotFounds(t *testing.T, ds dstore.Datastore) {
 	}
 
 	size, err := ds.GetSize(ctx, badk)
-	switch err {
-	case dstore.ErrNotFound:
-	case nil:
+	if err == nil {
 		t.Fatal("expected error getting size of not found key")
-	default:
+	}
+	if !errors.Is(err, dstore.ErrNotFound) {
 		t.Fatal("wrong error getting size of not found key", err)
 	}
 	if size != -1 {
@@ -181,7 +179,7 @@ func SubtestLimit(t *testing.T, ds dstore.Datastore) {
 
 func SubtestOrder(t *testing.T, ds dstore.Datastore) {
 	test := func(orders ...dsq.Order) {
-		var types []string
+		types := make([]string, 0, len(orders))
 		for _, o := range orders {
 			types = append(types, fmt.Sprintf("%T", o))
 		}
@@ -208,7 +206,7 @@ func SubtestManyKeysAndQuery(t *testing.T, ds dstore.Datastore) {
 }
 
 func SubtestBasicSync(t *testing.T, ds dstore.Datastore) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	if err := ds.Sync(ctx, dstore.NewKey("prefix")); err != nil {
 		t.Fatal(err)
@@ -404,10 +402,10 @@ func randValue() []byte {
 }
 
 func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	var input []dsq.Entry
+	input := make([]dsq.Entry, 0, 4*count)
 	for i := range count {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		key := dstore.NewKey(s).String()
@@ -566,10 +564,10 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 	}
 
 	// use a new context, since previous was cancelled.
-	ctx = context.Background()
+	ctx = t.Context()
 	t.Log("deleting all keys")
 	for _, e := range input {
-		if err := ds.Delete(ctx, dstore.RawKey(e.Key)); err != nil {
+		if err = ds.Delete(ctx, dstore.RawKey(e.Key)); err != nil {
 			t.Fatal(err)
 		}
 	}

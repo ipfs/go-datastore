@@ -1,7 +1,6 @@
 package dstest
 
 import (
-	"context"
 	"reflect"
 	"runtime"
 	"testing"
@@ -43,7 +42,7 @@ func getFunctionName(i any) string {
 }
 
 func clearDs(t *testing.T, ds dstore.Datastore) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	q, err := ds.Query(ctx, query.Query{KeysOnly: true})
 	if err != nil {
