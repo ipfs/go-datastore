@@ -475,6 +475,7 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 	if err != nil {
 		t.Fatal("calling query: ", err)
 	}
+	defer resp.Close()
 
 	if rq := resp.Query(); !reflect.DeepEqual(rq, q) {
 		t.Errorf("returned query\n  %s\nexpected query\n  %s", &rq, q)
@@ -509,6 +510,10 @@ func subtestQuery(t *testing.T, ds dstore.Datastore, q dsq.Query, count int) {
 		if q.ReturnsSizes && actual[i].Size <= 0 {
 			t.Errorf("for result %d, expected size > 0 with ReturnsSizes", i)
 		}
+	}
+	err = resp.Close()
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// Test QueryIter for same results.
